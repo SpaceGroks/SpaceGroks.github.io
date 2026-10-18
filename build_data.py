@@ -8,6 +8,8 @@ def get(kind, n, cache):
     req=urllib.request.Request(BASE.format(kind,n),headers={"User-Agent":"spacex-play"})
     d=json.load(urllib.request.urlopen(req,timeout=300))
     json.dump(d,open(cache,"w")); return d
+def cut(t,n=400):
+    return t if len(t)<=n else t[:n].rsplit(" ",1)[0].rstrip(",.;:")+"…"
 def slim(r):
     m=r.get("mission") or {}; ro=r.get("rocket") or {}; p=r.get("pad") or {}
     st=[]
@@ -20,7 +22,7 @@ def slim(r):
           "booster_flights":L.get("flights"),"booster_landings":L.get("successful_landings")})
     vids=r.get("vid_urls") or []
     return {"id":r["id"],"name":r.get("name"),"mission":m.get("name"),"mtype":m.get("type"),
-      "desc":(m.get("description") or "")[:400],"orbit":(m.get("orbit") or {}).get("abbrev"),
+      "desc":cut(m.get("description") or ""),"orbit":(m.get("orbit") or {}).get("abbrev"),
       "orbit_name":(m.get("orbit") or {}).get("name"),
       "status":(r.get("status") or {}).get("abbrev"),"status_name":(r.get("status") or {}).get("name"),
       "net":r.get("net"),"net_precision":(r.get("net_precision") or {}).get("abbrev"),

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SpaceX Play</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head><body>
+<header><h1>🚀 SpaceX Play</h1><p class="sub">Juega con las misiones reales de SpaceX. Datos actualizados cada día.</p>
+<div id="score" class="score"></div></header>
+<nav>
+<button data-tab="next" class="on">Próximo</button>
+<button data-tab="predict">Predicciones</button>
+<button data-tab="quiz">Reto semanal</button>
+<button data-tab="fleet">Propulsores</button>
+<button data-tab="map">Mapa</button>
+<button data-tab="log">Historial</button>
+</nav>
+<main>
+<section id="next" class="tab on"></section>
+<section id="predict" class="tab"></section>
+<section id="quiz" class="tab"></section>
+<section id="fleet" class="tab"></section>
+<section id="map" class="tab"><div id="mapdiv"></div><div id="maplist"></div></section>
+<section id="log" class="tab"></section>
+</main>
+<footer id="foot"></footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body></html>

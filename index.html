@@ -2,17 +2,20 @@
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpaceX Play</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<meta name="theme-color" content="#05070d">
 </head><body>
-<header><h1>🚀 SpaceX Play</h1><p class="sub">Juega con las misiones reales de SpaceX. Datos actualizados cada día.</p>
+<div class="stars"></div><div class="stars s2"></div>
+<header><h1><span class="logo">▲</span> SPACEX <b>PLAY</b></h1><p class="sub">Juega con las misiones reales de SpaceX · datos en directo cada hora</p>
 <div id="score" class="score"></div></header>
 <nav>
-<button data-tab="next" class="on">Próximo</button>
-<button data-tab="predict">Predicciones</button>
-<button data-tab="quiz">Reto semanal</button>
-<button data-tab="fleet">Propulsores</button>
-<button data-tab="map">Mapa</button>
-<button data-tab="log">Historial</button>
+<button data-tab="next" class="on">🚀 Próximo</button>
+<button data-tab="predict">🎯 Predicciones</button>
+<button data-tab="quiz">🧠 Reto semanal</button>
+<button data-tab="fleet">♻️ Propulsores</button>
+<button data-tab="map">🗺️ Mapa</button>
+<button data-tab="log">📜 Historial</button>
 </nav>
 <main>
 <section id="next" class="tab on"></section>
@@ -23,6 +26,7 @@
 <section id="log" class="tab"></section>
 </main>
 <footer id="foot"></footer>
+<p class="disc">Proyecto de aficionados, no oficial ni afiliado a SpaceX.</p>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="app.js"></script>
 </body></html>

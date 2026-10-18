@@ -3,6 +3,7 @@
 Cada 2 horas, de 9:00 a 21:00, se hace la primera sin marcar, se prueba y se marca. Cualquiera del grupo puede añadir ideas.
 
 - [ ] Racha de días: puntos extra por volver cada día y completar el desafío del globo
+- [ ] Análisis de experto: cuadro de texto en cada lanzamiento para el razonamiento (física, ingeniería) más una predicción concreta y medible (aterrizaje, minutos de retraso, órbita) que se puntúa sola con los datos reales; se guarda en el navegador. Más adelante, evaluación del texto por una IA cuando haya almacenamiento compartido
 - [ ] Aviso 15 minutos antes de cada lanzamiento (notificación del navegador si el jugador la acepta) con enlace al directo
 - [ ] Ficha de cada propulsor con su historial de vuelos, tiempo entre vuelos y apuesta "¿llegará a X vuelos?"
 - [ ] "Aprende en 1 minuto" por misión: qué lleva, a qué órbita va y para qué sirve

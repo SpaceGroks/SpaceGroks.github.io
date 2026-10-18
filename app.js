@@ -147,3 +147,32 @@ function renderLog(){
     ${b.land_attempt?`<span class="tag ${b.land_success?'ok':'ko'}">${b.land_success?'Aterrizó':'No aterrizó'} ${b.land_loc?'en '+b.land_loc:''}</span>`:''}</div>
     ${l.fail?`<div class="ko">${l.fail}</div>`:''}</div></div>`}).join('');
 }
+// ---------- Globo de desafío (cada pocas horas, con datos reales) ----------
+const GLOBO_CADA=4*H;
+function retosGlobo(){
+  const R=[],ups=D.upcoming.filter(predictable),preds=LS.get('preds',{});
+  const sin=ups.filter(l=>!preds[l.id]);
+  if(sin.length){const l=sin[0],b=(l.stages||[])[0]||{};
+    R.push({t:'🎯 ¿Te la juegas?',m:`${mname(l)} despega ${fmt(l.net)}${b.flight?` con el propulsor ${b.serial} en su vuelo nº ${b.flight}`:''}. ¿Aterrizará? Haz tu predicción antes del despegue y gana hasta 35 puntos.`,tab:'predict',btn:'Predecir ahora'});}
+  const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),falta=Z.qs.length-Object.keys(st.ans).length;
+  if(falta>0)R.push({t:'🧠 Reto semanal',m:`Te quedan ${falta} preguntas sobre las misiones reales de esta semana. Solo los mejores directores de vuelo las aciertan todas. ¿Tú qué?`,tab:'quiz',btn:'Aceptar el reto'});
+  const fl=D.previous.flatMap(l=>(l.stages||[]).map(s=>({...s,l}))).filter(s=>s.flight).sort((a,b)=>b.flight-a.flight)[0];
+  if(fl)R.push({t:'♻️ Récord de reutilización',m:`El propulsor ${fl.serial} ya lleva ${fl.flight} vuelos. Antes los cohetes se tiraban tras un solo uso. ¿Sabrías decir cuál es el siguiente en llegar a esa cifra?`,tab:'fleet',btn:'Ver la flota'});
+  const s=D.stats;if(s&&s.consecutive_successful_landings)R.push({t:'🔥 Racha en directo',m:`SpaceX lleva ${s.consecutive_successful_landings} aterrizajes seguidos sin fallar y ${s.consecutive_successful_launches} lanzamientos seguidos con éxito. ¿Crees que la racha aguanta esta semana? Demuéstralo con tus predicciones.`,tab:'predict',btn:'Apostar'});
+  const o=D.previous.find(l=>l.orbit&&l.orbit!=='LEO');
+  if(o)R.push({t:'📚 Fórmate',m:`${mname(o)} fue a una órbita ${orb(o.orbit)}. ¿Sabes por qué no todas las misiones van a la misma órbita? Aprende cómo funciona y vuelve a por el reto.`,url:'https://es.wikipedia.org/wiki/%C3%93rbita',btn:'Aprender (Wikipedia)'});
+  return R;
+}
+function mostrarGlobo(forzar){
+  if(!D)return;const last=LS.get('globo_last',0);if(!forzar&&Date.now()-last<GLOBO_CADA)return;
+  const R=retosGlobo();if(!R.length)return;const n=LS.get('globo_n',0);const r=R[n%R.length];
+  LS.set('globo_last',Date.now());LS.set('globo_n',n+1);
+  const g=document.createElement('div');g.className='globo';
+  g.innerHTML=`<button class="x" aria-label="Cerrar">×</button><h4>${r.t}</h4><p>${r.m}</p><button class="go">${r.btn}</button><button class="later">Luego</button>`;
+  document.body.appendChild(g);requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.add('show')));
+  const close=()=>{g.classList.remove('show');setTimeout(()=>g.remove(),500)};
+  g.querySelector('.x').onclick=close;g.querySelector('.later').onclick=close;
+  g.querySelector('.go').onclick=()=>{close();if(r.url)window.open(r.url,'_blank');else document.querySelector(`nav button[data-tab="${r.tab}"]`).click()};
+}
+setTimeout(()=>mostrarGlobo(false),4000);
+setInterval(()=>mostrarGlobo(false),10*60*1000);

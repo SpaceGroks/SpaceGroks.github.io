@@ -9,6 +9,7 @@ const ORB={LEO:'Órbita baja (LEO)',SSO:'Heliosíncrona (SSO)',PO:'Polar',GTO:'T
 const tdays=t=>{const m=/P(?:(\d+)D)?/.exec(t||'');return m&&t.length>1?+(m[1]||0):null};
 const DRONE=/Of Course I Still Love You|A Shortfall of Gravitas|Just Read the Instructions/,LZ=/Landing Zone|^LZ/;
 const orb=o=>ORB[o]||o||'¿?';
+const ic=(ok,si='Acierto',no='Fallo')=>`<span role="img" aria-label="${ok?si:no}">${ok?'✅':'❌'}</span>`;
 let D;
 const LANG=((navigator.languages&&navigator.languages[0])||navigator.language||'es').toLowerCase();
 let ES={};
@@ -33,11 +34,26 @@ async function translateDescs(){try{
 Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_es.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,es])=>{D=d;ES=es||{};init();translateDescs()}).catch(e=>{$('main').innerHTML='<p class="ko">No se han podido cargar los datos.</p>'});
 
 function init(){
-  document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
-    document.querySelectorAll('nav button,.tab').forEach(x=>x.classList.remove('on'));
-    b.classList.add('on');$('#'+b.dataset.tab).classList.add('on');if(b.dataset.tab==='map')drawMap();});
+  initTabs();
   resolvePredictions();resolveBets();renderNext();renderPredict();renderQuiz();renderFleet();renderLog();renderScore();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
+}
+// ---------- Pestañas (accesibles con teclado y enlazables con #) ----------
+const TABS=()=>[...document.querySelectorAll('nav [role=tab]')];
+function showTab(id,focus){const b=TABS().find(x=>x.dataset.tab===id);if(!b)return;
+  TABS().forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-selected',on);x.tabIndex=on?0:-1});
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id===id));
+  if(focus)b.focus({preventScroll:true});const bar=b.parentNode;if(bar&&bar.scrollWidth>bar.clientWidth){const l=b.offsetLeft-bar.offsetLeft,r=l+b.offsetWidth;if(l<bar.scrollLeft||r>bar.scrollLeft+bar.clientWidth)bar.scrollLeft=Math.max(0,l-(bar.clientWidth-b.offsetWidth)/2)}
+  if(id==='map'){drawMap();setTimeout(()=>{try{mapObj&&mapObj.invalidateSize()}catch(e){}},50)}}
+function initTabs(){
+  const bar=$('nav .tabs'),tb=TABS();
+  tb.forEach(b=>b.onclick=()=>{showTab(b.dataset.tab);try{history.replaceState(null,'','#'+b.dataset.tab)}catch(e){}});
+  if(bar){bar.onkeydown=e=>{const i=tb.indexOf(document.activeElement);if(i<0)return;let j=null;
+      if(e.key==='ArrowRight')j=(i+1)%tb.length;else if(e.key==='ArrowLeft')j=(i-1+tb.length)%tb.length;else if(e.key==='Home')j=0;else if(e.key==='End')j=tb.length-1;
+      if(j!=null){e.preventDefault();tb[j].click();tb[j].focus({preventScroll:true})}};
+    const fade=()=>bar.classList.toggle('end',bar.scrollLeft+bar.clientWidth>=bar.scrollWidth-4);bar.onscroll=fade;fade();addEventListener('resize',fade)}
+  const fromHash=()=>{const h=(location.hash||'').slice(1);if(tb.some(b=>b.dataset.tab===h))showTab(h)};
+  addEventListener('hashchange',fromHash);if(location.hash.length>1){fromHash();setTimeout(()=>{try{scrollTo(0,0)}catch(e){}},0)}
 }
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
@@ -53,12 +69,12 @@ function renderNext(){
   if(n){const b=(n.stages||[])[0]||{};
     h+=`<div class="card hero"><div class="bg" style="background-image:url('${n.img||(D.previous.find(x=>x.img)||{}).img||''}')"></div><div class="in">
     <div class="kick">Próximo lanzamiento</div><h2>${mname(n)}</h2>
-    <div class="big" id="cd"></div>
+    <div class="big" id="cd" role="timer" aria-live="off" aria-label="Cuenta atrás hasta el despegue"></div>
     <div class="mut">${fmt(n.net)} · ${n.rocket} · ${n.loc||''}</div>
     <div style="margin-top:8px">${n.status==='Go'?'<span class="tag ok">Confirmado (Go)</span>':`<span class="tag warn">${n.status_name}</span>`}
     ${n.orbit?`<span class="tag">${orb(n.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">Propulsor ${b.serial} · vuelo ${b.flight}</span>`:''}
     ${b.land_loc?`<span class="tag">Aterriza en ${b.land_loc_name}</span>`:''}${n.prob?`<span class="tag">Meteo favorable ${n.prob}%</span>`:''}</div>
-    <p class="mut">${tdesc(n)}</p>${n.video?`<a class="live" href="${n.video}" target="_blank">▶ Ver directo</a>`:''}</div></div>`;
+    <p class="mut">${tdesc(n)}</p>${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}</div></div>`;
     const tick=()=>{const ms=new Date(n.net)-Date.now();const el=$('#cd');if(!el)return;
       if(ms<0){el.textContent='¡Despegando o ya en vuelo!';return}
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
@@ -80,10 +96,10 @@ function renderPredict(){
   list.forEach(l=>{const p=preds[l.id]||{a:{}};const b=(l.stages||[])[0]||{};
     const qs=[['ok','¿Llegará la carga a su órbita?'],...(b.land_attempt?[['land',`¿Aterrizará el propulsor ${b.serial||''} en ${b.land_loc_name||'su zona'}?`]]:[]),['time',`¿Despegará dentro de las 24 h de la hora prevista ahora (${fmt(l.net)})?`]];
     h+=`<div class="card" data-id="${l.id}"><h3>${mname(l)}</h3><div class="mut">${l.rocket} · ${l.loc||''}${b.flight?` · vuelo nº ${b.flight} del propulsor`:''}</div>`+
-    qs.map(([k,q])=>`<div style="margin-top:8px">${q}<div class="opts">${['Sí','No'].map(v=>`<button data-k="${k}" data-v="${v}" class="${p.a[k]===v?'sel':''}">${v}</button>`).join('')}</div></div>`).join('')+
+    qs.map(([k,q])=>`<div style="margin-top:8px"><div id="q-${l.id}-${k}">${q}</div><div class="opts" role="group" aria-labelledby="q-${l.id}-${k}">${['Sí','No'].map(v=>`<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${p.a[k]===v}" class="${p.a[k]===v?'sel':''}">${v}</button>`).join('')}</div></div>`).join('')+
     `<div class="mut">${p.saved?'Predicción guardada ✔ (puedes cambiarla hasta el despegue)':'Sin predicción todavía'}</div></div>`});
   const done=Object.values(preds).filter(p=>p.res);
-  if(done.length)h+=`<h3>Tus resultados</h3>`+done.sort((a,b)=>b.resAt-a.resAt).map(p=>`<div class="card"><h3>${p.name}</h3>${p.res.map(r=>`<div>${r.ok?'✅':'❌'} ${r.q}: dijiste ${r.you}, pasó ${r.real}</div>`).join('')}<b>+${p.pts} puntos</b></div>`).join('');
+  if(done.length)h+=`<h3>Tus resultados</h3>`+done.sort((a,b)=>b.resAt-a.resAt).map(p=>`<div class="card"><h3>${p.name}</h3>${p.res.map(r=>`<div>${ic(r.ok)} ${r.q}: dijiste ${r.you}, pasó ${r.real}</div>`).join('')}<b>+${p.pts} puntos</b></div>`).join('');
   $('#predict').innerHTML=h;
   $('#predict').querySelectorAll('.opts button').forEach(bt=>bt.onclick=()=>{
     const id=bt.closest('.card').dataset.id,l=D.upcoming.find(x=>x.id===id);const ps=LS.get('preds',{});
@@ -134,11 +150,12 @@ function renderQuiz(){
   const correct=Z.qs.filter((q,i)=>st.ans[i]===q.right).length;
   let h=`<div class="card"><b>Reto semanal</b><div class="mut">${Z.title}. Cada lunes sale un reto nuevo. 10 puntos por acierto.</div>
   <div style="margin-top:6px">${answered}/${Z.qs.length} respondidas · ${correct} aciertos</div><div class="bar"><i style="width:${Z.qs.length?100*answered/Z.qs.length:0}%"></i></div></div>`;
-  h+=Z.qs.map((q,i)=>{const a=st.ans[i];return `<div class="card"><div>${i+1}. ${q.q}</div><div class="opts">${q.opts.map(o=>`<button data-i="${i}" data-v="${o}" ${a?'disabled':''} class="${a?(o===q.right?'right':(o===a?'wrong':'')):''}">${o}</button>`).join('')}</div></div>`}).join('');
+  h+=Z.qs.map((q,i)=>{const a=st.ans[i];return `<div class="card"><div id="qz-${i}">${i+1}. ${q.q}</div><div class="opts" role="group" aria-labelledby="qz-${i}">${q.opts.map(o=>`<button type="button" data-i="${i}" data-v="${esc(o)}" ${a?'disabled':''} class="${a?(o===q.right?'right':(o===a?'wrong':'')):''}">${esc(o)}${a&&o===q.right?'<span class="sr"> (respuesta correcta)</span>':a&&o===a?'<span class="sr"> (tu respuesta, incorrecta)</span>':''}</button>`).join('')}</div>${a?`<div class="sr" role="status">${a===q.right?'Acierto':'Fallo. La correcta era '+esc(q.right)}</div>`:''}</div>`}).join('');
   if(!Z.qs.length)h+='<p class="mut">No hay datos suficientes para el reto de esta semana.</p>';
   $('#quiz').innerHTML=h;
   $('#quiz').querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{const s=LS.get('quiz_'+Z.key,{ans:{}});const i=b.dataset.i;if(s.ans[i])return;
-    s.ans[i]=b.dataset.v;LS.set('quiz_'+Z.key,s);if(b.dataset.v===Z.qs[i].right)addPts('quiz',10);renderQuiz()});
+    s.ans[i]=b.dataset.v;LS.set('quiz_'+Z.key,s);if(b.dataset.v===Z.qs[i].right)addPts('quiz',10);renderQuiz();
+    const nx=$('#quiz').querySelector(`.opts button[data-i="${+i+1}"]`)||$('#qz-'+i);if(nx&&nx.focus)nx.focus({preventScroll:false})});
 }
 // ---------- Propulsores ----------
 let fleetSort='flights';
@@ -150,16 +167,16 @@ function renderFleet(){
   D.upcoming.forEach(l=>(l.stages||[]).forEach(s=>{const b=m[s.serial];if(b&&!b.next)b.next=l}));
   const rows=Object.values(m).sort((a,b)=>fleetSort==='flights'?b.flights-a.flights:new Date(b.last)-new Date(a.last));
   const max=Math.max(...rows.map(r=>r.flights),1);
-  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Los primeros fases que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar y un propulsor para ver su ficha y apostar si volverá a volar.</div></div>${betsHTML()}
-  <table><tr><th data-s="flights">Propulsor</th><th data-s="flights">Vuelos</th><th data-s="last">Último vuelo</th><th>Próximo</th></tr>
-  ${rows.map(r=>`<tr class="clic" data-serial="${r.serial}"><td><b>${r.serial}</b> <span class="mut">ficha ›</span></td><td>${r.flights}<div class="bar"><i style="width:${100*r.flights/max}%"></i></div></td><td>${fmtD(r.last)}<div class="mut">${r.missions.at(-1)}</div></td><td>${r.next?`${mname(r.next)}<div class="mut">${fmtD(r.next.net)}</div>`:'—'}</td></tr>`).join('')}</table>`;
-  $('#fleet').querySelectorAll('th[data-s]').forEach(t=>t.onclick=()=>{fleetSort=t.dataset.s;renderFleet()});
-  $('#fleet').querySelectorAll('tr[data-serial]').forEach(t=>t.onclick=()=>openBooster(t.dataset.serial));
+  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Las primeras etapas que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar y un propulsor para ver su ficha y apostar si volverá a volar.</div></div>${betsHTML()}
+  <div class="tscroll"><table><caption class="sr">Flota de propulsores, ordenada por ${fleetSort==='flights'?'número de vuelos':'último vuelo'}</caption><tr><th scope="col">Propulsor</th><th scope="col" aria-sort="${fleetSort==='flights'?'descending':'none'}"><button type="button" class="lnk" data-s="flights">Vuelos</button></th><th scope="col" aria-sort="${fleetSort==='last'?'descending':'none'}"><button type="button" class="lnk" data-s="last">Último vuelo</button></th><th scope="col">Próximo</th></tr>
+  ${rows.map(r=>`<tr class="clic" data-serial="${r.serial}"><td><button type="button" class="lnk" data-open="${r.serial}" aria-label="Abrir la ficha del propulsor ${r.serial}"><b>${r.serial}</b> <span class="mut" aria-hidden="true">ficha ›</span></button></td><td>${r.flights}<div class="bar"><i style="width:${100*r.flights/max}%"></i></div></td><td>${fmtD(r.last)}<div class="mut">${r.missions.at(-1)}</div></td><td>${r.next?`${mname(r.next)}<div class="mut">${fmtD(r.next.net)}</div>`:'—'}</td></tr>`).join('')}</table></div>`;
+  $('#fleet').querySelectorAll('button[data-s]').forEach(t=>t.onclick=()=>{fleetSort=t.dataset.s;renderFleet();const f=$('#fleet').querySelector(`button[data-s="${t.dataset.s}"]`);f&&f.focus()});
+  $('#fleet').querySelectorAll('tr[data-serial]').forEach(t=>t.onclick=e=>{if(e.target.closest('button[data-s]'))return;openBooster(t.dataset.serial)});
 }
 // ---------- Mapa ----------
-let mapDone=false;
+let mapDone=false,mapObj=null;
 function drawMap(){if(mapDone)return;mapDone=true;
-  const map=L.map('mapdiv').setView([31,-100],3);
+  const map=mapObj=L.map('mapdiv').setView([31,-100],3);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap, © CARTO'}).addTo(map);
   const pads={};[...D.previous.map(l=>({...l,up:0})),...D.upcoming.map(l=>({...l,up:1}))].forEach(l=>{if(l.lat==null)return;
     const k=l.pad;const p=pads[k]||(pads[k]={pad:l.pad,loc:l.loc,lat:l.lat,lon:l.lon,done:0,up:0});l.up?p.up++:p.done++});
@@ -169,7 +186,7 @@ function drawMap(){if(mapDone)return;mapDone=true;
 // ---------- Historial ----------
 function renderLog(){
   $('#log').innerHTML=D.previous.map(l=>{const b=(l.stages||[])[0]||{};const ok=l.status==='Success';
-    return `<div class="card row">${l.img?`<img loading="lazy" src="${l.img}" alt="">`:''}<div><h3>${ok?'✅':'❌'} ${mname(l)}</h3>
+    return `<div class="card row">${l.img?`<img loading="lazy" src="${l.img}" alt="">`:''}<div><h3>${ic(ok,'Éxito','Fallo')} ${mname(l)}</h3>
     <div class="mut">${fmt(l.net)} · ${l.rocket} · ${l.loc||''}</div>
     <div>${l.orbit?`<span class="tag">${orb(l.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">${b.serial} · vuelo ${b.flight}</span>`:''}
     ${b.land_attempt?`<span class="tag ${b.land_success?'ok':'ko'}">${b.land_success?'Aterrizó':'No aterrizó'} ${b.land_loc?'en '+b.land_loc:''}</span>`:''}</div>
@@ -198,7 +215,8 @@ function mostrarGlobo(forzar){
   const R=retosGlobo();if(!R.length)return;const n=LS.get('globo_n',0);const r=R[n%R.length];
   LS.set('globo_last',Date.now());LS.set('globo_n',n+1);
   const g=document.createElement('div');g.className='globo';
-  g.innerHTML=`<button class="x" aria-label="Cerrar">×</button><h4>${r.t}</h4><p>${r.m}</p><button class="go">${r.btn}</button><button class="later">Luego</button>`;
+  g.setAttribute('role','complementary');g.setAttribute('aria-label','Desafío');g.setAttribute('aria-live','polite');
+  g.innerHTML=`<button type="button" class="x" aria-label="Cerrar">×</button><h4>${r.t}</h4><p>${r.m}</p><button type="button" class="go">${r.btn}</button><button type="button" class="later">Luego</button>`;
   document.body.appendChild(g);requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.add('show')));
   const close=()=>{g.classList.remove('show');setTimeout(()=>g.remove(),500)};
   g.querySelector('.x').onclick=close;g.querySelector('.later').onclick=close;
@@ -226,7 +244,7 @@ function resolveBets(){
 }
 function betsHTML(){
   const bs=Object.values(LS.get('bets',{}));if(!bs.length)return'';
-  return `<div class="card"><b>Tus apuestas de propulsores</b>${bs.sort((a,b)=>b.at-a.at).map(b=>`<div style="margin-top:6px">${b.res?(b.res.ok?'✅':'❌'):'⏳'} ${b.serial} · vuelo nº ${b.target} antes del ${fmtD(b.deadline)}: dijiste <b>${b.pick}</b>${b.res?` · ${b.res.real?`voló${b.res.mission?' en '+b.res.mission:''}`:'no voló a tiempo'} · +${b.won} puntos`:' · pendiente'}</div>`).join('')}</div>`;
+  return `<div class="card"><b>Tus apuestas de propulsores</b>${bs.sort((a,b)=>b.at-a.at).map(b=>`<div style="margin-top:6px">${b.res?ic(b.res.ok):'<span role="img" aria-label="Pendiente">⏳</span>'} ${b.serial} · vuelo nº ${b.target} antes del ${fmtD(b.deadline)}: dijiste <b>${b.pick}</b>${b.res?` · ${b.res.real?`voló${b.res.mission?' en '+b.res.mission:''}`:'no voló a tiempo'} · +${b.won} puntos`:' · pendiente'}</div>`).join('')}</div>`;
 }
 function openBooster(serial){
   const h=boosterHist(serial);if(!h.length)return;
@@ -243,21 +261,25 @@ function openBooster(serial){
   else if(open)betH=`<p>Ya has apostado <b>${bet.pick}</b> a que hace el vuelo nº ${bet.target} antes del ${fmtD(bet.deadline)}. Se resolverá solo cuando lleguen los datos.</p>`;
   else betH=`<p><b>¿Hará el vuelo nº ${target} antes del ${fmtD(deadline)}?</b></p>
     <div class="mut">Pistas reales: ${avg!=null?`suele pasar ${avg} días en tierra entre vuelos (récord en estos datos: ${best} días)`:'no hay tiempos entre vuelos en estos datos'}; lleva ${since} días sin volar.${next?` Ya tiene asignada ${mname(next)} para el ${fmtD(next.net)}, aunque las fechas pueden cambiar.`:' No tiene misión anunciada todavía.'}</div>
-    <div class="opts"><button data-b="Sí">Sí (+${P.si})</button><button data-b="No">No (+${P.no})</button></div>`;
+    <div class="opts" role="group" aria-label="Tu apuesta"><button type="button" data-b="Sí">Sí (+${P.si})</button><button type="button" data-b="No">No (+${P.no})</button></div>`;
   const rows=h.slice().reverse().map(({l,s})=>{const td=tdays(s.turnaround);
     return `<tr><td>${fmtD(l.net)}</td><td>${mname(l)}</td><td>${s.flight??'—'}</td><td>${td!=null&&td>0?td+' d':'—'}</td><td>${s.land_attempt?`<span class="tag ${s.land_success?'ok':'ko'}">${s.land_success?'Sí':'No'}${s.land_loc?' · '+s.land_loc:''}</span>`:'Sin intento'}</td></tr>`}).join('');
   const m=document.createElement('div');m.className='modal';
-  m.innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-label="Ficha del propulsor ${serial}"><button class="x" aria-label="Cerrar">×</button>
+  m.innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-label="Ficha del propulsor ${serial}"><button type="button" class="x" aria-label="Cerrar la ficha">×</button>
    <div class="kick">Ficha del propulsor</div><h2>${serial}</h2>
    <div class="stats"><div><b>${tot}</b>vuelos totales</div><div><b>${last.s.booster_landings??'—'}</b>aterrizajes con éxito</div><div><b>${avg??'—'}</b>días medios entre vuelos</div><div><b>${since}</b>días desde su último vuelo</div></div>
    ${betH}
    <h3>Vuelos en los últimos ${D.previous.length} lanzamientos de SpaceX</h3>
-   <div class="scroll"><table><tr><th>Fecha</th><th>Misión</th><th>Vuelo nº</th><th>Días en tierra</th><th>Aterrizó</th></tr>${rows}</table></div>
+   <div class="scroll"><table><tr><th scope="col">Fecha</th><th scope="col">Misión</th><th scope="col">Vuelo nº</th><th scope="col">Días en tierra</th><th scope="col">Aterrizó</th></tr>${rows}</table></div>
    <p class="mut">Datos de Launch Library 2. Los totales de vuelos y aterrizajes son los que da la fuente en la última actualización.</p></div>`;
-  document.body.appendChild(m);
-  const close=()=>{m.remove();document.removeEventListener('keydown',esc)},esc=e=>{if(e.key==='Escape')close()};
-  document.addEventListener('keydown',esc);
+  const prevFocus=document.activeElement;
+  document.body.appendChild(m);document.body.classList.add('noscroll');
+  const close=(keep)=>{m.remove();document.body.classList.remove('noscroll');document.removeEventListener('keydown',onKey);
+    if(keep!==true){const t=document.querySelector(`#fleet button[data-open="${serial}"]`)||prevFocus;try{t&&t.focus&&t.focus()}catch(e){}}},
+   onKey=e=>{if(e.key==='Escape')close();else if(e.key==='Tab'){const f=[...m.querySelectorAll('button,a[href],[tabindex]:not([tabindex="-1"])')];if(!f.length)return;
+     const a=f[0],z=f.at(-1);if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}}};
+  document.addEventListener('keydown',onKey);m.querySelector('.x').focus();
   m.onclick=e=>{if(e.target===m)close()};m.querySelector('.x').onclick=close;
   m.querySelectorAll('[data-b]').forEach(bt=>bt.onclick=()=>{const b2=LS.get('bets',{});
-    b2[serial]={serial,pick:bt.dataset.b,target,deadline:deadline.getTime(),si:P.si,no:P.no,at:Date.now()};LS.set('bets',b2);close();renderFleet();openBooster(serial)});
+    b2[serial]={serial,pick:bt.dataset.b,target,deadline:deadline.getTime(),si:P.si,no:P.no,at:Date.now()};LS.set('bets',b2);close(true);renderFleet();openBooster(serial)});
 }

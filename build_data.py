@@ -38,5 +38,8 @@ out={"generated":datetime.datetime.now(datetime.timezone.utc).isoformat(timespec
  "source":"Launch Library 2 (The Space Devs)",
  "stats":{k:lsp.get(k) for k in ["total_launch_count","successful_launches","failed_launches","consecutive_successful_launches","successful_landings","attempted_landings","consecutive_successful_landings","pending_launches"]},
  "upcoming":[slim(r) for r in up["results"]],"previous":[slim(r) for r in prev["results"]]}
+try: es=json.load(open("i18n/desc_es.json"))
+except Exception: es={}
+out["missing_es"]=[l["id"] for l in out["upcoming"]+out["previous"] if l["desc"] and l["id"] not in es]
 json.dump(out,open("data.json","w"),ensure_ascii=False,separators=(",",":"))
 print("ok",len(out["upcoming"]),len(out["previous"]),out["generated"])

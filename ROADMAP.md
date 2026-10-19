@@ -2,6 +2,8 @@
 
 Cada 2 horas, de 9:00 a 21:00, se hace la primera sin marcar, se prueba y se marca. Cualquiera del grupo puede añadir ideas.
 
+En cada ejecución, además: traducir al español (castellano, nombres propios intactos) las descripciones de los ids listados en `missing_es` de data.json y añadirlas a `i18n/desc_es.json` (texto completo de up.json/prev.json, cortado a 400 caracteres en límite de palabra con «…», como `cut()` de build_data.py).
+
 - [x] Vista previa al compartir el enlace (imagen y texto Open Graph para X, WhatsApp y Reddit)
 - [ ] Mejoras de uso en móvil y accesibilidad (probar en pantalla de 390 px)
 - [ ] Crédito de cada foto (autor y licencia que da Launch Library 2) junto a la imagen, y no mostrar fotos sin licencia clara

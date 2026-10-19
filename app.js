@@ -10,7 +10,27 @@ const tdays=t=>{const m=/P(?:(\d+)D)?/.exec(t||'');return m&&t.length>1?+(m[1]||
 const DRONE=/Of Course I Still Love You|A Shortfall of Gravitas|Just Read the Instructions/,LZ=/Landing Zone|^LZ/;
 const orb=o=>ORB[o]||o||'¿?';
 let D;
-fetch('data.json?'+Date.now()).then(r=>r.json()).then(d=>{D=d;init()}).catch(e=>{$('main').innerHTML='<p class="ko">No se han podido cargar los datos.</p>'});
+const LANG=((navigator.languages&&navigator.languages[0])||navigator.language||'es').toLowerCase();
+let ES={};
+const esc=t=>String(t||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+function tdesc(l){if(!l||!l.desc)return '';let t=l.desc;
+  if(LANG.startsWith('es')&&ES[l.id])t=ES[l.id];
+  else if(!LANG.startsWith('es')&&!LANG.startsWith('en')){try{const c=localStorage.getItem('sxp_tr_'+LANG+'_'+l.id);if(c)t=c}catch(e){}}
+  return `<span class="desc" data-id="${esc(l.id)}">${esc(t)}</span>`}
+async function translateDescs(){try{
+  if(LANG.startsWith('es')||LANG.startsWith('en')||!('Translator' in self))return;
+  const tl=LANG.split('-')[0];
+  const av=await Translator.availability({sourceLanguage:'en',targetLanguage:tl});
+  if(av==='unavailable')return;
+  const tr=await Translator.create({sourceLanguage:'en',targetLanguage:tl});
+  const all=[...(D.upcoming||[]),...(D.previous||[])];
+  for(const el of document.querySelectorAll('span.desc[data-id]')){
+    const id=el.dataset.id,k='sxp_tr_'+tl+'_'+id,l=all.find(x=>x.id===id);if(!l)continue;
+    let t=null;try{t=localStorage.getItem(k)}catch(e){}
+    if(!t){t=await tr.translate(l.desc);try{localStorage.setItem(k,t);localStorage.setItem('sxp_tr_'+LANG+'_'+id,t)}catch(e){}}
+    el.textContent=t}
+}catch(e){}}
+Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_es.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,es])=>{D=d;ES=es||{};init();translateDescs()}).catch(e=>{$('main').innerHTML='<p class="ko">No se han podido cargar los datos.</p>'});
 
 function init(){
   document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
@@ -38,7 +58,7 @@ function renderNext(){
     <div style="margin-top:8px">${n.status==='Go'?'<span class="tag ok">Confirmado (Go)</span>':`<span class="tag warn">${n.status_name}</span>`}
     ${n.orbit?`<span class="tag">${orb(n.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">Propulsor ${b.serial} · vuelo ${b.flight}</span>`:''}
     ${b.land_loc?`<span class="tag">Aterriza en ${b.land_loc_name}</span>`:''}${n.prob?`<span class="tag">Meteo favorable ${n.prob}%</span>`:''}</div>
-    <p class="mut">${n.desc}</p>${n.video?`<a class="live" href="${n.video}" target="_blank">▶ Ver directo</a>`:''}</div></div>`;
+    <p class="mut">${tdesc(n)}</p>${n.video?`<a class="live" href="${n.video}" target="_blank">▶ Ver directo</a>`:''}</div></div>`;
     const tick=()=>{const ms=new Date(n.net)-Date.now();const el=$('#cd');if(!el)return;
       if(ms<0){el.textContent='¡Despegando o ya en vuelo!';return}
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);

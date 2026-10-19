@@ -7,7 +7,7 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Vista previa al compartir el enlace (imagen y texto Open Graph para X, WhatsApp y Reddit)
 - [x] Mejoras de uso en móvil y accesibilidad (probar en pantalla de 390 px) (hecho el 19 oct, 11:05)
 - [x] Crédito de cada foto (autor y licencia que da Launch Library 2) junto a la imagen, y no mostrar fotos sin licencia clara (hecho el 19 oct, 12:58)
-- [ ] Análisis de experto: cuadro de texto en cada lanzamiento para el razonamiento (física, ingeniería) más una predicción concreta y medible (aterrizaje, minutos de retraso, órbita) que se puntúa sola con los datos reales; se guarda en el navegador. Más adelante, evaluación del texto por una IA cuando haya almacenamiento compartido
+- [x] Análisis de experto: cuadro de texto en cada lanzamiento para el razonamiento (física, ingeniería) más una predicción concreta y medible (aterrizaje, minutos de retraso, órbita) que se puntúa sola con los datos reales; se guarda en el navegador. Más adelante, evaluación del texto por una IA cuando haya almacenamiento compartido (hecho el 19 oct, 15:10; falta la evaluación por IA)
 - [ ] Racha de días: puntos extra por volver cada día y completar el desafío del globo
 - [ ] Aviso 15 minutos antes de cada lanzamiento (notificación del navegador si el jugador la acepta) con enlace al directo
 - [x] Ficha de cada propulsor con su historial de vuelos, tiempo entre vuelos y apuesta "¿volverá a volar?" (hecho en el reto semanal del 19 oct)

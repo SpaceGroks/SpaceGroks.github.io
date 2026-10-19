@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();
-  resolvePredictions();resolveBets();renderNext();renderPredict();renderQuiz();renderFleet();renderLog();renderScore();
+  resolvePredictions();resolveExpert();resolveBets();renderNext();renderPredict();renderQuiz();renderFleet();renderLog();renderScore();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
 }
 // ---------- Pestañas (accesibles con teclado y enlazables con #) ----------
@@ -59,7 +59,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0);
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0);
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}`}
 // ---------- Próximo ----------
@@ -92,18 +92,20 @@ function renderNext(){
 function predictable(l){return new Date(l.net)>Date.now()&&!/TBD/i.test(l.status)&&new Date(l.net)-Date.now()<21*DAY}
 function renderPredict(){
   const preds=LS.get('preds',{});
-  let h=`<div class="card"><b>Cómo se juega:</b> antes de cada despegue responde a tres preguntas. Cuando el lanzamiento ocurra, comparamos con lo que pasó de verdad. Cada acierto da 10 puntos, acertar las tres da 5 de bonus, y si apuestas por un fallo y aciertas te llevas 50.</div>`;
+  let h=`<div class="card"><b>Cómo se juega:</b> antes de cada despegue responde a tres preguntas. Cuando el lanzamiento ocurra, comparamos con lo que pasó de verdad. Cada acierto da 10 puntos, acertar las tres da 5 de bonus, y si apuestas por un fallo y aciertas te llevas 50. Abre «Análisis de experto» en cada lanzamiento para razonar y predecir los minutos de retraso (hasta 40 puntos más).</div>`;
   const list=D.upcoming.filter(predictable);
   if(!list.length)h+='<p class="mut">Ahora mismo no hay lanzamientos confirmados en las próximas tres semanas. Vuelve mañana.</p>';
   list.forEach(l=>{const p=preds[l.id]||{a:{}};const b=(l.stages||[])[0]||{};
     const qs=[['ok','¿Llegará la carga a su órbita?'],...(b.land_attempt?[['land',`¿Aterrizará el propulsor ${b.serial||''} en ${b.land_loc_name||'su zona'}?`]]:[]),['time',`¿Despegará dentro de las 24 h de la hora prevista ahora (${fmt(l.net)})?`]];
     h+=`<div class="card" data-id="${l.id}"><h3>${mname(l)}</h3><div class="mut">${l.rocket} · ${l.loc||''}${b.flight?` · vuelo nº ${b.flight} del propulsor`:''}</div>`+
     qs.map(([k,q])=>`<div style="margin-top:8px"><div id="q-${l.id}-${k}">${q}</div><div class="opts" role="group" aria-labelledby="q-${l.id}-${k}">${['Sí','No'].map(v=>`<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${p.a[k]===v}" class="${p.a[k]===v?'sel':''}">${v}</button>`).join('')}</div></div>`).join('')+
-    `<div class="mut">${p.saved?'Predicción guardada ✔ (puedes cambiarla hasta el despegue)':'Sin predicción todavía'}</div></div>`});
+    `<div class="mut">${p.saved?'Predicción guardada ✔ (puedes cambiarla hasta el despegue)':'Sin predicción todavía'}</div>${expertHTML(l)}</div>`});
   const done=Object.values(preds).filter(p=>p.res);
   if(done.length)h+=`<h3>Tus resultados</h3>`+done.sort((a,b)=>b.resAt-a.resAt).map(p=>`<div class="card"><h3>${p.name}</h3>${p.res.map(r=>`<div>${ic(r.ok)} ${r.q}: dijiste ${r.you}, pasó ${r.real}</div>`).join('')}<b>+${p.pts} puntos</b></div>`).join('');
+  h+=expertResultsHTML();
   $('#predict').innerHTML=h;
-  $('#predict').querySelectorAll('.opts button').forEach(bt=>bt.onclick=()=>{
+  bindExpert();
+  $('#predict').querySelectorAll('.opts button[data-k]').forEach(bt=>bt.onclick=()=>{
     const id=bt.closest('.card').dataset.id,l=D.upcoming.find(x=>x.id===id);const ps=LS.get('preds',{});
     const p=ps[id]||{a:{},name:mname(l),land:!!((l.stages||[])[0]||{}).land_attempt};p.a[bt.dataset.k]=bt.dataset.v;p.net=l.net;p.saved=Date.now();ps[id]=p;LS.set('preds',ps);renderPredict()});
 }
@@ -284,4 +286,65 @@ function openBooster(serial){
   m.onclick=e=>{if(e.target===m)close()};m.querySelector('.x').onclick=close;
   m.querySelectorAll('[data-b]').forEach(bt=>bt.onclick=()=>{const b2=LS.get('bets',{});
     b2[serial]={serial,pick:bt.dataset.b,target,deadline:deadline.getTime(),si:P.si,no:P.no,at:Date.now()};LS.set('bets',b2);close(true);renderFleet();openBooster(serial)});
+}
+
+// ---------- Análisis de experto (razonamiento + predicción medible que se puntúa sola) ----------
+const XDRAFT={},XOPEN=new Set();
+const precise=l=>/^(SEC|MIN)$/i.test(l.net_precision||'');
+function winStats(){// datos reales: minutos entre la apertura de la ventana y el despegue en los lanzamientos recientes
+  const v=D.previous.filter(l=>l.ws&&l.net&&precise(l)).map(l=>Math.round((new Date(l.net)-new Date(l.ws))/6e4)).filter(x=>x>=0).sort((a,b)=>a-b);
+  if(!v.length)return null;return{n:v.length,med:v[Math.floor(v.length/2)],at0:v.filter(x=>x<=1).length}}
+function xDelayPts(err){return err<=2?40:err<=10?25:err<=60?10:err<=240?5:0}
+function xConfPts(c,o){return Math.max(0,Math.round(20*(1-2*Math.pow(c/100-(o?1:0),2))))}
+function expertHTML(l){
+  if(!precise(l))return '';
+  const X=LS.get('expert',{}),x=X[l.id],dr=XDRAFT[l.id]||{},b=(l.stages||[])[0]||{};
+  const txt=dr.txt??(x?x.txt:''),del=dr.delay??(x?x.delay:''),conf=dr.conf??(x&&x.conf!=null?x.conf:'');
+  const ws=winStats(),wmin=l.ws&&l.we?Math.round((new Date(l.we)-new Date(l.ws))/6e4):null;
+  const pist=[wmin!=null?(wmin>0?`la ventana dura ${wmin} min (de ${fmt(l.ws)} a ${fmt(l.we)})`:'la ventana es instantánea: si algo falla, se aplaza'):null,
+    l.prob!=null?`meteo favorable ${l.prob}%`:null,`estado: ${esc(l.status_name)}`,
+    ws?`en los últimos ${ws.n} lanzamientos el despegue fue una mediana de ${ws.med} min después de abrirse la ventana (${ws.at0} justo al abrirse)`:null].filter(Boolean).join('; ');
+  const id=esc(l.id);
+  return `<details class="xp" data-xid="${id}"${XOPEN.has(l.id)?' open':''}><summary>Análisis de experto${x?' <span class="tag ok">guardado</span>':''}</summary>
+  <p class="mut">Razona como un ingeniero (física, meteo, historial del propulsor) y haz una predicción concreta que se puntúa sola con los datos reales. Pistas reales: ${pist}.</p>
+  <label for="xt-${id}">Tu razonamiento</label>
+  <textarea id="xt-${id}" data-f="txt" maxlength="1500" rows="4" placeholder="Por ejemplo: ventana corta, propulsor con pocos días en tierra, viento en la zona de recuperación...">${esc(txt)}</textarea>
+  <div class="xrow"><div><label for="xd-${id}">Minutos de retraso respecto a la hora prevista ahora (${fmt(l.net)})</label>
+  <input id="xd-${id}" data-f="delay" type="number" inputmode="numeric" min="0" max="20160" step="1" value="${esc(String(del))}" aria-describedby="xdh-${id}"><div class="mut" id="xdh-${id}">0 si despega a la hora. Hasta 2 min de error: 40 puntos; 10 min: 25; 1 h: 10; 4 h: 5.</div></div>
+  ${b.land_attempt?`<div><label for="xc-${id}">Confianza en que aterrice ${esc(b.serial||'el propulsor')} (%)</label>
+  <input id="xc-${id}" data-f="conf" type="number" inputmode="numeric" min="0" max="100" step="1" value="${esc(String(conf))}" aria-describedby="xch-${id}"><div class="mut" id="xch-${id}">Opcional. Se puntúa por calibración: hasta 20 puntos; decir 50% da 10 pase lo que pase.</div></div>`:''}</div>
+  <div class="opts"><button type="button" class="xsave" data-xid="${id}">${x?'Actualizar análisis':'Guardar análisis'}</button></div>
+  <div class="mut" role="status" id="xs-${id}">${x?`Guardado ${fmt(x.saved)}. Puedes cambiarlo hasta el despegue.`:'Sin guardar.'}</div></details>`}
+function bindExpert(){
+  const root=$('#predict');
+  root.querySelectorAll('details.xp').forEach(d=>d.ontoggle=()=>{d.open?XOPEN.add(d.dataset.xid):XOPEN.delete(d.dataset.xid)});
+  root.querySelectorAll('details.xp [data-f]').forEach(el=>el.oninput=()=>{const id=el.closest('details').dataset.xid;(XDRAFT[id]||(XDRAFT[id]={}))[el.dataset.f]=el.value});
+  root.querySelectorAll('button.xsave').forEach(bt=>bt.onclick=()=>{const id=bt.dataset.xid,d=bt.closest('details'),l=D.upcoming.find(x=>x.id===id);if(!l)return;
+    const st=$('#xs-'+CSS.escape(id)),g=f=>{const e=d.querySelector(`[data-f="${f}"]`);return e?e.value.trim():''};
+    if(new Date(l.net)<=Date.now()){st.textContent='El lanzamiento ya ha empezado: no se puede cambiar.';return}
+    const txt=g('txt').slice(0,1500),dv=g('delay'),cv=g('conf');
+    const delay=dv===''?NaN:Math.round(+dv),conf=cv===''?null:Math.round(+cv);
+    if(!Number.isFinite(delay)||delay<0||delay>20160){st.textContent='Escribe los minutos de retraso: un número entre 0 y 20160 (14 días).';return}
+    if(conf!=null&&!(conf>=0&&conf<=100)){st.textContent='La confianza debe ser un número de 0 a 100.';return}
+    const b=(l.stages||[])[0]||{},X=LS.get('expert',{});
+    X[id]={name:mname(l),txt,delay,conf:b.land_attempt?conf:null,net0:new Date(l.net).getTime(),land:!!b.land_attempt,serial:b.serial||null,saved:Date.now()};
+    LS.set('expert',X);delete XDRAFT[id];XOPEN.add(id);renderPredict();
+    const s2=$('#xs-'+CSS.escape(id));if(s2)s2.textContent='Análisis guardado. Se puntuará solo cuando despegue.'});
+}
+function resolveExpert(){
+  const X=LS.get('expert',{});let ch=false;
+  for(const [id,x] of Object.entries(X)){if(x.res)continue;const l=D.previous.find(y=>y.id===id);if(!l)continue;
+    const b=(l.stages||[])[0]||{},r={};let pts=0;
+    if(precise(l)){r.realDelay=Math.round((new Date(l.net)-x.net0)/6e4);r.err=Math.abs(r.realDelay-x.delay);r.dpts=xDelayPts(r.err);pts+=r.dpts}else r.void=true;
+    if(x.land&&x.conf!=null&&b.land_success!=null){r.landed=!!b.land_success;r.cpts=xConfPts(x.conf,r.landed);pts+=r.cpts}
+    x.res=r;x.pts=pts;x.resAt=Date.now();ch=true;if(pts)addPts('expert',pts);}
+  if(ch)LS.set('expert',X);
+}
+function expertResultsHTML(){
+  const done=Object.values(LS.get('expert',{})).filter(x=>x.res);if(!done.length)return '';
+  return `<h3>Tus análisis de experto</h3>`+done.sort((a,b)=>b.resAt-a.resAt).map(x=>{const r=x.res;
+    return `<div class="card"><h3>${esc(x.name)}</h3>${r.void?'<div class="mut">La fuente no da la hora exacta del despegue, así que el retraso no se puede medir.</div>':
+    `<div>${ic(r.err<=10,'Muy cerca','Lejos')} Retraso: dijiste ${x.delay} min, fue ${r.realDelay} min (error de ${r.err} min) · +${r.dpts}</div>`}
+    ${r.cpts!=null?`<div>${ic((x.conf>=50)===r.landed,'Bien calibrado','Mal calibrado')} Confianza en el aterrizaje: ${x.conf}% · ${r.landed?'aterrizó':'no aterrizó'} · +${r.cpts}</div>`:''}
+    ${x.txt?`<blockquote class="xq">${esc(x.txt)}</blockquote>`:''}<b>+${x.pts} puntos</b></div>`}).join('');
 }

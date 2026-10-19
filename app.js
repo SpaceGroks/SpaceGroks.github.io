@@ -35,8 +35,8 @@ async function translateDescs(){try{
 Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_es.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,es])=>{D=d;ES=es||{};init();translateDescs()}).catch(e=>{$('main').innerHTML='<p class="ko">No se han podido cargar los datos.</p>'});
 
 function init(){
-  initTabs();
-  resolvePredictions();resolveExpert();resolveBets();renderNext();renderPredict();renderQuiz();renderFleet();renderLog();renderScore();
+  initTabs();checkIn();
+  resolvePredictions();resolveExpert();resolveBets();renderNext();renderPredict();renderQuiz();renderFleet();renderLog();renderDaily();renderScore();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
 }
 // ---------- Pestañas (accesibles con teclado y enlazables con #) ----------
@@ -59,9 +59,9 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0);
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
-  $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}`}
+  $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`}
 // ---------- Próximo ----------
 function upcomingFuture(){const now=Date.now();return D.upcoming.filter(l=>new Date(l.net)>now-3*H)}
 function renderNext(){
@@ -82,6 +82,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
+  h+='<div id="daily"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -107,7 +108,7 @@ function renderPredict(){
   bindExpert();
   $('#predict').querySelectorAll('.opts button[data-k]').forEach(bt=>bt.onclick=()=>{
     const id=bt.closest('.card').dataset.id,l=D.upcoming.find(x=>x.id===id);const ps=LS.get('preds',{});
-    const p=ps[id]||{a:{},name:mname(l),land:!!((l.stages||[])[0]||{}).land_attempt};p.a[bt.dataset.k]=bt.dataset.v;p.net=l.net;p.saved=Date.now();ps[id]=p;LS.set('preds',ps);renderPredict()});
+    const p=ps[id]||{a:{},name:mname(l),land:!!((l.stages||[])[0]||{}).land_attempt};p.a[bt.dataset.k]=bt.dataset.v;p.net=l.net;p.saved=Date.now();ps[id]=p;LS.set('preds',ps);completeDaily('pred');renderPredict()});
 }
 function resolvePredictions(){
   const ps=LS.get('preds',{});let changed=false;
@@ -158,7 +159,7 @@ function renderQuiz(){
   if(!Z.qs.length)h+='<p class="mut">No hay datos suficientes para el reto de esta semana.</p>';
   $('#quiz').innerHTML=h;
   $('#quiz').querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{const s=LS.get('quiz_'+Z.key,{ans:{}});const i=b.dataset.i;if(s.ans[i])return;
-    s.ans[i]=b.dataset.v;LS.set('quiz_'+Z.key,s);if(b.dataset.v===Z.qs[i].right)addPts('quiz',10);renderQuiz();
+    s.ans[i]=b.dataset.v;LS.set('quiz_'+Z.key,s);if(b.dataset.v===Z.qs[i].right)addPts('quiz',10);completeDaily('quiz');renderQuiz();
     const nx=$('#quiz').querySelector(`.opts button[data-i="${+i+1}"]`)||$('#qz-'+i);if(nx&&nx.focus)nx.focus({preventScroll:false})});
 }
 // ---------- Propulsores ----------
@@ -202,29 +203,32 @@ function retosGlobo(){
   const R=[],ups=D.upcoming.filter(predictable),preds=LS.get('preds',{});
   const sin=ups.filter(l=>!preds[l.id]);
   if(sin.length){const l=sin[0],b=(l.stages||[])[0]||{};
-    R.push({t:'¿Te la juegas?',m:`${mname(l)} despega ${fmt(l.net)}${b.flight?` con el propulsor ${b.serial} en su vuelo nº ${b.flight}`:''}. ¿Aterrizará? Haz tu predicción antes del despegue y gana hasta 35 puntos.`,tab:'predict',btn:'Predecir ahora'});}
+    R.push({t:'¿Te la juegas?',m:`${mname(l)} despega ${fmt(l.net)}${b.flight?` con el propulsor ${b.serial} en su vuelo nº ${b.flight}`:''}. ¿Aterrizará? Haz tu predicción antes del despegue y gana hasta 35 puntos.`,tab:'predict',btn:'Predecir ahora',k:'pred'});}
+  {const X=LS.get('expert',{}),l=ups.find(l=>precise(l)&&!X[l.id]);if(l)R.push({t:'Análisis de experto',m:`¿Cuántos minutos se retrasará ${mname(l)} respecto a su hora prevista (${fmt(l.net)})? Razona como un ingeniero con las pistas reales y gana hasta 60 puntos.`,tab:'predict',btn:'Analizar',k:'expert'});}
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),falta=Z.qs.length-Object.keys(st.ans).length;
-  if(falta>0)R.push({t:'Reto semanal',m:`Te quedan ${falta} preguntas sobre las misiones reales de esta semana. Solo los mejores directores de vuelo las aciertan todas. ¿Tú qué?`,tab:'quiz',btn:'Aceptar el reto'});
+  if(falta>0)R.push({t:'Reto semanal',m:`Te quedan ${falta} preguntas sobre las misiones reales de esta semana. Solo los mejores directores de vuelo las aciertan todas. ¿Tú qué?`,tab:'quiz',btn:'Aceptar el reto',k:'quiz'});
   const fl=D.previous.flatMap(l=>(l.stages||[]).map(s=>({...s,l}))).filter(s=>s.flight).sort((a,b)=>b.flight-a.flight)[0];
-  if(fl)R.push({t:'Récord de reutilización',m:`El propulsor ${fl.serial} ya lleva ${fl.flight} vuelos. Antes los cohetes se tiraban tras un solo uso. ¿Sabrías decir cuál es el siguiente en llegar a esa cifra?`,tab:'fleet',btn:'Ver la flota'});
-  {const bs=LS.get('bets',{});const cand=D.previous.flatMap(l=>(l.stages||[]).map(s=>s.serial)).find(x=>x&&!/Unknown/.test(x)&&!(bs[x]&&!bs[x].res));
-   if(cand)R.push({t:'¿Volverá a volar?',m:`Abre la ficha del propulsor ${cand}: mira cuántos días suele pasar en tierra entre vuelos y apuesta si volverá a despegar en los próximos 30 días. Se resuelve solo con los datos reales.`,tab:'fleet',btn:'Ver propulsores'});}
-  const s=D.stats;if(s&&s.consecutive_successful_landings)R.push({t:'Racha en directo',m:`SpaceX lleva ${s.consecutive_successful_landings} aterrizajes seguidos sin fallar y ${s.consecutive_successful_launches} lanzamientos seguidos con éxito. ¿Crees que la racha aguanta esta semana? Demuéstralo con tus predicciones.`,tab:'predict',btn:'Apostar'});
+  if(fl)R.push({t:'Récord de reutilización',m:`El propulsor ${fl.serial} ya lleva ${fl.flight} vuelos. Antes los cohetes se tiraban tras un solo uso. ¿Sabrías decir cuál es el siguiente en llegar a esa cifra?`,tab:'fleet',btn:'Ver la flota',k:'fleet'});
+  {const bs=LS.get('bets',{});const cand=D.previous.flatMap(l=>(l.stages||[]).map(s=>s.serial)).find(x=>{if(!x||/Unknown/.test(x)||(bs[x]&&!bs[x].res))return false;const u=boosterHist(x).at(-1);return u&&u.s.land_attempt!==false&&u.s.land_success!==false});
+   if(cand)R.push({t:'¿Volverá a volar?',m:`Abre la ficha del propulsor ${cand}: mira cuántos días suele pasar en tierra entre vuelos y apuesta si volverá a despegar en los próximos 30 días. Se resuelve solo con los datos reales.`,tab:'fleet',btn:'Ver propulsores',k:'bet'});}
+  const s=D.stats;if(s&&s.consecutive_successful_landings)R.push({t:'Racha en directo',m:`SpaceX lleva ${s.consecutive_successful_landings} aterrizajes seguidos sin fallar y ${s.consecutive_successful_launches} lanzamientos seguidos con éxito. ¿Crees que la racha aguanta esta semana? Demuéstralo con tus predicciones.`,tab:'predict',btn:'Apostar',k:ups.length?'pred':null});
   const o=D.previous.find(l=>l.orbit&&l.orbit!=='LEO');
-  if(o)R.push({t:'Fórmate',m:`${mname(o)} fue a una órbita ${orb(o.orbit)}. ¿Sabes por qué no todas las misiones van a la misma órbita? Aprende cómo funciona y vuelve a por el reto.`,url:'https://es.wikipedia.org/wiki/%C3%93rbita',btn:'Aprender (Wikipedia)'});
+  if(o)R.push({t:'Fórmate',m:`${mname(o)} fue a una órbita ${orb(o.orbit)}. ¿Sabes por qué no todas las misiones van a la misma órbita? Aprende cómo funciona y vuelve a por el reto.`,url:'https://es.wikipedia.org/wiki/%C3%93rbita',btn:'Aprender (Wikipedia)',k:'learn'});
   return R;
 }
 function mostrarGlobo(forzar){
   if(!D)return;const last=LS.get('globo_last',0);if(!forzar&&Date.now()-last<GLOBO_CADA)return;
-  const R=retosGlobo();if(!R.length)return;const n=LS.get('globo_n',0);const r=R[n%R.length];
-  LS.set('globo_last',Date.now());LS.set('globo_n',n+1);
+  checkIn();const dd=retoDelDia();let r,diario=false;
+  if(dd&&!dd.done&&LS.get('globo_dd','')!==dayKey()){r=dd;diario=true;LS.set('globo_dd',dayKey())}
+  else{const R=retosGlobo();if(!R.length)return;const n=LS.get('globo_n',0);r=R[n%R.length];LS.set('globo_n',n+1)}
+  LS.set('globo_last',Date.now());
   const g=document.createElement('div');g.className='globo';
   g.setAttribute('role','complementary');g.setAttribute('aria-label','Desafío');g.setAttribute('aria-live','polite');
-  g.innerHTML=`<button type="button" class="x" aria-label="Cerrar">×</button><h4>${r.t}</h4><p>${r.m}</p><button type="button" class="go">${r.btn}</button><button type="button" class="later">Luego</button>`;
+  g.innerHTML=`<button type="button" class="x" aria-label="Cerrar">×</button>${diario?`<div class="gk">Desafío del día · +${dailyPts()} puntos</div>`:''}<h4>${r.t}</h4><p>${r.m}</p><button type="button" class="go">${r.btn}</button><button type="button" class="later">Luego</button>`;
   document.body.appendChild(g);requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.add('show')));
   const close=()=>{g.classList.remove('show');setTimeout(()=>g.remove(),500)};
   g.querySelector('.x').onclick=close;g.querySelector('.later').onclick=close;
-  g.querySelector('.go').onclick=()=>{close();if(r.url)window.open(r.url,'_blank');else document.querySelector(`nav button[data-tab="${r.tab}"]`).click()};
+  g.querySelector('.go').onclick=()=>{close();goReto(r)};
 }
 setTimeout(()=>mostrarGlobo(false),4000);
 setInterval(()=>mostrarGlobo(false),10*60*1000);
@@ -251,7 +255,7 @@ function betsHTML(){
   return `<div class="card"><b>Tus apuestas de propulsores</b>${bs.sort((a,b)=>b.at-a.at).map(b=>`<div style="margin-top:6px">${b.res?ic(b.res.ok):'<span role="img" aria-label="Pendiente">⏳</span>'} ${b.serial} · vuelo nº ${b.target} antes del ${fmtD(b.deadline)}: dijiste <b>${b.pick}</b>${b.res?` · ${b.res.real?`voló${b.res.mission?' en '+b.res.mission:''}`:'no voló a tiempo'} · +${b.won} puntos`:' · pendiente'}</div>`).join('')}</div>`;
 }
 function openBooster(serial){
-  const h=boosterHist(serial);if(!h.length)return;
+  const h=boosterHist(serial);if(!h.length)return;completeDaily('fleet');
   const last=h.at(-1),flights=Math.max(...h.map(x=>x.s.flight||0)),tot=Math.max(flights,last.s.booster_flights||0);
   const tds=h.map(x=>tdays(x.s.turnaround)).filter(x=>x!=null&&x>0);
   const avg=tds.length?Math.round(tds.reduce((a,b)=>a+b,0)/tds.length):null,best=tds.length?Math.min(...tds):null;
@@ -285,7 +289,7 @@ function openBooster(serial){
   document.addEventListener('keydown',onKey);m.querySelector('.x').focus();
   m.onclick=e=>{if(e.target===m)close()};m.querySelector('.x').onclick=close;
   m.querySelectorAll('[data-b]').forEach(bt=>bt.onclick=()=>{const b2=LS.get('bets',{});
-    b2[serial]={serial,pick:bt.dataset.b,target,deadline:deadline.getTime(),si:P.si,no:P.no,at:Date.now()};LS.set('bets',b2);close(true);renderFleet();openBooster(serial)});
+    b2[serial]={serial,pick:bt.dataset.b,target,deadline:deadline.getTime(),si:P.si,no:P.no,at:Date.now()};LS.set('bets',b2);completeDaily('bet');close(true);renderFleet();openBooster(serial)});
 }
 
 // ---------- Análisis de experto (razonamiento + predicción medible que se puntúa sola) ----------
@@ -328,7 +332,7 @@ function bindExpert(){
     if(conf!=null&&!(conf>=0&&conf<=100)){st.textContent='La confianza debe ser un número de 0 a 100.';return}
     const b=(l.stages||[])[0]||{},X=LS.get('expert',{});
     X[id]={name:mname(l),txt,delay,conf:b.land_attempt?conf:null,net0:new Date(l.net).getTime(),land:!!b.land_attempt,serial:b.serial||null,saved:Date.now()};
-    LS.set('expert',X);delete XDRAFT[id];XOPEN.add(id);renderPredict();
+    LS.set('expert',X);delete XDRAFT[id];XOPEN.add(id);completeDaily('expert');renderPredict();
     const s2=$('#xs-'+CSS.escape(id));if(s2)s2.textContent='Análisis guardado. Se puntuará solo cuando despegue.'});
 }
 function resolveExpert(){
@@ -348,3 +352,32 @@ function expertResultsHTML(){
     ${r.cpts!=null?`<div>${ic((x.conf>=50)===r.landed,'Bien calibrado','Mal calibrado')} Confianza en el aterrizaje: ${x.conf}% · ${r.landed?'aterrizó':'no aterrizó'} · +${r.cpts}</div>`:''}
     ${x.txt?`<blockquote class="xq">${esc(x.txt)}</blockquote>`:''}<b>+${x.pts} puntos</b></div>`}).join('');
 }
+
+// ---------- Racha de días y desafío del día ----------
+// Volver cada día suma 2 puntos por día de racha (máximo 14). Completar el desafío del día da 10, +5 con racha de 3 días y +10 con racha de 7.
+function dayKey(off){const d=new Date();d.setDate(d.getDate()+(off||0));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+const visitPts=n=>2*Math.min(n,7);
+function streakNow(){const st=LS.get('streak',null);return st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0}
+function dailyPts(){const n=streakNow();return 10+(n>=7?10:n>=3?5:0)}
+function checkIn(){try{const t=dayKey(),st=LS.get('streak',{n:0,best:0,last:null,days:0});if(st.last===t)return;
+  st.n=st.last===dayKey(-1)?(st.n||0)+1:1;st.best=Math.max(st.best||0,st.n);st.days=(st.days||0)+1;st.last=t;st.got=visitPts(st.n);
+  LS.set('streak',st);addPts('streak',st.got);if($('#daily'))renderDaily()}catch(e){}}
+function retoDelDia(){const t=dayKey(),d=LS.get('daily',null);if(d&&d.d===t)return d;
+  const R=retosGlobo().filter(r=>r.k);if(!R.length)return null;
+  const num=Math.round(new Date(t+'T12:00:00')/DAY),r=R[num%R.length];
+  const nd={d:t,k:r.k,t:r.t,m:r.m,btn:r.btn,tab:r.tab||null,url:r.url||null,done:false};LS.set('daily',nd);return nd}
+function completeDaily(k){try{const d=LS.get('daily',null);if(!d||d.d!==dayKey()||d.done||d.k!==k)return;
+  d.done=true;d.pts=dailyPts();d.at=Date.now();LS.set('daily',d);addPts('streak',d.pts);
+  const st=LS.get('streak',{});st.retos=(st.retos||0)+1;LS.set('streak',st);
+  aviso(`Desafío del día completado: +${d.pts} puntos.`);renderDaily()}catch(e){}}
+function goReto(r){if(r.url){window.open(r.url,'_blank','noopener');completeDaily(r.k)}else{const b=document.querySelector(`nav button[data-tab="${r.tab}"]`);if(b)b.click();try{scrollTo({top:0})}catch(e){}}}
+function aviso(t){let a=$('#aviso');if(!a){a=document.createElement('div');a.id='aviso';a.className='aviso';a.setAttribute('role','status');document.body.appendChild(a)}
+  a.textContent=t;a.classList.add('show');clearTimeout(a._t);a._t=setTimeout(()=>a.classList.remove('show'),4500)}
+function renderDaily(){const el=$('#daily');if(!el||!D)return;const st=LS.get('streak',{n:0,best:0}),n=streakNow(),d=retoDelDia();
+  const sig=visitPts(n+1);
+  el.innerHTML=`<div class="card daily"><div class="kick">Racha y desafío del día</div>
+  <div class="stats"><div><b>${n}</b>${n===1?'día seguido':'días seguidos'}</div><div><b>${st.best||n}</b>récord de racha</div><div><b>+${st.last===dayKey()?st.got||0:0}</b>puntos hoy por volver</div><div><b>${st.retos||0}</b>desafíos completados</div></div>
+  ${d?`<h3>${esc(d.t)}</h3><p class="mut">${esc(d.m)}</p>${d.done?`<p>${ic(true,'Completado')} Completado hoy · +${d.pts} puntos. Mañana hay otro.</p>`:`<div class="opts"><button type="button" class="dgo">${esc(d.btn)} (+${dailyPts()})</button></div>`}`:'<p class="mut">Hoy no hay desafío disponible con los datos actuales.</p>'}
+  <div class="mut">Vuelve mañana para mantener la racha: +${sig} puntos por volver${n+1>=3&&n<3?' y el desafío del día pasa a dar +15':n+1>=7&&n<7?' y el desafío del día pasa a dar +20':''}. Volver da 2 puntos por día de racha (hasta 14); el desafío da 10, 15 con 3 días seguidos y 20 con 7. Si un día no entras, la racha vuelve a empezar.</div></div>`;
+  const b=el.querySelector('.dgo');if(b)b.onclick=()=>goReto(d);renderScore()}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&D){checkIn();renderDaily()}});

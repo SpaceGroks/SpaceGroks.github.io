@@ -8,7 +8,7 @@ Cada 2 horas, de 9:00 a 21:00, se hace la primera sin marcar, se prueba y se mar
 - [ ] Análisis de experto: cuadro de texto en cada lanzamiento para el razonamiento (física, ingeniería) más una predicción concreta y medible (aterrizaje, minutos de retraso, órbita) que se puntúa sola con los datos reales; se guarda en el navegador. Más adelante, evaluación del texto por una IA cuando haya almacenamiento compartido
 - [ ] Racha de días: puntos extra por volver cada día y completar el desafío del globo
 - [ ] Aviso 15 minutos antes de cada lanzamiento (notificación del navegador si el jugador la acepta) con enlace al directo
-- [ ] Ficha de cada propulsor con su historial de vuelos, tiempo entre vuelos y apuesta "¿llegará a X vuelos?"
+- [x] Ficha de cada propulsor con su historial de vuelos, tiempo entre vuelos y apuesta "¿volverá a volar?" (hecho en el reto semanal del 19 oct)
 - [ ] "Aprende en 1 minuto" por misión: qué lleva, a qué órbita va y para qué sirve
 - [ ] Instalable en el móvil como app (manifest y service worker)
 - [ ] Modo director de vuelo: pasos reales de la cuenta atrás de un Falcon 9 (carga de combustible, separación de etapas, aterrizaje) pulsando en el momento justo

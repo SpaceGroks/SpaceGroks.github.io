@@ -5,7 +5,9 @@ const fmt=d=>new Date(d).toLocaleString('es-ES',{weekday:'short',day:'numeric',m
 const fmtD=d=>new Date(d).toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'});
 const H=36e5,DAY=864e5;
 const mname=l=>l.mission||l.name.split('|').pop().trim();
-const ORB={LEO:'Órbita baja (LEO)',SSO:'Heliosíncrona (SSO)',PO:'Polar',GTO:'Transferencia geoestacionaria (GTO)',MEO:'Media (MEO)',GEO:'Geoestacionaria',TLI:'Hacia la Luna',Sub:'Suborbital',HEO:'Muy elíptica (HEO)'};
+const ORB={LEO:'Órbita baja (LEO)',SSO:'Heliosíncrona (SSO)',PO:'Polar',GTO:'Transferencia geoestacionaria (GTO)',MEO:'Media (MEO)',GEO:'Geoestacionaria',TLI:'Hacia la Luna',Sub:'Suborbital',HEO:'Muy elíptica (HEO)',L2:'Punto de Lagrange L2 (Sol-Tierra)',LO:'Órbita lunar'};
+const tdays=t=>{const m=/P(?:(\d+)D)?/.exec(t||'');return m&&t.length>1?+(m[1]||0):null};
+const DRONE=/Of Course I Still Love You|A Shortfall of Gravitas|Just Read the Instructions/,LZ=/Landing Zone|^LZ/;
 const orb=o=>ORB[o]||o||'¿?';
 let D;
 fetch('data.json?'+Date.now()).then(r=>r.json()).then(d=>{D=d;init()}).catch(e=>{$('main').innerHTML='<p class="ko">No se han podido cargar los datos.</p>'});
@@ -14,13 +16,13 @@ function init(){
   document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
     document.querySelectorAll('nav button,.tab').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');$('#'+b.dataset.tab).classList.add('on');if(b.dataset.tab==='map')drawMap();});
-  resolvePredictions();renderNext();renderPredict();renderQuiz();renderFleet();renderLog();renderScore();
+  resolvePredictions();resolveBets();renderNext();renderPredict();renderQuiz();renderFleet();renderLog();renderScore();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
 }
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0);
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0);
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`⭐ <b>${t}</b> puntos · ${lv}`}
 // ---------- Próximo ----------
@@ -92,7 +94,7 @@ function buildQuiz(){
   const uniq=a=>[...new Set(a.filter(Boolean))];
   const serials=uniq(all.flatMap(l=>(l.stages||[]).map(s=>s.serial)).filter(s=>!/Unknown/.test(s)));
   const lands=uniq(all.flatMap(l=>(l.stages||[]).map(s=>s.land_loc_name)));
-  const pads=uniq(all.map(l=>l.loc));const orbs=uniq(all.map(l=>l.orbit));
+  const pads=uniq(all.map(l=>l.loc));const orbs=uniq(all.map(l=>l.orbit)).filter(o=>o!=='N/A');
   const mk=(q,right,cands)=>{const wrong=shuffle(cands.filter(c=>c!==right),r).slice(0,3);return{q,right,opts:shuffle([right,...wrong],r)}};
   const Q=[];
   pool.forEach(l=>{const b=(l.stages||[])[0]||{},m=mname(l);
@@ -100,8 +102,12 @@ function buildQuiz(){
     if(b.flight>1){const f=b.flight;Q.push(mk(`¿Qué número de vuelo hacía el propulsor en ${m}?`,String(f),[f-3,f-1,f+1,f+2,f+4].filter(x=>x>0).map(String)))}
     if(b.land_loc_name&&b.land_success)Q.push(mk(`¿Dónde aterrizó el propulsor de ${m}?`,b.land_loc_name,lands));
     if(l.loc)Q.push(mk(`¿Desde dónde despegó ${m}?`,l.loc,pads));
-    if(l.orbit&&orbs.length>2)Q.push(mk(`¿A qué órbita iba ${m}?`,orb(l.orbit),orbs.map(orb)));});
-  return{key,title,qs:shuffle(Q,r).slice(0,8)};
+    const td=tdays(b.turnaround);
+    if(td!=null&&td>0){const c=[td-20,td-10,td-5,td+5,td+10,td+20].filter(x=>x>0);Q.push(mk(`¿Cuántos días pasaron entre el vuelo anterior del propulsor ${b.serial} y ${m}?`,`${td} días`,c.map(x=>`${x} días`)))}
+    if(b.land_success&&(DRONE.test(b.land_loc_name||'')||LZ.test(b.land_loc_name||''))){const right=DRONE.test(b.land_loc_name)?'En un barco dron en el mar':'En una plataforma en tierra';Q.push({q:`¿Cómo se recuperó el propulsor de ${m}?`,right,opts:shuffle(['En un barco dron en el mar','En una plataforma en tierra','No se recuperó (se perdió en el mar)'],r)})}
+    {const dd=new Date(l.net),right=dd.toLocaleDateString('es-ES',{weekday:'long'});Q.push(mk(`¿Qué día de la semana despegó ${m}? (hora de tu dispositivo)`,right,['lunes','martes','miércoles','jueves','viernes','sábado','domingo']))}
+    if(l.orbit&&l.orbit!=='N/A'&&orbs.length>2)Q.push(mk(`¿A qué órbita iba ${m}?`,orb(l.orbit),orbs.map(orb)));});
+  return{key,title,qs:shuffle(Q,r).slice(0,10)};
 }
 function renderQuiz(){
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),answered=Object.keys(st.ans).length;
@@ -124,10 +130,11 @@ function renderFleet(){
   D.upcoming.forEach(l=>(l.stages||[]).forEach(s=>{const b=m[s.serial];if(b&&!b.next)b.next=l}));
   const rows=Object.values(m).sort((a,b)=>fleetSort==='flights'?b.flights-a.flights:new Date(b.last)-new Date(a.last));
   const max=Math.max(...rows.map(r=>r.flights),1);
-  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Los primeros fases que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar.</div></div>
+  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Los primeros fases que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar y un propulsor para ver su ficha y apostar si volverá a volar.</div></div>${betsHTML()}
   <table><tr><th data-s="flights">Propulsor</th><th data-s="flights">Vuelos</th><th data-s="last">Último vuelo</th><th>Próximo</th></tr>
-  ${rows.map(r=>`<tr><td><b>${r.serial}</b></td><td>${r.flights}<div class="bar"><i style="width:${100*r.flights/max}%"></i></div></td><td>${fmtD(r.last)}<div class="mut">${r.missions.at(-1)}</div></td><td>${r.next?`${mname(r.next)}<div class="mut">${fmtD(r.next.net)}</div>`:'—'}</td></tr>`).join('')}</table>`;
+  ${rows.map(r=>`<tr class="clic" data-serial="${r.serial}"><td><b>${r.serial}</b> <span class="mut">ficha ›</span></td><td>${r.flights}<div class="bar"><i style="width:${100*r.flights/max}%"></i></div></td><td>${fmtD(r.last)}<div class="mut">${r.missions.at(-1)}</div></td><td>${r.next?`${mname(r.next)}<div class="mut">${fmtD(r.next.net)}</div>`:'—'}</td></tr>`).join('')}</table>`;
   $('#fleet').querySelectorAll('th[data-s]').forEach(t=>t.onclick=()=>{fleetSort=t.dataset.s;renderFleet()});
+  $('#fleet').querySelectorAll('tr[data-serial]').forEach(t=>t.onclick=()=>openBooster(t.dataset.serial));
 }
 // ---------- Mapa ----------
 let mapDone=false;
@@ -159,6 +166,8 @@ function retosGlobo(){
   if(falta>0)R.push({t:'🧠 Reto semanal',m:`Te quedan ${falta} preguntas sobre las misiones reales de esta semana. Solo los mejores directores de vuelo las aciertan todas. ¿Tú qué?`,tab:'quiz',btn:'Aceptar el reto'});
   const fl=D.previous.flatMap(l=>(l.stages||[]).map(s=>({...s,l}))).filter(s=>s.flight).sort((a,b)=>b.flight-a.flight)[0];
   if(fl)R.push({t:'♻️ Récord de reutilización',m:`El propulsor ${fl.serial} ya lleva ${fl.flight} vuelos. Antes los cohetes se tiraban tras un solo uso. ¿Sabrías decir cuál es el siguiente en llegar a esa cifra?`,tab:'fleet',btn:'Ver la flota'});
+  {const bs=LS.get('bets',{});const cand=D.previous.flatMap(l=>(l.stages||[]).map(s=>s.serial)).find(x=>x&&!/Unknown/.test(x)&&!(bs[x]&&!bs[x].res));
+   if(cand)R.push({t:'🎰 ¿Volverá a volar?',m:`Abre la ficha del propulsor ${cand}: mira cuántos días suele pasar en tierra entre vuelos y apuesta si volverá a despegar en los próximos 30 días. Se resuelve solo con los datos reales.`,tab:'fleet',btn:'Ver propulsores'});}
   const s=D.stats;if(s&&s.consecutive_successful_landings)R.push({t:'🔥 Racha en directo',m:`SpaceX lleva ${s.consecutive_successful_landings} aterrizajes seguidos sin fallar y ${s.consecutive_successful_launches} lanzamientos seguidos con éxito. ¿Crees que la racha aguanta esta semana? Demuéstralo con tus predicciones.`,tab:'predict',btn:'Apostar'});
   const o=D.previous.find(l=>l.orbit&&l.orbit!=='LEO');
   if(o)R.push({t:'📚 Fórmate',m:`${mname(o)} fue a una órbita ${orb(o.orbit)}. ¿Sabes por qué no todas las misiones van a la misma órbita? Aprende cómo funciona y vuelve a por el reto.`,url:'https://es.wikipedia.org/wiki/%C3%93rbita',btn:'Aprender (Wikipedia)'});
@@ -177,3 +186,58 @@ function mostrarGlobo(forzar){
 }
 setTimeout(()=>mostrarGlobo(false),4000);
 setInterval(()=>mostrarGlobo(false),10*60*1000);
+
+// ---------- Ficha de propulsor y apuestas "¿volverá a volar?" ----------
+const BET_DIAS=30;
+function boosterHist(serial){
+  return D.previous.flatMap(l=>(l.stages||[]).filter(s=>s.serial===serial).map(s=>({l,s}))).sort((a,b)=>new Date(a.l.net)-new Date(b.l.net));
+}
+function betPts(serial){const nx=D.upcoming.some(l=>(l.stages||[]).some(s=>s.serial===serial));return{si:nx?5:15,no:25}}
+function resolveBets(){
+  const bs=LS.get('bets',{});let ch=false;
+  for(const [serial,b] of Object.entries(bs)){if(b.res)continue;
+    const hit=boosterHist(serial).find(x=>(x.s.flight||0)>=b.target);
+    let real=null;
+    if(hit)real=new Date(hit.l.net).getTime()<=b.deadline;else if(Date.now()>b.deadline)real=false;
+    if(real===null)continue;
+    const ok=(b.pick==='Sí')===real;b.res={real,ok,mission:hit&&new Date(hit.l.net).getTime()<=b.deadline?mname(hit.l):null};b.resAt=Date.now();b.won=ok?(b.pick==='Sí'?b.si:b.no):0;
+    if(b.won)addPts('bet',b.won);ch=true;}
+  if(ch)LS.set('bets',bs);
+}
+function betsHTML(){
+  const bs=Object.values(LS.get('bets',{}));if(!bs.length)return'';
+  return `<div class="card"><b>Tus apuestas de propulsores</b>${bs.sort((a,b)=>b.at-a.at).map(b=>`<div style="margin-top:6px">${b.res?(b.res.ok?'✅':'❌'):'⏳'} ${b.serial} · vuelo nº ${b.target} antes del ${fmtD(b.deadline)}: dijiste <b>${b.pick}</b>${b.res?` · ${b.res.real?`voló${b.res.mission?' en '+b.res.mission:''}`:'no voló a tiempo'} · +${b.won} puntos`:' · pendiente'}</div>`).join('')}</div>`;
+}
+function openBooster(serial){
+  const h=boosterHist(serial);if(!h.length)return;
+  const last=h.at(-1),flights=Math.max(...h.map(x=>x.s.flight||0)),tot=Math.max(flights,last.s.booster_flights||0);
+  const tds=h.map(x=>tdays(x.s.turnaround)).filter(x=>x!=null&&x>0);
+  const avg=tds.length?Math.round(tds.reduce((a,b)=>a+b,0)/tds.length):null,best=tds.length?Math.min(...tds):null;
+  const since=Math.floor((Date.now()-new Date(last.l.net))/DAY);
+  const next=D.upcoming.find(l=>(l.stages||[]).some(s=>s.serial===serial));
+  const lost=last.s.land_attempt===false||last.s.land_success===false;
+  const bs=LS.get('bets',{}),bet=bs[serial],open=bet&&!bet.res,P=betPts(serial);
+  const target=flights+1,deadline=new Date(Date.now()+BET_DIAS*DAY);deadline.setHours(23,59,59,0);
+  let betH;
+  if(lost)betH=`<p class="ko">En su último vuelo no se recuperó (${last.s.land_attempt===false?'no intentó aterrizar':'el aterrizaje falló'}), así que no se puede apostar por él.</p>`;
+  else if(open)betH=`<p>Ya has apostado <b>${bet.pick}</b> a que hace el vuelo nº ${bet.target} antes del ${fmtD(bet.deadline)}. Se resolverá solo cuando lleguen los datos.</p>`;
+  else betH=`<p><b>¿Hará el vuelo nº ${target} antes del ${fmtD(deadline)}?</b></p>
+    <div class="mut">Pistas reales: ${avg!=null?`suele pasar ${avg} días en tierra entre vuelos (récord en estos datos: ${best} días)`:'no hay tiempos entre vuelos en estos datos'}; lleva ${since} días sin volar.${next?` Ya tiene asignada ${mname(next)} para el ${fmtD(next.net)}, aunque las fechas pueden cambiar.`:' No tiene misión anunciada todavía.'}</div>
+    <div class="opts"><button data-b="Sí">Sí (+${P.si})</button><button data-b="No">No (+${P.no})</button></div>`;
+  const rows=h.slice().reverse().map(({l,s})=>{const td=tdays(s.turnaround);
+    return `<tr><td>${fmtD(l.net)}</td><td>${mname(l)}</td><td>${s.flight??'—'}</td><td>${td!=null&&td>0?td+' d':'—'}</td><td>${s.land_attempt?`<span class="tag ${s.land_success?'ok':'ko'}">${s.land_success?'Sí':'No'}${s.land_loc?' · '+s.land_loc:''}</span>`:'Sin intento'}</td></tr>`}).join('');
+  const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-label="Ficha del propulsor ${serial}"><button class="x" aria-label="Cerrar">×</button>
+   <div class="kick">Ficha del propulsor</div><h2>${serial}</h2>
+   <div class="stats"><div><b>${tot}</b>vuelos totales</div><div><b>${last.s.booster_landings??'—'}</b>aterrizajes con éxito</div><div><b>${avg??'—'}</b>días medios entre vuelos</div><div><b>${since}</b>días desde su último vuelo</div></div>
+   ${betH}
+   <h3>Vuelos en los últimos ${D.previous.length} lanzamientos de SpaceX</h3>
+   <div class="scroll"><table><tr><th>Fecha</th><th>Misión</th><th>Vuelo nº</th><th>Días en tierra</th><th>Aterrizó</th></tr>${rows}</table></div>
+   <p class="mut">Datos de Launch Library 2. Los totales de vuelos y aterrizajes son los que da la fuente en la última actualización.</p></div>`;
+  document.body.appendChild(m);
+  const close=()=>{m.remove();document.removeEventListener('keydown',esc)},esc=e=>{if(e.key==='Escape')close()};
+  document.addEventListener('keydown',esc);
+  m.onclick=e=>{if(e.target===m)close()};m.querySelector('.x').onclick=close;
+  m.querySelectorAll('[data-b]').forEach(bt=>bt.onclick=()=>{const b2=LS.get('bets',{});
+    b2[serial]={serial,pick:bt.dataset.b,target,deadline:deadline.getTime(),si:P.si,no:P.no,at:Date.now()};LS.set('bets',b2);close();renderFleet();openBooster(serial)});
+}

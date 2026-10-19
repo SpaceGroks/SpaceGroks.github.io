@@ -31,6 +31,8 @@ def slim(r):
     return {"id":r["id"],"name":r.get("name"),"mission":m.get("name"),"mtype":m.get("type"),
       "desc":cut(m.get("description") or ""),"orbit":(m.get("orbit") or {}).get("abbrev"),
       "orbit_name":(m.get("orbit") or {}).get("name"),
+      "cust":[a.get("name") for a in m.get("agencies") or [] if a.get("name")],
+      "info":next((u.get("url") for u in sorted(r.get("info_urls") or [],key=lambda u:-(u.get("priority") or 0)) if u.get("url")),None),
       "status":(r.get("status") or {}).get("abbrev"),"status_name":(r.get("status") or {}).get("name"),
       "net":r.get("net"),"net_precision":(r.get("net_precision") or {}).get("abbrev"),
       "ws":r.get("window_start"),"we":r.get("window_end"),"prob":r.get("probability"),

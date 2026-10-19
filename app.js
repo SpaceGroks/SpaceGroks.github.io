@@ -76,7 +76,7 @@ function renderNext(){
     <div style="margin-top:8px">${n.status==='Go'?'<span class="tag ok">Confirmado (Go)</span>':`<span class="tag warn">${n.status_name}</span>`}
     ${n.orbit?`<span class="tag">${orb(n.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">Propulsor ${b.serial} · vuelo ${b.flight}</span>`:''}
     ${b.land_loc?`<span class="tag">Aterriza en ${b.land_loc_name}</span>`:''}${n.prob?`<span class="tag">Meteo favorable ${n.prob}%</span>`:''}</div>
-    <p class="mut">${tdesc(n)}</p>${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}${alertBtns(n)}${ph?credit(ph).replace('Foto:',ph===n?'Foto:':`Foto de ${esc(mname(ph))}:`):''}</div></div>`;
+    <p class="mut">${tdesc(n)}</p>${learnHTML(n,true)}${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}${alertBtns(n)}${ph?credit(ph).replace('Foto:',ph===n?'Foto:':`Foto de ${esc(mname(ph))}:`):''}</div></div>`;
     const tick=()=>{const ms=new Date(n.net)-Date.now();const el=$('#cd');if(!el)return;
       if(ms<0){el.textContent='¡Despegando o ya en vuelo!';return}
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
@@ -86,7 +86,7 @@ function renderNext(){
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
-  h+=`<h3 style="margin-top:22px">Siguientes lanzamientos</h3>`+ups.slice(1,8).map(l=>`<div class="card"><h3>${mname(l)}</h3><div class="mut">${fmt(l.net)}${/TBD|MON|YEAR|QUARTER/i.test(l.net_precision||'')?' (fecha aproximada)':''} · ${l.rocket} · ${l.loc||''}</div>${alertBtns(l)}</div>`).join('');
+  h+=`<h3 style="margin-top:22px">Siguientes lanzamientos</h3>`+ups.slice(1,8).map(l=>`<div class="card"><h3>${mname(l)}</h3><div class="mut">${fmt(l.net)}${/TBD|MON|YEAR|QUARTER/i.test(l.net_precision||'')?' (fecha aproximada)':''} · ${l.rocket} · ${l.loc||''}</div>${alertBtns(l)}${learnHTML(l)}</div>`).join('');
   $('#next').innerHTML=h;
 }
 // ---------- Predicciones ----------
@@ -195,8 +195,48 @@ function renderLog(){
     <div class="mut">${fmt(l.net)} · ${l.rocket} · ${l.loc||''}</div>
     <div>${l.orbit?`<span class="tag">${orb(l.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">${b.serial} · vuelo ${b.flight}</span>`:''}
     ${b.land_attempt?`<span class="tag ${b.land_success?'ok':'ko'}">${b.land_success?'Aterrizó':'No aterrizó'} ${b.land_loc?'en '+b.land_loc:''}</span>`:''}</div>
-    ${l.fail?`<div class="ko">${l.fail}</div>`:''}</div></div>`}).join('');
+    ${l.fail?`<div class="ko">${l.fail}</div>`:''}${learnHTML(l)}</div></div>`}).join('');
 }
+// ---------- Aprende en 1 minuto (qué lleva, a qué órbita va y para qué sirve) ----------
+const ORB_LEARN={LEO:'Entre unos 160 y 2.000 km de altura. Una vuelta a la Tierra dura unos 90 minutos. Es la órbita más barata de alcanzar: allí están Starlink y la Estación Espacial Internacional.',
+ SSO:'Órbita baja casi polar (normalmente entre 500 y 800 km) inclinada para pasar sobre cada lugar a la misma hora solar todos los días. Es ideal para fotografiar la Tierra siempre con la misma luz.',
+ PO:'Pasa por encima o cerca de los polos y, como la Tierra gira debajo, acaba sobrevolando todo el planeta. Se lanza hacia el norte o el sur, por eso SpaceX suele usar Vandenberg (California), con el océano al sur.',
+ GTO:'Órbita muy alargada cuyo punto más alto llega a unos 35.786 km. Desde ahí el satélite enciende su propio motor para quedarse en la órbita geoestacionaria, donde parece quieto sobre el ecuador.',
+ GEO:'A 35.786 km sobre el ecuador el satélite tarda un día en dar la vuelta, lo mismo que la Tierra en girar, así que parece quieto en el cielo. La usan satélites de televisión y meteorológicos.',
+ MEO:'Entre unos 2.000 y 35.786 km de altura. Es la zona de los sistemas de navegación como GPS o Galileo, a unos 20.000 km.',
+ HEO:'Muy alargada: pasa cerca de la Tierra y luego se aleja mucho. Así el satélite pasa la mayor parte del tiempo sobre la misma zona del planeta.',
+ Sub:'Sube al espacio pero no llega a la velocidad orbital (unos 7,8 km/s a baja altura), así que vuelve a caer. Se usa en vuelos de prueba.',
+ L2:'El punto de Lagrange L2 está a unos 1,5 millones de km de la Tierra, en el lado contrario al Sol. Un telescopio allí tiene el Sol, la Tierra y la Luna siempre a su espalda, como el James Webb.',
+ LO:'Alrededor de la Luna, a unos 384.000 km de media de la Tierra. La nave tiene que frenar al llegar para que la gravedad lunar la atrape.',
+ TLI:'Inyección translunar: el cohete acelera la nave para que viaje hasta la Luna, a unos 384.000 km.'};
+const TYPE_LEARN={'Communications':'Comunicaciones: satélites que llevan internet, telefonía o televisión a cualquier parte del mundo.',
+ 'Government/Top Secret':'Misión de un gobierno o un ejército. Muchos detalles son secretos, así que solo se sabe lo que se ha hecho público.',
+ 'Dedicated Rideshare':'Vuelo compartido: muchos satélites pequeños de distintos clientes viajan juntos y se reparten el precio del cohete.',
+ 'Resupply':'Reabastecimiento: lleva comida, agua, piezas de recambio y experimentos a una estación espacial, normalmente la Estación Espacial Internacional.',
+ 'Test Flight':'Vuelo de prueba: sirve para comprobar un cohete o una nave nuevos antes de usarlos en misiones de verdad.',
+ 'Lunar Exploration':'Exploración de la Luna: estudiar su superficie o preparar las futuras misiones con astronautas.',
+ 'Earth Science':'Ciencias de la Tierra: medir desde el espacio el clima, los océanos, el hielo o la atmósfera.',
+ 'Human Exploration':'Vuelo tripulado: lleva personas al espacio.',
+ 'Tourism':'Turismo espacial: lleva al espacio a personas que no son astronautas profesionales.',
+ 'Astrophysics':'Astrofísica: observar estrellas, galaxias y el universo sin la atmósfera de por medio.',
+ 'Planetary Science':'Ciencia planetaria: estudiar otros planetas, lunas o asteroides.',
+ 'Heliophysics':'Heliofísica: estudiar el Sol y cómo afecta a la Tierra.',
+ 'Navigation':'Navegación: satélites que permiten saber dónde estás, como el GPS.',
+ 'Mission Extension':'Alargar la vida útil de satélites que ya están en órbita, por ejemplo dándoles impulso o servicio en el espacio.',
+ 'Technology':'Demostración tecnológica: probar en el espacio un sistema nuevo antes de usarlo a gran escala.',
+ 'Robotic Exploration':'Exploración robótica: sondas o robots que viajan a otros mundos.'};
+const STARLINK='Starlink: satélites de SpaceX que dan internet por satélite a casas, barcos, aviones y zonas sin cobertura.';
+function learnHTML(l,top){if(!l)return '';
+  const all=D.previous||[],oc=l.orbit&&l.orbit!=='N/A'?all.filter(x=>x.orbit===l.orbit).length:0;
+  const cu=(l.cust||[]).filter(Boolean),para=/starlink/i.test(l.name||'')?STARLINK:TYPE_LEARN[l.mtype]||(l.mtype?esc(l.mtype)+'.':'');
+  const ol=l.orbit&&l.orbit!=='N/A'?ORB_LEARN[l.orbit]:'';
+  if(!l.desc&&!ol&&!para)return '';
+  return `<details class="xp learn" data-learn="${esc(l.id)}"><summary>Aprende en 1 minuto</summary>
+  <dl class="lrn"><dt>Qué lleva</dt><dd>${l.desc?(top?'Lo que cuenta la descripción de arriba.':tdesc(l)):'Launch Library 2 todavía no da detalles de la carga.'}${cu.length?`<div class="mut">Cliente: ${cu.map(esc).join(', ')}</div>`:''}</dd>
+  <dt>A qué órbita va</dt><dd>${l.orbit&&l.orbit!=='N/A'?`<b>${esc(orb(l.orbit))}</b>${ol?'. '+ol:''}${oc?`<div class="mut">De los últimos ${all.length} lanzamientos de SpaceX, ${oc} fueron a esta órbita.</div>`:''}`:'Todavía no se ha publicado.'}</dd>
+  ${para?`<dt>Para qué sirve</dt><dd>${para}</dd>`:''}</dl>
+  ${l.info?`<a href="${esc(l.info)}" target="_blank" rel="noopener">Página oficial de la misión<span class="sr"> (se abre en otra pestaña)</span></a>`:''}</details>`}
+document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.matches&&d.matches('details.learn')&&d.open){try{completeDaily('learn')}catch(x){}}},true);
 // ---------- Globo de desafío (cada pocas horas, con datos reales) ----------
 const GLOBO_CADA=4*H;
 function retosGlobo(){

@@ -10,6 +10,13 @@ def get(kind, n, cache):
     json.dump(d,open(cache,"w")); return d
 def cut(t,n=400):
     return t if len(t)<=n else t[:n].rsplit(" ",1)[0].rstrip(",.;:")+"…"
+def photo(r):
+    """Solo fotos con licencia clara (nombre y enlace); devuelve url, autor y licencia."""
+    i=r.get("image") or {}; lic=i.get("license") or {}
+    if not i.get("thumbnail_url") or not lic.get("link") or (lic.get("name") or "Unknown")=="Unknown":
+        return {"img":None}
+    return {"img":i["thumbnail_url"],"img_credit":i.get("credit") or "Autor no indicado",
+      "img_lic":lic.get("name"),"img_lic_url":lic.get("link")}
 def slim(r):
     m=r.get("mission") or {}; ro=r.get("rocket") or {}; p=r.get("pad") or {}
     st=[]
@@ -30,7 +37,7 @@ def slim(r):
       "fail":r.get("failreason") or "","rocket":(ro.get("configuration") or {}).get("name"),
       "pad":p.get("name"),"loc":(p.get("location") or {}).get("name"),
       "lat":float(p["latitude"]) if p.get("latitude") else None,"lon":float(p["longitude"]) if p.get("longitude") else None,
-      "stages":st,"img":((r.get("image") or {}).get("thumbnail_url")),
+      "stages":st,**photo(r),
       "video":vids[0]["url"] if vids else None,"updated":r.get("last_updated")}
 up=get("upcoming",20,"up.json"); prev=get("previous",60,"prev.json")
 lsp=(prev["results"][0].get("launch_service_provider") or {}) if prev["results"] else {}

@@ -11,6 +11,7 @@ const DRONE=/Of Course I Still Love You|A Shortfall of Gravitas|Just Read the In
 const orb=o=>ORB[o]||o||'¿?';
 const ic=(ok,si='Acierto',no='Fallo')=>`<span role="img" aria-label="${ok?si:no}">${ok?'✅':'❌'}</span>`;
 let D;
+const credit=l=>l&&l.img?`<div class="credit">Foto: ${esc(l.img_credit)} · <a href="${esc(l.img_lic_url)}" target="_blank" rel="noopener license">${esc(l.img_lic)}<span class="sr"> (licencia, se abre en otra pestaña)</span></a></div>`:'';
 const LANG=((navigator.languages&&navigator.languages[0])||navigator.language||'es').toLowerCase();
 let ES={};
 const esc=t=>String(t||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
@@ -67,14 +68,15 @@ function renderNext(){
   const s=D.stats,ups=upcomingFuture(),n=ups[0];
   let h='';
   if(n){const b=(n.stages||[])[0]||{};
-    h+=`<div class="card hero"><div class="bg" style="background-image:url('${n.img||(D.previous.find(x=>x.img)||{}).img||''}')"></div><div class="in">
+    const ph=n.img?n:D.previous.find(x=>x.img&&x.img_lic_url);
+    h+=`<div class="card hero"><div class="bg" style="background-image:url('${ph?esc(ph.img):''}')"></div><div class="in">
     <div class="kick">Próximo lanzamiento</div><h2>${mname(n)}</h2>
     <div class="big" id="cd" role="timer" aria-live="off" aria-label="Cuenta atrás hasta el despegue"></div>
     <div class="mut">${fmt(n.net)} · ${n.rocket} · ${n.loc||''}</div>
     <div style="margin-top:8px">${n.status==='Go'?'<span class="tag ok">Confirmado (Go)</span>':`<span class="tag warn">${n.status_name}</span>`}
     ${n.orbit?`<span class="tag">${orb(n.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">Propulsor ${b.serial} · vuelo ${b.flight}</span>`:''}
     ${b.land_loc?`<span class="tag">Aterriza en ${b.land_loc_name}</span>`:''}${n.prob?`<span class="tag">Meteo favorable ${n.prob}%</span>`:''}</div>
-    <p class="mut">${tdesc(n)}</p>${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}</div></div>`;
+    <p class="mut">${tdesc(n)}</p>${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}${ph?credit(ph).replace('Foto:',ph===n?'Foto:':`Foto de ${esc(mname(ph))}:`):''}</div></div>`;
     const tick=()=>{const ms=new Date(n.net)-Date.now();const el=$('#cd');if(!el)return;
       if(ms<0){el.textContent='¡Despegando o ya en vuelo!';return}
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
@@ -186,7 +188,7 @@ function drawMap(){if(mapDone)return;mapDone=true;
 // ---------- Historial ----------
 function renderLog(){
   $('#log').innerHTML=D.previous.map(l=>{const b=(l.stages||[])[0]||{};const ok=l.status==='Success';
-    return `<div class="card row">${l.img?`<img loading="lazy" src="${l.img}" alt="">`:''}<div><h3>${ic(ok,'Éxito','Fallo')} ${mname(l)}</h3>
+    return `<div class="card row">${l.img?`<figure class="ph"><img loading="lazy" src="${esc(l.img)}" alt="">${credit(l)}</figure>`:''}<div><h3>${ic(ok,'Éxito','Fallo')} ${mname(l)}</h3>
     <div class="mut">${fmt(l.net)} · ${l.rocket} · ${l.loc||''}</div>
     <div>${l.orbit?`<span class="tag">${orb(l.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">${b.serial} · vuelo ${b.flight}</span>`:''}
     ${b.land_attempt?`<span class="tag ${b.land_success?'ok':'ko'}">${b.land_success?'Aterrizó':'No aterrizó'} ${b.land_loc?'en '+b.land_loc:''}</span>`:''}</div>

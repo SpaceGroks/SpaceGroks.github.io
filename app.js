@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();renderNext();renderPredict();renderQuiz();renderFleet();renderLog();renderDaily();renderScore();
+  resolvePredictions();resolveExpert();resolveBets();renderNext();renderPredict();renderQuiz();renderFleet();renderLog();renderDaily();renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
 }
 // ---------- Pestañas (accesibles con teclado y enlazables con #) ----------
@@ -76,17 +76,17 @@ function renderNext(){
     <div style="margin-top:8px">${n.status==='Go'?'<span class="tag ok">Confirmado (Go)</span>':`<span class="tag warn">${n.status_name}</span>`}
     ${n.orbit?`<span class="tag">${orb(n.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">Propulsor ${b.serial} · vuelo ${b.flight}</span>`:''}
     ${b.land_loc?`<span class="tag">Aterriza en ${b.land_loc_name}</span>`:''}${n.prob?`<span class="tag">Meteo favorable ${n.prob}%</span>`:''}</div>
-    <p class="mut">${tdesc(n)}</p>${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}${ph?credit(ph).replace('Foto:',ph===n?'Foto:':`Foto de ${esc(mname(ph))}:`):''}</div></div>`;
+    <p class="mut">${tdesc(n)}</p>${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}${alertBtns(n)}${ph?credit(ph).replace('Foto:',ph===n?'Foto:':`Foto de ${esc(mname(ph))}:`):''}</div></div>`;
     const tick=()=>{const ms=new Date(n.net)-Date.now();const el=$('#cd');if(!el)return;
       if(ms<0){el.textContent='¡Despegando o ya en vuelo!';return}
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="daily"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
-  h+=`<h3 style="margin-top:22px">Siguientes lanzamientos</h3>`+ups.slice(1,8).map(l=>`<div class="card"><h3>${mname(l)}</h3><div class="mut">${fmt(l.net)}${/TBD|MON|YEAR|QUARTER/i.test(l.net_precision||'')?' (fecha aproximada)':''} · ${l.rocket} · ${l.loc||''}</div></div>`).join('');
+  h+=`<h3 style="margin-top:22px">Siguientes lanzamientos</h3>`+ups.slice(1,8).map(l=>`<div class="card"><h3>${mname(l)}</h3><div class="mut">${fmt(l.net)}${/TBD|MON|YEAR|QUARTER/i.test(l.net_precision||'')?' (fecha aproximada)':''} · ${l.rocket} · ${l.loc||''}</div>${alertBtns(l)}</div>`).join('');
   $('#next').innerHTML=h;
 }
 // ---------- Predicciones ----------
@@ -381,3 +381,55 @@ function renderDaily(){const el=$('#daily');if(!el||!D)return;const st=LS.get('s
   <div class="mut">Vuelve mañana para mantener la racha: +${sig} puntos por volver${n+1>=3&&n<3?' y el desafío del día pasa a dar +15':n+1>=7&&n<7?' y el desafío del día pasa a dar +20':''}. Volver da 2 puntos por día de racha (hasta 14); el desafío da 10, 15 con 3 días seguidos y 20 con 7. Si un día no entras, la racha vuelve a empezar.</div></div>`;
   const b=el.querySelector('.dgo');if(b)b.onclick=()=>goReto(d);renderScore()}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&D){checkIn();renderDaily()}});
+// ---------- Avisos 15 minutos antes del despegue ----------
+const AVISO_MIN=15,SITE='https://spacegroks.github.io/';
+let AL_UP=null;// copia de los próximos lanzamientos que se refresca para seguir los cambios de hora
+const alertable=l=>l&&precise(l)&&!/TBD/i.test(l.status||'')&&new Date(l.net)>Date.now()-10*6e4;
+const alSet=()=>{const a=LS.get('alerts',{all:false,ids:{},sent:{}});a.ids=a.ids||{};a.sent=a.sent||{};return a};
+const wanted=(a,l)=>a.all||!!a.ids[l.id];
+const notifOK=()=>typeof Notification!=='undefined';
+function alertBtns(l){if(!alertable(l))return '';const a=alSet(),on=wanted(a,l);
+  return `<div class="opts al" data-alid="${esc(l.id)}"><button type="button" data-al="one" aria-pressed="${on}" class="${on?'sel':''}"${a.all?' disabled':''}>${a.all?'Aviso activado (todos)':on?'Aviso activado: 15 min antes':'Avisarme 15 min antes'}</button><button type="button" data-al="ics">Añadir al calendario</button></div>`}
+function renderAlerts(){const el=$('#alerts');if(!el||!D)return;const a=alSet(),ups=(AL_UP||D.upcoming).filter(alertable);
+  const perm=notifOK()?Notification.permission:'none',n=ups.filter(l=>wanted(a,l)).length;
+  const st=perm==='granted'?'Notificaciones del navegador activadas.':perm==='denied'?'Has bloqueado las notificaciones de esta web: el aviso saldrá dentro de la página.':perm==='none'?'Este navegador no permite notificaciones: el aviso saldrá dentro de la página.':'Al activar un aviso, el navegador te pedirá permiso para mostrar notificaciones.';
+  el.innerHTML=`<div class="card"><div class="kick">Avisos de lanzamiento</div>
+  <p class="mut">Te avisamos ${AVISO_MIN} minutos antes de cada despegue con hora exacta, con enlace al directo. ${n?`Tienes ${n===1?'1 aviso activo':n+' avisos activos'} de ${ups.length} lanzamientos con hora exacta.`:`Hay ${ups.length} lanzamientos con hora exacta.`}</p>
+  <div class="opts"><button type="button" data-al="all" aria-pressed="${!!a.all}" class="${a.all?'sel':''}">${a.all?'Avisos de todos los lanzamientos: activados':'Avisarme de todos los lanzamientos'}</button></div>
+  <div class="mut">${st} El aviso llega mientras SpaceX Play esté abierta en una pestaña, aunque sea en segundo plano. Si se retrasa el lanzamiento, el aviso sigue la nueva hora. Para que te llegue con la página cerrada, usa «Añadir al calendario» (el evento trae su propia alarma ${AVISO_MIN} minutos antes).</div></div>`;
+  document.querySelectorAll('.al[data-alid]').forEach(w=>{const l=(AL_UP||D.upcoming).find(x=>x.id===w.dataset.alid);if(l)w.outerHTML=alertBtns(l)||''})}
+const icsT=d=>new Date(d).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+const icsE=s=>String(s||'').replace(/[\\;,]/g,m=>'\\'+m).replace(/\r?\n/g,'\\n');
+const icsFold=s=>{const o=[];let r=s;while(r.length>60){o.push(r.slice(0,60));r=' '+r.slice(60)}o.push(r);return o.join('\r\n')};
+function icsFor(l){const u=l.video||SITE+'#next';
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//SpaceX Play//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT','UID:'+l.id+'@spacegroks.github.io','DTSTAMP:'+icsT(Date.now()),'DTSTART:'+icsT(l.net),'DURATION:PT30M',
+    'SUMMARY:'+icsE('Lanzamiento '+l.rocket+': '+mname(l)),'LOCATION:'+icsE([l.pad,l.loc].filter(Boolean).join(', ')),
+    'DESCRIPTION:'+icsE(`Hora prevista según Launch Library 2 (${fmt(D.generated)}). Puede cambiar: consulta ${SITE}. Directo: ${u}`),'URL:'+u,
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsE(mname(l)+' despega en '+AVISO_MIN+' minutos'),'TRIGGER:-PT'+AVISO_MIN+'M','END:VALARM','END:VEVENT','END:VCALENDAR'].map(icsFold).join('\r\n')+'\r\n'}
+function downloadIcs(l){try{const b=new Blob([icsFor(l)],{type:'text/calendar;charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a');
+  a.href=u;a.download='spacex-'+mname(l).toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)+'.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5e3);
+  aviso('Evento descargado: ábrelo para añadirlo a tu calendario.')}catch(e){aviso('No se ha podido crear el evento de calendario.')}}
+async function askPerm(){try{if(notifOK()&&Notification.permission==='default')await Notification.requestPermission()}catch(e){}}
+function alertBar(l,mins){let b=$('#alertbar');if(!b){b=document.createElement('div');b.id='alertbar';b.className='alertbar';b.setAttribute('role','alert');document.body.appendChild(b)}
+  const u=l.video||SITE+'#next';
+  b.innerHTML=`<b>${esc(mname(l))}</b> despega ${mins>0?`en ${mins} min`:'ahora'} · ${esc(l.rocket)}${l.loc?' · '+esc(l.loc):''} <a class="live" href="${esc(u)}" target="_blank" rel="noopener">${l.video?'Ver directo':'Abrir SpaceX Play'}<span class="sr"> (se abre en otra pestaña)</span></a> <button type="button" class="x" aria-label="Cerrar aviso">×</button>`;
+  b.classList.add('show');b.querySelector('.x').onclick=()=>b.classList.remove('show')}
+function fireAlert(l,mins){const u=l.video||SITE+'#next';alertBar(l,mins);
+  if(notifOK()&&Notification.permission==='granted'){try{const n=new Notification(`${mname(l)} despega ${mins>0?'en '+mins+' min':'ahora'}`,{body:`${l.rocket}${l.loc?' · '+l.loc:''}. ${l.video?'Pulsa para ver el directo.':'Pulsa para abrir SpaceX Play.'}`,tag:'sxp-'+l.id,icon:'og.png'});
+    n.onclick=()=>{try{window.focus()}catch(e){}window.open(u,'_blank','noopener');n.close()}}catch(e){}}}
+function checkAlerts(){if(!D)return;const a=alSet(),now=Date.now();let ch=false;
+  for(const l of (AL_UP||D.upcoming)){if(!alertable(l)||!wanted(a,l))continue;const ms=new Date(l.net)-now;
+    if(ms<=AVISO_MIN*6e4&&ms>-10*6e4&&a.sent[l.id]!==l.net){a.sent[l.id]=l.net;ch=true;fireAlert(l,Math.max(0,Math.ceil(ms/6e4)))}}
+  for(const id of Object.keys(a.sent))if(!(AL_UP||D.upcoming).some(x=>x.id===id)){delete a.sent[id];ch=true}
+  if(ch)LS.set('alerts',a)}
+async function refreshAlertData(){const a=alSet();if(!a.all&&!Object.keys(a.ids).length)return;
+  try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&Array.isArray(d.upcoming)){AL_UP=d.upcoming;checkAlerts()}}catch(e){}}
+function startAlerts(){renderAlerts();checkAlerts();setInterval(checkAlerts,20e3);setInterval(refreshAlertData,20*6e4);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkAlerts()});
+  $('#next').addEventListener('click',async e=>{const b=e.target.closest('button[data-al]');if(!b)return;const a=alSet(),k=b.dataset.al;
+    if(k==='ics'){const l=(AL_UP||D.upcoming).find(x=>x.id===b.closest('[data-alid]').dataset.alid);if(l)downloadIcs(l);return}
+    const w=b.closest('[data-alid]'),id=w?w.dataset.alid:'',inHero=!!b.closest('.hero');
+    if(k==='all')a.all=!a.all;else if(a.ids[id])delete a.ids[id];else a.ids[id]=true;
+    const on=k==='all'?a.all:!!a.ids[id];LS.set('alerts',a);if(on)await askPerm();
+    renderAlerts();const f=k==='all'?$('#alerts button[data-al="all"]'):document.querySelector(`${inHero?'.hero ':'.card:not(.hero) '}[data-alid="${id}"] button[data-al="one"]`);try{f&&f.focus()}catch(e){}
+    aviso(on?`Aviso activado: ${AVISO_MIN} minutos antes${k==='all'?' de cada lanzamiento':''}.`:'Aviso desactivado.');checkAlerts()})}

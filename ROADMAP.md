@@ -2,7 +2,7 @@
 
 Cada 2 horas, de 9:00 a 21:00, se hace la primera sin marcar, se prueba y se marca. Cualquiera del grupo puede añadir ideas.
 
-- [ ] Vista previa al compartir el enlace (imagen y texto Open Graph para X, WhatsApp y Reddit)
+- [x] Vista previa al compartir el enlace (imagen y texto Open Graph para X, WhatsApp y Reddit)
 - [ ] Mejoras de uso en móvil y accesibilidad (probar en pantalla de 390 px)
 - [ ] Crédito de cada foto (autor y licencia que da Launch Library 2) junto a la imagen, y no mostrar fotos sin licencia clara
 - [ ] Análisis de experto: cuadro de texto en cada lanzamiento para el razonamiento (física, ingeniería) más una predicción concreta y medible (aterrizaje, minutos de retraso, órbita) que se puntúa sola con los datos reales; se guarda en el navegador. Más adelante, evaluación del texto por una IA cuando haya almacenamiento compartido

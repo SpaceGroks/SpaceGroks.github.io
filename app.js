@@ -77,7 +77,7 @@ function renderNext(){
     <div style="margin-top:8px">${n.status==='Go'?'<span class="tag ok">Confirmado (Go)</span>':`<span class="tag warn">${n.status_name}</span>`}
     ${n.orbit?`<span class="tag">${orb(n.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">Propulsor ${b.serial} · vuelo ${b.flight}</span>`:''}
     ${b.land_loc?`<span class="tag">Aterriza en ${b.land_loc_name}</span>`:''}${n.prob?`<span class="tag">Meteo favorable ${n.prob}%</span>`:''}</div>
-    <p class="mut">${tdesc(n)}</p>${learnHTML(n,true)}${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}${alertBtns(n)}${ph?credit(ph).replace('Foto:',ph===n?'Foto:':`Foto de ${esc(mname(ph))}:`):''}</div></div>`;
+    <p class="mut">${tdesc(n)}</p>${learnHTML(n,true)}${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}${misBtn(n,'u')}${alertBtns(n)}${ph?credit(ph).replace('Foto:',ph===n?'Foto:':`Foto de ${esc(mname(ph))}:`):''}</div></div>`;
     const tick=()=>{const ms=new Date(n.net)-Date.now();const el=$('#cd');if(!el)return;
       if(ms<0){el.textContent='¡Despegando o ya en vuelo!';return}
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
@@ -87,7 +87,7 @@ function renderNext(){
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
-  h+=`<h3 style="margin-top:22px">Siguientes lanzamientos</h3>`+ups.slice(1,8).map(l=>`<div class="card"><h3>${mname(l)}</h3><div class="mut">${fmt(l.net)}${/TBD|MON|YEAR|QUARTER/i.test(l.net_precision||'')?' (fecha aproximada)':''} · ${l.rocket} · ${l.loc||''}</div>${alertBtns(l)}${learnHTML(l)}</div>`).join('');
+  h+=`<h3 style="margin-top:22px">Siguientes lanzamientos</h3>`+ups.slice(1,8).map(l=>`<div class="card"><h3>${mname(l)}</h3><div class="mut">${fmt(l.net)}${/TBD|MON|YEAR|QUARTER/i.test(l.net_precision||'')?' (fecha aproximada)':''} · ${l.rocket} · ${l.loc||''}</div>${alertBtns(l)}${learnHTML(l)}${misBtn(l,'u')}</div>`).join('');
   $('#next').innerHTML=h;
 }
 // ---------- Predicciones ----------
@@ -196,7 +196,7 @@ function renderLog(){
     <div class="mut">${fmt(l.net)} · ${l.rocket} · ${l.loc||''}</div>
     <div>${l.orbit?`<span class="tag">${orb(l.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">${b.serial} · vuelo ${b.flight}</span>`:''}
     ${b.land_attempt?`<span class="tag ${b.land_success?'ok':'ko'}">${b.land_success?'Aterrizó':'No aterrizó'} ${b.land_loc?'en '+b.land_loc:''}</span>`:''}</div>
-    ${l.fail?`<div class="ko">${l.fail}</div>`:''}${learnHTML(l)}</div></div>`}).join('');
+    ${l.fail?`<div class="ko">${l.fail}</div>`:''}${learnHTML(l)}${misBtn(l,'p')}</div></div>`}).join('');
 }
 // ---------- Aprende en 1 minuto (qué lleva, a qué órbita va y para qué sirve) ----------
 const ORB_LEARN={LEO:'Entre unos 160 y 2.000 km de altura. Una vuelta a la Tierra dura unos 90 minutos. Es la órbita más barata de alcanzar: allí están Starlink y la Estación Espacial Internacional.',
@@ -334,6 +334,49 @@ function openBooster(serial){
     b2[serial]={serial,pick:bt.dataset.b,target,deadline:deadline.getTime(),si:P.si,no:P.no,at:Date.now()};LS.set('bets',b2);completeDaily('bet');close(true);renderFleet();openBooster(serial)});
 }
 
+// ---------- Ficha de misión (al pulsar un lanzamiento) ----------
+const ST_ES={Success:'Éxito',Failure:'Fallo','Partial Failure':'Fallo parcial',Go:'Confirmado (Go)',TBD:'Fecha por confirmar',TBC:'Pendiente de confirmar','In Flight':'En vuelo',Hold:'En espera'};
+const stES=l=>ST_ES[l.status]||l.status_name||l.status||'';
+function landKind(s){const n=s.land_loc_name||'';if(DRONE.test(n))return 'barco dron en el mar';if(LZ.test(n)||/^LZ/.test(s.land_loc||''))return 'zona de aterrizaje en tierra';if(/Ocean|Gulf|Sea/i.test(n))return 'amerizaje en el mar';return ''}
+function misBtn(l,src){return `<button type="button" class="lnk misb" data-mis="${esc(l.id)}" data-src="${src}" aria-label="Abrir la ficha de la misión ${esc(mname(l))}">Ficha de la misión <span aria-hidden="true">›</span></button>`}
+function findMis(id,src){const a=src==='p'?D.previous:D.upcoming,b=src==='p'?D.upcoming:D.previous;return a.find(x=>x.id===id)||b.find(x=>x.id===id)}
+function openMission(id,src,from){const l=findMis(id,src);if(!l)return;
+  const fut=new Date(l.net)>Date.now(),ok=l.status==='Success',st=(l.stages||[]).filter(s=>s.serial||s.land_loc),approx=/TBD|MON|YEAR|QUARTER|DAY/i.test(l.net_precision||'');
+  const win=l.ws&&l.we?Math.round((new Date(l.we)-new Date(l.ws))/6e4):null;
+  const stH=st.length?st.map(s=>{const known=s.serial&&!/Unknown/.test(s.serial),hist=known&&boosterHist(s.serial).length,td=tdays(s.turnaround),lk=landKind(s);
+    return `<div class="card mstage"><b>${known?(hist?`<button type="button" class="lnk" data-bst="${esc(s.serial)}" aria-label="Abrir la ficha del propulsor ${esc(s.serial)}">Propulsor ${esc(s.serial)} <span aria-hidden="true">›</span></button>`:`Propulsor ${esc(s.serial)}`):'Propulsor aún sin asignar'}</b>${s.type&&s.type!=='Core'?` <span class="tag">${s.type==='Strap-On Booster'?'Lateral':esc(s.type)}</span>`:''}
+     <div class="mut">${s.flight?`Vuelo nº ${s.flight} de este propulsor${s.reused?' (reutilizado)':' (primer vuelo)'}`:''}${td!=null&&td>0?` · ${td} días en tierra desde su vuelo anterior`:''}</div>
+     <div>${s.land_attempt===false?'<span class="tag">Sin intento de aterrizaje</span>':s.land_loc_name&&s.land_loc_name!=='Unknown'?`<span class="tag${s.land_success===true?' ok':s.land_success===false?' ko':''}">${s.land_success===true?'Aterrizó en':s.land_success===false?'No aterrizó en':'Aterrizará en'} ${esc(s.land_loc_name)}${s.land_loc&&s.land_loc!==s.land_loc_name?' ('+esc(s.land_loc)+')':''}</span>${lk?` <span class="mut">${lk}</span>`:''}`:'<span class="mut">Zona de aterrizaje todavía sin publicar</span>'}</div></div>`}).join(''):'<p class="mut">Launch Library 2 todavía no da el propulsor ni la zona de aterrizaje de esta misión.</p>';
+  const cu=(l.cust||[]).filter(Boolean),canPred=predictable(l),canFd=/Falcon 9/.test(l.rocket||'')&&fdSteps(l).length>=5;
+  const live=l.video?`<a class="live" href="${esc(l.video)}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> ${fut||l.status==='In Flight'?'Ver directo':'Ver la retransmisión'}<span class="sr"> (se abre en otra pestaña)</span></a>`:`<p class="mut">${fut?'Todavía no hay enlace al directo; suele publicarse unos días antes del despegue.':'Launch Library 2 no da enlace a la retransmisión.'}</p>`;
+  const m=document.createElement('div');m.className='modal';
+  m.innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-labelledby="mis-h"><button type="button" class="x" aria-label="Cerrar la ficha">×</button>
+   <div class="kick">Ficha de misión</div><h2 id="mis-h">${esc(mname(l))}</h2>
+   <div class="mut">${fmt(l.net)}${approx?' (fecha aproximada)':''} · ${esc(l.rocket)} · ${esc(l.pad||'')}${l.loc?', '+esc(l.loc):''}</div>
+   <div style="margin:8px 0">${l.status?`<span class="tag ${ok||l.status==='Go'?'ok':/Fail/.test(l.status)?'ko':'warn'}">${esc(stES(l))}</span>`:''}${l.orbit&&l.orbit!=='N/A'?`<span class="tag">${esc(orb(l.orbit))}</span>`:''}${l.prob&&fut?`<span class="tag">Meteo favorable ${l.prob}%</span>`:''}</div>
+   ${l.img?`<figure class="ph mph"><img loading="lazy" src="${esc(l.img)}" alt="">${credit(l)}</figure>`:''}
+   ${l.fail?`<p class="ko">${esc(l.fail)}</p>`:''}
+   <h3>Descripción</h3><p>${l.desc?tdesc(l):'<span class="mut">Launch Library 2 todavía no da la descripción.</span>'}</p>
+   ${cu.length?`<p class="mut">Cliente: ${cu.map(esc).join(', ')}</p>`:''}
+   ${win!=null&&fut?`<p class="mut">Ventana de lanzamiento: ${win?`${win} minutos, de ${new Date(l.ws).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})} a ${new Date(l.we).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}`:'instantánea (hay que despegar a la hora exacta)'}.</p>`:''}
+   <h3>Propulsor y aterrizaje</h3>${stH}
+   <h3>Directo</h3>${live}
+   ${canPred||canFd?`<div class="opts">${canPred?'<button type="button" data-go="predict">Predecir este lanzamiento</button>':''}${canFd?'<button type="button" data-go="flight">Jugar su cuenta atrás</button>':''}</div>`:''}
+   ${l.info?`<p><a href="${esc(l.info)}" target="_blank" rel="noopener">Página oficial de la misión<span class="sr"> (se abre en otra pestaña)</span></a></p>`:''}
+   <p class="mut">Datos de Launch Library 2 (última actualización: ${fmt(D.generated)}).</p></div>`;
+  const prevFocus=from||document.activeElement;
+  document.body.appendChild(m);document.body.classList.add('noscroll');
+  const close=(keep)=>{m.remove();document.body.classList.remove('noscroll');document.removeEventListener('keydown',onKey);
+    if(keep!==true){try{prevFocus&&prevFocus.isConnected&&prevFocus.focus()}catch(e){}}},
+   onKey=e=>{if(e.key==='Escape')close();else if(e.key==='Tab'){const f=[...m.querySelectorAll('button,a[href],[tabindex]:not([tabindex="-1"])')];if(!f.length)return;
+     const a=f[0],z=f.at(-1);if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}}};
+  document.addEventListener('keydown',onKey);m.querySelector('.x').focus();
+  m.onclick=e=>{if(e.target===m)close()};m.querySelector('.x').onclick=close;
+  m.querySelectorAll('[data-bst]').forEach(b=>b.onclick=()=>{close(true);openBooster(b.dataset.bst)});
+  m.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const t=b.dataset.go;close(true);if(t==='flight'){fdSel=l.id;if(!(FD&&FD.run)){FD=null;renderFlight()}}
+    showTab(t);try{history.replaceState(null,'','#'+t);scrollTo({top:0})}catch(e){}const tb=document.querySelector(`nav [data-tab="${t}"]`);try{tb&&tb.focus({preventScroll:true})}catch(e){}});
+}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button[data-mis]');if(b&&!b.closest('.modal'))openMission(b.dataset.mis,b.dataset.src,b)});
 // ---------- Análisis de experto (razonamiento + predicción medible que se puntúa sola) ----------
 const XDRAFT={},XOPEN=new Set();
 const precise=l=>/^(SEC|MIN)$/i.test(l.net_precision||'');

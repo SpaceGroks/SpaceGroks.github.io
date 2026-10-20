@@ -15,7 +15,7 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Instalable en el móvil como app (manifest y service worker)
 - [x] Modo director de vuelo: pasos reales de la cuenta atrás de un Falcon 9 (carga de combustible, separación de etapas, aterrizaje) pulsando en el momento justo (hecho el 20 oct, 11:02)
 - [x] Logros (primer acierto, 5 predicciones seguidas, apostar contra la racha y acertar...) (hecho el 20 oct, 12:56)
-- [ ] Ficha de misión al pulsar un lanzamiento: descripción, propulsor, zona de aterrizaje, enlace al directo
+- [x] Ficha de misión al pulsar un lanzamiento: descripción, propulsor, zona de aterrizaje, enlace al directo (hecho el 20 oct, 14:51)
 - [ ] Enlace a "Fórmate" en el globo: la página de la misión y, de vez en cuando, las ofertas de trabajo de SpaceX
 - [ ] Reto rápido de 30 segundos con 3 preguntas
 - [ ] Probabilidad meteorológica en las predicciones cuando esté disponible

@@ -238,6 +238,17 @@ function learnHTML(l,top){if(!l)return '';
   ${para?`<dt>Para qué sirve</dt><dd>${para}</dd>`:''}</dl>
   ${l.info?`<a href="${esc(l.info)}" target="_blank" rel="noopener">Página oficial de la misión<span class="sr"> (se abre en otra pestaña)</span></a>`:''}</details>`}
 document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.matches&&d.matches('details.learn')&&d.open){try{completeDaily('learn')}catch(x){}}},true);
+// «Fórmate»: la página oficial de una misión y, de vez en cuando (1 de cada 3), las ofertas reales de trabajo de SpaceX.
+function formateJobs(){const J=D.jobs;if(!J||!J.total)return null;
+  const locs=(J.locs||[]).slice(0,3).map(([n,c])=>`${n} (${c})`),r=(J.recent||[])[0];
+  return {t:'Fórmate',f:'jobs',m:`SpaceX tiene ahora mismo ${J.total.toLocaleString('es-ES')} ofertas de trabajo abiertas${locs.length?`, sobre todo en ${locs.length>1?locs.slice(0,-1).join(', ')+' y '+locs.at(-1):locs[0]}`:''}${J.intern?`, y ${J.intern} son de prácticas`:''}.${r?` La más reciente: «${r.t}»${r.loc?` en ${r.loc}`:''}.`:''} ¿Te ves trabajando en cohetes? Mira qué piden y qué estudiar para llegar.`,url:J.url||'https://www.spacex.com/careers/',btn:'Ver ofertas de SpaceX',k:'learn'}}
+function formateMision(){const now=Date.now();
+  const u=D.upcoming.find(l=>l.info&&new Date(l.net)>now),p=D.previous.find(l=>l.info);
+  if(u)return {t:'Fórmate',f:'mision',m:`${mname(u)} despega ${fmt(u.net)}.${u.orbit&&u.orbit!=='N/A'?` Órbita de destino: ${orb(u.orbit)}.`:''} Lee su página oficial en spacex.com y llega a tus predicciones con información de primera mano.`,url:u.info,btn:'Ver la página de la misión',k:'learn'};
+  if(p)return {t:'Fórmate',f:'mision',m:`Repasa la página oficial de ${mname(p)} en spacex.com${p.orbit&&p.orbit!=='N/A'?` (fue a esta órbita: ${orb(p.orbit)})`:''}. Entender misiones reales es la mejor forma de acertar las siguientes.`,url:p.info,btn:'Ver la página de la misión',k:'learn'};
+  const o=D.previous.find(l=>l.orbit&&l.orbit!=='LEO'&&l.orbit!=='N/A');
+  return o?{t:'Fórmate',f:'orbita',m:`${mname(o)} fue a esta órbita: ${orb(o.orbit)}. ¿Sabes por qué no todas las misiones van a la misma órbita? Aprende cómo funciona y vuelve a por el reto.`,url:'https://es.wikipedia.org/wiki/%C3%93rbita',btn:'Aprender (Wikipedia)',k:'learn'}:null}
+function formate(){const n=LS.get('formate_n',0);return (n%3===2&&formateJobs())||formateMision()||formateJobs()}
 // ---------- Globo de desafío (cada pocas horas, con datos reales) ----------
 const GLOBO_CADA=4*H;
 function retosGlobo(){
@@ -254,19 +265,18 @@ function retosGlobo(){
   {const bs=LS.get('bets',{});const cand=D.previous.flatMap(l=>(l.stages||[]).map(s=>s.serial)).find(x=>{if(!x||/Unknown/.test(x)||(bs[x]&&!bs[x].res))return false;const u=boosterHist(x).at(-1);return u&&u.s.land_attempt!==false&&u.s.land_success!==false});
    if(cand)R.push({t:'¿Volverá a volar?',m:`Abre la ficha del propulsor ${cand}: mira cuántos días suele pasar en tierra entre vuelos y apuesta si volverá a despegar en los próximos 30 días. Se resuelve solo con los datos reales.`,tab:'fleet',btn:'Ver propulsores',k:'bet'});}
   const s=D.stats;if(s&&s.consecutive_successful_landings)R.push({t:'Racha en directo',m:`SpaceX lleva ${s.consecutive_successful_landings} aterrizajes seguidos sin fallar y ${s.consecutive_successful_launches} lanzamientos seguidos con éxito. ¿Crees que la racha aguanta esta semana? Demuéstralo con tus predicciones.`,tab:'predict',btn:'Apostar',k:ups.length?'pred':null});
-  const o=D.previous.find(l=>l.orbit&&l.orbit!=='LEO');
-  if(o)R.push({t:'Fórmate',m:`${mname(o)} fue a una órbita ${orb(o.orbit)}. ¿Sabes por qué no todas las misiones van a la misma órbita? Aprende cómo funciona y vuelve a por el reto.`,url:'https://es.wikipedia.org/wiki/%C3%93rbita',btn:'Aprender (Wikipedia)',k:'learn'});
+  {const f=formate();if(f)R.push(f);}
   return R;
 }
 function mostrarGlobo(forzar){
   if(!D)return;const last=LS.get('globo_last',0);if(!forzar&&Date.now()-last<GLOBO_CADA)return;
   checkIn();const dd=retoDelDia();let r,diario=false;
   if(dd&&!dd.done&&LS.get('globo_dd','')!==dayKey()){r=dd;diario=true;LS.set('globo_dd',dayKey())}
-  else{const R=retosGlobo();if(!R.length)return;const n=LS.get('globo_n',0);r=R[n%R.length];LS.set('globo_n',n+1)}
+  else{const R=retosGlobo();if(!R.length)return;const n=LS.get('globo_n',0);r=R[n%R.length];LS.set('globo_n',n+1);if(r.f)LS.set('formate_n',LS.get('formate_n',0)+1)}
   LS.set('globo_last',Date.now());
   const g=document.createElement('div');g.className='globo';
   g.setAttribute('role','complementary');g.setAttribute('aria-label','Desafío');g.setAttribute('aria-live','polite');
-  g.innerHTML=`<button type="button" class="x" aria-label="Cerrar">×</button>${diario?`<div class="gk">Desafío del día · +${dailyPts()} puntos</div>`:''}<h4>${r.t}</h4><p>${r.m}</p><button type="button" class="go">${r.btn}</button><button type="button" class="later">Luego</button>`;
+  g.innerHTML=`<button type="button" class="x" aria-label="Cerrar">×</button>${diario?`<div class="gk">Desafío del día · +${dailyPts()} puntos</div>`:''}<h4>${esc(r.t)}</h4><p>${esc(r.m)}</p><button type="button" class="go">${esc(r.btn)}${r.url?'<span class="sr"> (se abre en otra pestaña)</span>':''}</button><button type="button" class="later">Luego</button>`;
   document.body.appendChild(g);requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.add('show')));
   const close=()=>{g.classList.remove('show');setTimeout(()=>g.remove(),500)};
   g.querySelector('.x').onclick=close;g.querySelector('.later').onclick=close;

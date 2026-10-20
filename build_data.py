@@ -57,6 +57,27 @@ def slim(r):
       "lat":float(p["latitude"]) if p.get("latitude") else None,"lon":float(p["longitude"]) if p.get("longitude") else None,
       "stages":st,**photo(r),"tl":timeline(r),
       "video":vids[0]["url"] if vids else None,"updated":r.get("last_updated")}
+def jobs():
+    """Ofertas de trabajo reales de SpaceX (tablón público de Greenhouse). Si falla, se conservan las últimas."""
+    try:
+        req=urllib.request.Request("https://boards-api.greenhouse.io/v1/boards/spacex/jobs",headers={"User-Agent":"spacex-play"})
+        J=json.load(urllib.request.urlopen(req,timeout=120))["jobs"]
+        if not J: raise ValueError("sin ofertas")
+        loc={}
+        for j in J:
+            n=(j.get("location") or {}).get("name") or ""
+            if n: loc[n]=loc.get(n,0)+1
+        intern=[j for j in J if re.search(r"\bintern(ship)?s?\b",j.get("title") or "",re.I)]
+        rec=sorted([j for j in J if j.get("first_published") and j.get("absolute_url")],key=lambda j:j["first_published"],reverse=True)[:5]
+        return {"total":len(J),"intern":len(intern),"url":"https://www.spacex.com/careers/",
+          "locs":sorted(loc.items(),key=lambda x:-x[1])[:5],
+          "recent":[{"t":j["title"],"loc":(j.get("location") or {}).get("name"),"url":j["absolute_url"],"pub":j["first_published"][:10]} for j in rec],
+          "at":datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),"source":"SpaceX en Greenhouse"}
+    except Exception as e:
+        print("ofertas no disponibles:",e,file=sys.stderr)
+        try: return json.load(open("data.json")).get("jobs")
+        except Exception: return None
+
 up=get("upcoming",20,"up.json"); prev=get("previous",60,"prev.json")
 lsp=(prev["results"][0].get("launch_service_provider") or {}) if prev["results"] else {}
 out={"generated":datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
@@ -64,6 +85,7 @@ out={"generated":datetime.datetime.now(datetime.timezone.utc).isoformat(timespec
  "stats":{k:lsp.get(k) for k in ["total_launch_count","successful_launches","failed_launches","consecutive_successful_launches","successful_landings","attempted_landings","consecutive_successful_landings","pending_launches"]},
  "upcoming":[slim(r) for r in up["results"]],"previous":[slim(r) for r in prev["results"]]}
 out["tl_types"]=TLT
+out["jobs"]=jobs()
 try: es=json.load(open("i18n/desc_es.json"))
 except Exception: es={}
 out["missing_es"]=[l["id"] for l in out["upcoming"]+out["previous"] if l["desc"] and l["id"] not in es]

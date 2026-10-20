@@ -52,6 +52,7 @@ def slim(r):
       "status":(r.get("status") or {}).get("abbrev"),"status_name":(r.get("status") or {}).get("name"),
       "net":r.get("net"),"net_precision":(r.get("net_precision") or {}).get("abbrev"),
       "ws":r.get("window_start"),"we":r.get("window_end"),"prob":r.get("probability"),
+      "wx":[w.strip() for w in (r.get("weather_concerns") or "").split(",") if w.strip()],
       "fail":r.get("failreason") or "","rocket":(ro.get("configuration") or {}).get("name"),
       "pad":p.get("name"),"loc":(p.get("location") or {}).get("name"),
       "lat":float(p["latitude"]) if p.get("latitude") else None,"lon":float(p["longitude"]) if p.get("longitude") else None,

@@ -92,6 +92,24 @@ function renderNext(){
 }
 // ---------- Predicciones ----------
 function predictable(l){return new Date(l.net)>Date.now()&&!/TBD/i.test(l.status)&&new Date(l.net)-Date.now()<21*DAY}
+// ---------- Meteo real en las predicciones (Launch Library 2: probability y weather_concerns) ----------
+const WX_ES={'Cumulus Cloud Rule':'nubes de tipo cúmulo','Thick Cloud Layers Rule':'capas de nubes gruesas','Anvil Cloud Rules':'nubes de yunque de tormenta',
+ 'Liftoff Winds':'viento en el despegue','Flight Through Precipitation':'volar a través de lluvia','Surface Electric Fields Rule':'campos eléctricos en el suelo',
+ 'Upper Level Winds':'vientos en altura','Disturbed Weather Rule':'tiempo perturbado','Lightning Rule':'rayos','Lightning':'rayos','Triboelectrification Rule':'carga eléctrica por fricción',
+ 'Attached Anvil Clouds':'nubes de yunque cercanas','Detached Anvil Clouds':'nubes de yunque sueltas','Ground Winds':'viento en el suelo','Booster Recovery Weather':'tiempo en la zona de recuperación del propulsor',
+ 'Solar Activity':'actividad solar','Smoke Plumes Rule':'columnas de humo'};
+const wxList=l=>(l&&l.wx||[]).map(w=>WX_ES[w]||w);
+const wxCls=p=>p>=80?'ok':p>=60?'warn':'ko';
+function wxStats(){// datos reales: meteo con la que despegaron los últimos lanzamientos que tenían previsión
+  const v=D.previous.filter(l=>l.prob!=null);if(!v.length)return null;
+  const s=v.map(l=>l.prob).sort((a,b)=>a-b),lo=v.reduce((m,l)=>l.prob<m.prob?l:m,v[0]);
+  const c={},w=v.filter(l=>Array.isArray(l.wx));w.forEach(l=>wxList(l).forEach(x=>c[x]=(c[x]||0)+1));
+  const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];
+  return{n:v.length,med:s[Math.floor(s.length/2)],lo,top:top&&w.length?{name:top[0],c:top[1],n:w.length}:null}}
+function wxHTML(l){const ws=wxStats(),wx=wxList(l);
+  const ref=ws?`<div class="mut">Referencia real: en los últimos ${ws.n} lanzamientos de SpaceX con previsión, despegaron con una meteo favorable mediana del ${ws.med}% y la más baja fue del ${ws.lo.prob}% (${esc(mname(ws.lo))})${ws.top?`; lo que más preocupó: ${esc(ws.top.name)} (${ws.top.c} de ${ws.top.n})`:''}.</div>`:'';
+  return `<div class="wxp" style="margin-top:8px">${l.prob!=null?`<div><b>Meteo:</b> <span class="tag ${wxCls(l.prob)}">${l.prob}% favorable</span>${wx.length?` Preocupa: ${esc(wx.join(', '))}.`:''}</div>`:
+   '<div class="mut"><b>Meteo:</b> la fuente aún no da previsión para este lanzamiento; saldrá aquí en cuanto la publique.</div>'}${ref}</div>`}
 function renderPredict(){
   const preds=LS.get('preds',{});
   let h=`<div class="card"><b>Cómo se juega:</b> antes de cada despegue responde a tres preguntas. Cuando el lanzamiento ocurra, comparamos con lo que pasó de verdad. Cada acierto da 10 puntos, acertar las tres da 5 de bonus, y si apuestas por un fallo y aciertas te llevas 50. Abre «Análisis de experto» en cada lanzamiento para razonar y predecir los minutos de retraso (hasta 40 puntos más).</div>`;
@@ -99,17 +117,17 @@ function renderPredict(){
   if(!list.length)h+='<p class="mut">Ahora mismo no hay lanzamientos confirmados en las próximas tres semanas. Vuelve mañana.</p>';
   list.forEach(l=>{const p=preds[l.id]||{a:{}};const b=(l.stages||[])[0]||{};
     const qs=[['ok','¿Llegará la carga a su órbita?'],...(b.land_attempt?[['land',`¿Aterrizará el propulsor ${b.serial||''} en ${b.land_loc_name||'su zona'}?`]]:[]),['time',`¿Despegará dentro de las 24 h de la hora prevista ahora (${fmt(l.net)})?`]];
-    h+=`<div class="card" data-id="${l.id}"><h3>${mname(l)}</h3><div class="mut">${l.rocket} · ${l.loc||''}${b.flight?` · vuelo nº ${b.flight} del propulsor`:''}</div>`+
+    h+=`<div class="card" data-id="${l.id}"><h3>${mname(l)}</h3><div class="mut">${l.rocket} · ${l.loc||''}${b.flight?` · vuelo nº ${b.flight} del propulsor`:''}</div>${wxHTML(l)}`+
     qs.map(([k,q])=>`<div style="margin-top:8px"><div id="q-${l.id}-${k}">${q}</div><div class="opts" role="group" aria-labelledby="q-${l.id}-${k}">${['Sí','No'].map(v=>`<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${p.a[k]===v}" class="${p.a[k]===v?'sel':''}">${v}</button>`).join('')}</div></div>`).join('')+
     `<div class="mut">${p.saved?'Predicción guardada ✔ (puedes cambiarla hasta el despegue)':'Sin predicción todavía'}</div>${expertHTML(l)}</div>`});
   const done=Object.values(preds).filter(p=>p.res);
-  if(done.length)h+=`<h3>Tus resultados</h3>`+done.sort((a,b)=>b.resAt-a.resAt).map(p=>`<div class="card"><h3>${p.name}</h3>${p.res.map(r=>`<div>${ic(r.ok)} ${r.q}: dijiste ${r.you}, pasó ${r.real}</div>`).join('')}<b>+${p.pts} puntos</b></div>`).join('');
+  if(done.length)h+=`<h3>Tus resultados</h3>`+done.sort((a,b)=>b.resAt-a.resAt).map(p=>`<div class="card"><h3>${p.name}</h3>${p.wx0!=null?`<div class="mut">Meteo al predecir: ${p.wx0}% favorable</div>`:''}${p.res.map(r=>`<div>${ic(r.ok)} ${r.q}: dijiste ${r.you}, pasó ${r.real}</div>`).join('')}<b>+${p.pts} puntos</b></div>`).join('');
   h+=expertResultsHTML();
   $('#predict').innerHTML=h;
   bindExpert();
   $('#predict').querySelectorAll('.opts button[data-k]').forEach(bt=>bt.onclick=()=>{
     const id=bt.closest('.card').dataset.id,l=D.upcoming.find(x=>x.id===id);const ps=LS.get('preds',{});
-    const p=ps[id]||{a:{},name:mname(l),land:!!((l.stages||[])[0]||{}).land_attempt};p.a[bt.dataset.k]=bt.dataset.v;p.net=l.net;p.saved=Date.now();ps[id]=p;LS.set('preds',ps);completeDaily('pred');renderPredict()});
+    const p=ps[id]||{a:{},name:mname(l),land:!!((l.stages||[])[0]||{}).land_attempt};p.a[bt.dataset.k]=bt.dataset.v;p.net=l.net;if(l.prob!=null)p.wx0=l.prob;p.saved=Date.now();ps[id]=p;LS.set('preds',ps);completeDaily('pred');renderPredict()});
 }
 function resolvePredictions(){
   const ps=LS.get('preds',{});let changed=false;
@@ -413,7 +431,7 @@ function openMission(id,src,from){const l=findMis(id,src);if(!l)return;
   m.innerHTML=`<div class="box" role="dialog" aria-modal="true" aria-labelledby="mis-h"><button type="button" class="x" aria-label="Cerrar la ficha">×</button>
    <div class="kick">Ficha de misión</div><h2 id="mis-h">${esc(mname(l))}</h2>
    <div class="mut">${fmt(l.net)}${approx?' (fecha aproximada)':''} · ${esc(l.rocket)} · ${esc(l.pad||'')}${l.loc?', '+esc(l.loc):''}</div>
-   <div style="margin:8px 0">${l.status?`<span class="tag ${ok||l.status==='Go'?'ok':/Fail/.test(l.status)?'ko':'warn'}">${esc(stES(l))}</span>`:''}${l.orbit&&l.orbit!=='N/A'?`<span class="tag">${esc(orb(l.orbit))}</span>`:''}${l.prob&&fut?`<span class="tag">Meteo favorable ${l.prob}%</span>`:''}</div>
+   <div style="margin:8px 0">${l.status?`<span class="tag ${ok||l.status==='Go'?'ok':/Fail/.test(l.status)?'ko':'warn'}">${esc(stES(l))}</span>`:''}${l.orbit&&l.orbit!=='N/A'?`<span class="tag">${esc(orb(l.orbit))}</span>`:''}${l.prob!=null&&fut?`<span class="tag ${wxCls(l.prob)}">Meteo favorable ${l.prob}%</span>`:''}</div>${fut&&wxList(l).length?`<div class="mut">Preocupa a la meteo: ${esc(wxList(l).join(', '))}.</div>`:''}
    ${l.img?`<figure class="ph mph"><img loading="lazy" src="${esc(l.img)}" alt="">${credit(l)}</figure>`:''}
    ${l.fail?`<p class="ko">${esc(l.fail)}</p>`:''}
    <h3>Descripción</h3><p>${l.desc?tdesc(l):'<span class="mut">Launch Library 2 todavía no da la descripción.</span>'}</p>
@@ -451,7 +469,7 @@ function expertHTML(l){
   const txt=dr.txt??(x?x.txt:''),del=dr.delay??(x?x.delay:''),conf=dr.conf??(x&&x.conf!=null?x.conf:'');
   const ws=winStats(),wmin=l.ws&&l.we?Math.round((new Date(l.we)-new Date(l.ws))/6e4):null;
   const pist=[wmin!=null?(wmin>0?`la ventana dura ${wmin} min (de ${fmt(l.ws)} a ${fmt(l.we)})`:'la ventana es instantánea: si algo falla, se aplaza'):null,
-    l.prob!=null?`meteo favorable ${l.prob}%`:null,`estado: ${esc(l.status_name)}`,
+    l.prob!=null?`meteo favorable ${l.prob}%${wxList(l).length?` (preocupa: ${esc(wxList(l).join(', '))})`:''}`:'aún sin previsión meteo',`estado: ${esc(l.status_name)}`,
     ws?`en los últimos ${ws.n} lanzamientos el despegue fue una mediana de ${ws.med} min después de abrirse la ventana (${ws.at0} justo al abrirse)`:null].filter(Boolean).join('; ');
   const id=esc(l.id);
   return `<details class="xp" data-xid="${id}"${XOPEN.has(l.id)?' open':''}><summary>Análisis de experto${x?' <span class="tag ok">guardado</span>':''}</summary>
@@ -476,7 +494,7 @@ function bindExpert(){
     if(!Number.isFinite(delay)||delay<0||delay>20160){st.textContent='Escribe los minutos de retraso: un número entre 0 y 20160 (14 días).';return}
     if(conf!=null&&!(conf>=0&&conf<=100)){st.textContent='La confianza debe ser un número de 0 a 100.';return}
     const b=(l.stages||[])[0]||{},X=LS.get('expert',{});
-    X[id]={name:mname(l),txt,delay,conf:b.land_attempt?conf:null,net0:new Date(l.net).getTime(),land:!!b.land_attempt,serial:b.serial||null,saved:Date.now()};
+    X[id]={name:mname(l),txt,delay,conf:b.land_attempt?conf:null,net0:new Date(l.net).getTime(),land:!!b.land_attempt,serial:b.serial||null,prob0:l.prob??null,saved:Date.now()};
     LS.set('expert',X);delete XDRAFT[id];XOPEN.add(id);completeDaily('expert');renderPredict();
     const s2=$('#xs-'+CSS.escape(id));if(s2)s2.textContent='Análisis guardado. Se puntuará solo cuando despegue.'});
 }
@@ -492,7 +510,7 @@ function resolveExpert(){
 function expertResultsHTML(){
   const done=Object.values(LS.get('expert',{})).filter(x=>x.res);if(!done.length)return '';
   return `<h3>Tus análisis de experto</h3>`+done.sort((a,b)=>b.resAt-a.resAt).map(x=>{const r=x.res;
-    return `<div class="card"><h3>${esc(x.name)}</h3>${r.void?'<div class="mut">La fuente no da la hora exacta del despegue, así que el retraso no se puede medir.</div>':
+    return `<div class="card"><h3>${esc(x.name)}</h3>${x.prob0!=null?`<div class="mut">Meteo al guardar: ${x.prob0}% favorable</div>`:''}${r.void?'<div class="mut">La fuente no da la hora exacta del despegue, así que el retraso no se puede medir.</div>':
     `<div>${ic(r.err<=10,'Muy cerca','Lejos')} Retraso: dijiste ${x.delay} min, fue ${r.realDelay} min (error de ${r.err} min) · +${r.dpts}</div>`}
     ${r.cpts!=null?`<div>${ic((x.conf>=50)===r.landed,'Bien calibrado','Mal calibrado')} Confianza en el aterrizaje: ${x.conf}% · ${r.landed?'aterrizó':'no aterrizó'} · +${r.cpts}</div>`:''}
     ${x.txt?`<blockquote class="xq">${esc(x.txt)}</blockquote>`:''}<b>+${x.pts} puntos</b></div>`}).join('');

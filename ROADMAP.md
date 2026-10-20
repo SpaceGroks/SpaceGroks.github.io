@@ -18,5 +18,5 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Ficha de misión al pulsar un lanzamiento: descripción, propulsor, zona de aterrizaje, enlace al directo (hecho el 20 oct, 14:51)
 - [x] Enlace a "Fórmate" en el globo: la página de la misión y, de vez en cuando, las ofertas de trabajo de SpaceX (hecho el 20 oct, 16:50)
 - [x] Reto rápido de 30 segundos con 3 preguntas (hecho el 20 oct, 18:57)
-- [ ] Probabilidad meteorológica en las predicciones cuando esté disponible
+- [x] Probabilidad meteorológica en las predicciones cuando esté disponible (hecho el 20 oct, 20:55)
 - [ ] Mapa con zonas de aterrizaje además de plataformas

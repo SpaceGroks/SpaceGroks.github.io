@@ -12,7 +12,7 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Aviso 15 minutos antes de cada lanzamiento (notificación del navegador si el jugador la acepta) con enlace al directo (hecho el 19 oct, 18:52)
 - [x] Ficha de cada propulsor con su historial de vuelos, tiempo entre vuelos y apuesta "¿volverá a volar?" (hecho en el reto semanal del 19 oct)
 - [x] "Aprende en 1 minuto" por misión: qué lleva, a qué órbita va y para qué sirve (hecho el 19 oct, 20:56)
-- [ ] Instalable en el móvil como app (manifest y service worker)
+- [x] Instalable en el móvil como app (manifest y service worker)
 - [ ] Modo director de vuelo: pasos reales de la cuenta atrás de un Falcon 9 (carga de combustible, separación de etapas, aterrizaje) pulsando en el momento justo
 - [ ] Logros (primer acierto, 5 predicciones seguidas, apostar contra la racha y acertar...)
 - [ ] Ficha de misión al pulsar un lanzamiento: descripción, propulsor, zona de aterrizaje, enlace al directo

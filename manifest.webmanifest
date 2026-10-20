@@ -1,0 +1,25 @@
+{
+  "name": "SpaceX Play",
+  "short_name": "SpaceX Play",
+  "description": "Juega con las misiones reales de SpaceX: predicciones con puntos, reto semanal, propulsores reutilizados y mapa. Datos en directo cada hora.",
+  "lang": "es",
+  "dir": "ltr",
+  "id": "/",
+  "start_url": "/?app=1",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#05070d",
+  "theme_color": "#05070d",
+  "categories": ["games", "education", "news"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Próximo lanzamiento", "short_name": "Próximo", "url": "/?app=1#next", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "Predicciones", "short_name": "Predicciones", "url": "/?app=1#predict", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]},
+    {"name": "Reto semanal", "short_name": "Reto", "url": "/?app=1#quiz", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192"}]}
+  ]
+}

@@ -38,6 +38,7 @@ function init(){
   initTabs();checkIn();
   resolvePredictions();resolveExpert();resolveBets();renderNext();renderPredict();renderQuiz();renderFleet();renderLog();renderDaily();renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
+  renderInstall();offlineNote();
 }
 // ---------- Pestañas (accesibles con teclado y enlazables con #) ----------
 const TABS=()=>[...document.querySelectorAll('nav [role=tab]')];
@@ -82,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -455,7 +456,9 @@ function alertBar(l,mins){let b=$('#alertbar');if(!b){b=document.createElement('
   b.innerHTML=`<b>${esc(mname(l))}</b> despega ${mins>0?`en ${mins} min`:'ahora'} · ${esc(l.rocket)}${l.loc?' · '+esc(l.loc):''} <a class="live" href="${esc(u)}" target="_blank" rel="noopener">${l.video?'Ver directo':'Abrir SpaceX Play'}<span class="sr"> (se abre en otra pestaña)</span></a> <button type="button" class="x" aria-label="Cerrar aviso">×</button>`;
   b.classList.add('show');b.querySelector('.x').onclick=()=>b.classList.remove('show')}
 function fireAlert(l,mins){const u=l.video||SITE+'#next';alertBar(l,mins);
-  if(notifOK()&&Notification.permission==='granted'){try{const n=new Notification(`${mname(l)} despega ${mins>0?'en '+mins+' min':'ahora'}`,{body:`${l.rocket}${l.loc?' · '+l.loc:''}. ${l.video?'Pulsa para ver el directo.':'Pulsa para abrir SpaceX Play.'}`,tag:'sxp-'+l.id,icon:'og.png'});
+  if(notifOK()&&Notification.permission==='granted'){const ti=`${mname(l)} despega ${mins>0?'en '+mins+' min':'ahora'}`,op={body:`${l.rocket}${l.loc?' · '+l.loc:''}. ${l.video?'Pulsa para ver el directo.':'Pulsa para abrir SpaceX Play.'}`,tag:'sxp-'+l.id,icon:'icons/icon-192.png',badge:'icons/icon-192.png',data:{url:u}};
+    if(SW_REG&&SW_REG.showNotification){SW_REG.showNotification(ti,op).catch(()=>{});return}
+    try{const n=new Notification(`${mname(l)} despega ${mins>0?'en '+mins+' min':'ahora'}`,{body:`${l.rocket}${l.loc?' · '+l.loc:''}. ${l.video?'Pulsa para ver el directo.':'Pulsa para abrir SpaceX Play.'}`,tag:'sxp-'+l.id,icon:'icons/icon-192.png'});
     n.onclick=()=>{try{window.focus()}catch(e){}window.open(u,'_blank','noopener');n.close()}}catch(e){}}}
 function checkAlerts(){if(!D)return;const a=alSet(),now=Date.now();let ch=false;
   for(const l of (AL_UP||D.upcoming)){if(!alertable(l)||!wanted(a,l))continue;const ms=new Date(l.net)-now;
@@ -473,3 +476,24 @@ function startAlerts(){renderAlerts();checkAlerts();setInterval(checkAlerts,20e3
     const on=k==='all'?a.all:!!a.ids[id];LS.set('alerts',a);if(on)await askPerm();
     renderAlerts();const f=k==='all'?$('#alerts button[data-al="all"]'):document.querySelector(`${inHero?'.hero ':'.card:not(.hero) '}[data-alid="${id}"] button[data-al="one"]`);try{f&&f.focus()}catch(e){}
     aviso(on?`Aviso activado: ${AVISO_MIN} minutos antes${k==='all'?' de cada lanzamiento':''}.`:'Aviso desactivado.');checkAlerts()})}
+
+// App instalable (manifest y service worker): se abre como app desde la pantalla de inicio y funciona sin conexión con los últimos datos guardados.
+let SW_REG=null,INST_EV=null;
+const standalone=()=>{try{return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){return false}};
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function renderInstall(){const el=$('#install');if(!el)return;const ins=LS.get('installed',false);
+  if(standalone()){el.innerHTML='';return}
+  let body='';
+  if(INST_EV)body=`<p class="mut">Instala SpaceX Play en tu móvil u ordenador: se abre desde la pantalla de inicio como una app, a pantalla completa, y sin conexión enseña los últimos datos guardados.</p><div class="opts"><button type="button" data-inst="go">Instalar la app</button></div>`;
+  else if(isIOS())body=`<p class="mut">En iPhone o iPad: abre esta página en Safari, pulsa el botón Compartir y elige «Añadir a pantalla de inicio». Se abrirá como una app, a pantalla completa, y sin conexión enseñará los últimos datos guardados.</p>`;
+  else if(ins)body=`<p class="mut">Ya tienes SpaceX Play instalada: búscala en tu pantalla de inicio o en tus aplicaciones.</p>`;
+  else{el.innerHTML='';return}
+  el.innerHTML=`<div class="card"><div class="kick">Llévatela como app</div>${body}</div>`;
+  const b=el.querySelector('[data-inst="go"]');if(b)b.onclick=async()=>{const ev=INST_EV;if(!ev)return;INST_EV=null;try{ev.prompt();const r=await ev.userChoice;if(r&&r.outcome==='accepted'){LS.set('installed',true);aviso('SpaceX Play se está instalando.')}}catch(e){}renderInstall()}}
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();INST_EV=e;renderInstall()});
+addEventListener('appinstalled',()=>{INST_EV=null;LS.set('installed',true);renderInstall()});
+function offlineNote(){const f=$('#foot');if(!f)return;let n=$('#offline');
+  if(navigator.onLine===false){if(!n){n=document.createElement('div');n.id='offline';n.className='mut';n.setAttribute('role','status');f.appendChild(n)}
+    n.textContent=`Sin conexión: estás viendo los últimos datos guardados${D&&D.generated?' ('+fmt(D.generated)+')':''}.`}else if(n)n.remove()}
+addEventListener('online',offlineNote);addEventListener('offline',offlineNote);
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>{SW_REG=r}).catch(()=>{})})}

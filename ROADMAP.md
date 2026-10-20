@@ -17,6 +17,6 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Logros (primer acierto, 5 predicciones seguidas, apostar contra la racha y acertar...) (hecho el 20 oct, 12:56)
 - [x] Ficha de misión al pulsar un lanzamiento: descripción, propulsor, zona de aterrizaje, enlace al directo (hecho el 20 oct, 14:51)
 - [x] Enlace a "Fórmate" en el globo: la página de la misión y, de vez en cuando, las ofertas de trabajo de SpaceX (hecho el 20 oct, 16:50)
-- [ ] Reto rápido de 30 segundos con 3 preguntas
+- [x] Reto rápido de 30 segundos con 3 preguntas (hecho el 20 oct, 18:57)
 - [ ] Probabilidad meteorológica en las predicciones cuando esté disponible
 - [ ] Mapa con zonas de aterrizaje además de plataformas

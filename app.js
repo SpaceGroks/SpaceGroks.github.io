@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
@@ -132,14 +132,18 @@ function buildQuiz(){
   let pool=D.previous.filter(l=>{const t=new Date(l.net).getTime();return t>=from&&t<mon.getTime()});
   let title=`Misiones de la semana del ${fmtD(from)} al ${fmtD(mon.getTime()-DAY)}`;
   if(pool.length<2){pool=D.previous.slice(0,6);title='Últimas misiones'}
-  const key=mon.toISOString().slice(0,10),r=rng(key),all=D.previous;
+  const key=mon.toISOString().slice(0,10),r=rng(key);
+  return{key,title,qs:shuffle(quizQs(pool,D.previous,r),r).slice(0,10)};
+}
+// Preguntas con datos reales de los lanzamientos de pool (opciones sacadas de all). Cada una lleva la misión en .m
+function quizQs(pool,all,r){
   const uniq=a=>[...new Set(a.filter(Boolean))];
   const serials=uniq(all.flatMap(l=>(l.stages||[]).map(s=>s.serial)).filter(s=>!/Unknown/.test(s)));
   const lands=uniq(all.flatMap(l=>(l.stages||[]).map(s=>s.land_loc_name)));
   const pads=uniq(all.map(l=>l.loc));const orbs=uniq(all.map(l=>l.orbit)).filter(o=>o!=='N/A');
   const mk=(q,right,cands)=>{const wrong=shuffle(cands.filter(c=>c!==right),r).slice(0,3);return{q,right,opts:shuffle([right,...wrong],r)}};
   const Q=[];
-  pool.forEach(l=>{const b=(l.stages||[])[0]||{},m=mname(l);
+  pool.forEach(l=>{const b=(l.stages||[])[0]||{},m=mname(l),n0=Q.length;
     if(b.serial&&!/Unknown/.test(b.serial))Q.push(mk(`¿Qué propulsor lanzó ${m}?`,b.serial,serials));
     if(b.flight>1){const f=b.flight;Q.push(mk(`¿Qué número de vuelo hacía el propulsor en ${m}?`,String(f),[f-3,f-1,f+1,f+2,f+4].filter(x=>x>0).map(String)))}
     if(b.land_loc_name&&b.land_success)Q.push(mk(`¿Dónde aterrizó el propulsor de ${m}?`,b.land_loc_name,lands));
@@ -148,21 +152,66 @@ function buildQuiz(){
     if(td!=null&&td>0){const c=[td-20,td-10,td-5,td+5,td+10,td+20].filter(x=>x>0);Q.push(mk(`¿Cuántos días pasaron entre el vuelo anterior del propulsor ${b.serial} y ${m}?`,`${td} días`,c.map(x=>`${x} días`)))}
     if(b.land_success&&(DRONE.test(b.land_loc_name||'')||LZ.test(b.land_loc_name||''))){const right=DRONE.test(b.land_loc_name)?'En un barco dron en el mar':'En una plataforma en tierra';Q.push({q:`¿Cómo se recuperó el propulsor de ${m}?`,right,opts:shuffle(['En un barco dron en el mar','En una plataforma en tierra','No se recuperó (se perdió en el mar)'],r)})}
     {const dd=new Date(l.net),right=dd.toLocaleDateString('es-ES',{weekday:'long'});Q.push(mk(`¿Qué día de la semana despegó ${m}? (hora de tu dispositivo)`,right,['lunes','martes','miércoles','jueves','viernes','sábado','domingo']))}
-    if(l.orbit&&l.orbit!=='N/A'&&orbs.length>2)Q.push(mk(`¿A qué órbita iba ${m}?`,orb(l.orbit),orbs.map(orb)));});
-  return{key,title,qs:shuffle(Q,r).slice(0,10)};
+    if(l.orbit&&l.orbit!=='N/A'&&orbs.length>2)Q.push(mk(`¿A qué órbita iba ${m}?`,orb(l.orbit),orbs.map(orb)));
+    for(let i=n0;i<Q.length;i++)Q[i].m=l.id;});
+  return Q;
 }
+function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="qwk"></div>';return $('#qwk')}
 function renderQuiz(){
+  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),answered=Object.keys(st.ans).length;
   const correct=Z.qs.filter((q,i)=>st.ans[i]===q.right).length;
   let h=`<div class="card"><b>Reto semanal</b><div class="mut">${Z.title}. Cada lunes sale un reto nuevo. 10 puntos por acierto.</div>
   <div style="margin-top:6px">${answered}/${Z.qs.length} respondidas · ${correct} aciertos</div><div class="bar"><i style="width:${Z.qs.length?100*answered/Z.qs.length:0}%"></i></div></div>`;
   h+=Z.qs.map((q,i)=>{const a=st.ans[i];return `<div class="card"><div id="qz-${i}">${i+1}. ${q.q}</div><div class="opts" role="group" aria-labelledby="qz-${i}">${q.opts.map(o=>`<button type="button" data-i="${i}" data-v="${esc(o)}" ${a?'disabled':''} class="${a?(o===q.right?'right':(o===a?'wrong':'')):''}">${esc(o)}${a&&o===q.right?'<span class="sr"> (respuesta correcta)</span>':a&&o===a?'<span class="sr"> (tu respuesta, incorrecta)</span>':''}</button>`).join('')}</div>${a?`<div class="sr" role="status">${a===q.right?'Acierto':'Fallo. La correcta era '+esc(q.right)}</div>`:''}</div>`}).join('');
   if(!Z.qs.length)h+='<p class="mut">No hay datos suficientes para el reto de esta semana.</p>';
-  $('#quiz').innerHTML=h;
-  $('#quiz').querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{const s=LS.get('quiz_'+Z.key,{ans:{}});const i=b.dataset.i;if(s.ans[i])return;
+  QW.innerHTML=h;
+  QW.querySelectorAll('.opts button').forEach(b=>b.onclick=()=>{const s=LS.get('quiz_'+Z.key,{ans:{}});const i=b.dataset.i;if(s.ans[i])return;
     s.ans[i]=b.dataset.v;LS.set('quiz_'+Z.key,s);if(b.dataset.v===Z.qs[i].right)addPts('quiz',10);completeDaily('quiz');renderQuiz();
-    const nx=$('#quiz').querySelector(`.opts button[data-i="${+i+1}"]`)||$('#qz-'+i);if(nx&&nx.focus)nx.focus({preventScroll:false})});
+    const nx=QW.querySelector(`.opts button[data-i="${+i+1}"]`)||$('#qz-'+i);if(nx&&nx.focus)nx.focus({preventScroll:false})});
 }
+// ---------- Reto rápido: 3 preguntas en 30 segundos ----------
+const RAPID_S=30;
+let RP=null;
+const rapidPts=(ok,left)=>ok*5+(ok===3?5+Math.min(10,Math.floor(left/2)):0);
+function rapidState(){const s=LS.get('rapid',{best:0,plays:0});if(s.d!==dayKey()){s.d=dayKey();s.today=0;s.todayPlays=0}return s}
+function rapidQs(){// 3 preguntas al azar sobre 3 misiones distintas de los últimos lanzamientos
+  if(!D||!D.previous||!D.previous.length)return[];const r=Math.random,seen=new Set(),out=[];
+  for(const q of shuffle(quizQs(D.previous.slice(0,40),D.previous,r),r)){if(seen.has(q.m)||q.opts.length<2)continue;seen.add(q.m);out.push(q);if(out.length===3)break}
+  return out.length===3?out:[]}
+function renderRapid(){const el=$('#rapid');if(!el||!D)return;const s=rapidState(),ok=rapidQs().length===3;
+  let h=`<div class="card rapid"><div class="kick">Reto rápido · ${RAPID_S} segundos</div>
+  <p class="mut">Tres preguntas sobre misiones reales de SpaceX y ${RAPID_S} segundos para todas. 5 puntos por acierto; si aciertas las tres, 5 más y 1 punto por cada 2 segundos que te sobren (hasta 10). Puedes jugar las veces que quieras: cada día cuenta tu mejor partida, y repetir solo suma si la mejoras.</p>
+  <div class="stats"><div><b>${s.today||0}</b>tu mejor hoy (de 30)</div><div><b>${s.best||0}</b>récord</div><div><b>${s.plays||0}</b>partidas jugadas</div></div>`;
+  if(RP&&RP.done)h+=rapidSummary();
+  h+=ok?`<div class="opts"><button type="button" class="rp-go">${RP&&RP.done?'Jugar otra vez':'Empezar (30 s)'}</button></div>`:'<p class="mut">No hay datos suficientes para el reto rápido ahora mismo.</p>';
+  el.innerHTML=h+'</div>';const b=el.querySelector('.rp-go');if(b)b.onclick=rapidStart}
+function rapidSummary(){const R=RP;return `<div class="rp-res" role="status"><h3>${R.ok} de 3 · +${R.pts} puntos${R.gain<R.pts?` <span class="mut">(suma ${R.gain}: ${R.gain?'mejoras tu partida de hoy':'no mejora tu mejor partida de hoy'})</span>`:''}</h3>
+  ${R.timeout?'<p class="mut">Se acabó el tiempo.</p>':R.ok===3?`<p class="mut">Te sobraron ${R.left} segundos.</p>`:''}
+  ${R.qs.map((q,i)=>{const a=R.ans[i],ok=a===q.right;return `<div class="rp-q">${ic(ok)} ${esc(q.q)}<br><span class="mut">${a==null?'Sin responder':'Tu respuesta: '+esc(a)}</span>${ok?'':` <span class="mut">· Correcta:</span> <b>${esc(q.right)}</b>`}</div>`}).join('')}</div>`}
+function rapidStart(){const qs=rapidQs();if(qs.length<3)return;clearInterval(RP&&RP.iv);
+  RP={qs,i:0,ans:{},end:Date.now()+RAPID_S*1e3,run:true,lock:false,warned:false};
+  $('#rapid').innerHTML=`<div class="card rapid on"><div class="kick">Reto rápido · ${RAPID_S} segundos</div>
+  <div class="rp-top"><span id="rp-n"></span><b id="rp-t" aria-hidden="true">${RAPID_S} s</b></div><div class="bar" aria-hidden="true"><i id="rp-bar" style="width:100%"></i></div>
+  <div class="sr" id="rp-live" role="status" aria-live="polite"></div>
+  <div id="rp-q" class="rp-qt"></div><div class="opts" id="rp-o" role="group" aria-labelledby="rp-q"></div></div>`;
+  rapidShow();RP.iv=setInterval(rapidTick,200);rapidTick()}
+function rapidShow(){const q=RP.qs[RP.i];$('#rp-n').textContent=`Pregunta ${RP.i+1} de 3`;$('#rp-q').textContent=q.q;
+  const o=$('#rp-o');o.innerHTML=q.opts.map(v=>`<button type="button" data-v="${esc(v)}">${esc(v)}</button>`).join('');
+  o.querySelectorAll('button').forEach(b=>b.onclick=()=>rapidAnswer(b));const f=o.querySelector('button');if(f&&f.focus)f.focus({preventScroll:true})}
+function rapidTick(){if(!RP||!RP.run)return;const ms=Math.max(0,RP.end-Date.now()),sec=Math.ceil(ms/1e3);
+  const t=$('#rp-t'),b=$('#rp-bar');if(t){t.textContent=sec+' s';t.classList.toggle('low',sec<=10)}if(b)b.style.width=(100*ms/(RAPID_S*1e3))+'%';
+  if(sec<=10&&!RP.warned){RP.warned=true;const lv=$('#rp-live');if(lv)lv.textContent='Quedan 10 segundos.'}
+  if(ms<=0&&!RP.lock)rapidEnd(true)}
+function rapidAnswer(b){if(!RP||!RP.run||RP.lock)return;const q=RP.qs[RP.i],v=b.dataset.v,ok=v===q.right;RP.ans[RP.i]=v;RP.lock=true;RP.end+=450;// la pausa para ver la respuesta no cuenta
+  $('#rp-o').querySelectorAll('button').forEach(x=>{x.disabled=true;if(x.dataset.v===q.right)x.classList.add('right');else if(x===b)x.classList.add('wrong')});
+  const lv=$('#rp-live');if(lv)lv.textContent=ok?'Acierto':'Fallo. La correcta era '+q.right;
+  setTimeout(()=>{if(!RP||!RP.run)return;RP.lock=false;if(RP.i<2){RP.i++;rapidShow()}else rapidEnd(false)},450)}
+function rapidEnd(timeout){if(!RP||!RP.run)return;RP.run=false;clearInterval(RP.iv);
+  const left=timeout?0:Math.min(RAPID_S,Math.max(0,Math.floor((RP.end-Date.now())/1e3))),ok=RP.qs.filter((q,i)=>RP.ans[i]===q.right).length,pts=rapidPts(ok,left);
+  const s=rapidState(),gain=Math.max(0,pts-(s.today||0));s.today=Math.max(s.today||0,pts);s.best=Math.max(s.best||0,pts);s.plays=(s.plays||0)+1;s.todayPlays=(s.todayPlays||0)+1;LS.set('rapid',s);
+  Object.assign(RP,{done:true,timeout,left,ok,pts,gain});if(gain)addPts('rapid',gain);completeDaily('rapid');
+  renderRapid();const g=$('#rapid').querySelector('.rp-go');if(g&&g.focus)g.focus({preventScroll:true})}
 // ---------- Propulsores ----------
 let fleetSort='flights';
 function renderFleet(){
@@ -259,6 +308,7 @@ function retosGlobo(){
   {const X=LS.get('expert',{}),l=ups.find(l=>precise(l)&&!X[l.id]);if(l)R.push({t:'Análisis de experto',m:`¿Cuántos minutos se retrasará ${mname(l)} respecto a su hora prevista (${fmt(l.net)})? Razona como un ingeniero con las pistas reales y gana hasta 60 puntos.`,tab:'predict',btn:'Analizar',k:'expert'});}
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),falta=Z.qs.length-Object.keys(st.ans).length;
   if(falta>0)R.push({t:'Reto semanal',m:`Te quedan ${falta} preguntas sobre las misiones reales de esta semana. Solo los mejores directores de vuelo las aciertan todas. ¿Tú qué?`,tab:'quiz',btn:'Aceptar el reto',k:'quiz'});
+  if(rapidQs().length===3){const rs=rapidState();R.push({t:'Reto rápido',m:`Tres preguntas sobre misiones reales de SpaceX en 30 segundos. ${rs.best?`Tu récord es de ${rs.best} puntos. ¿Lo superas?`:'Hasta 30 puntos si las aciertas todas rápido.'}`,tab:'quiz',btn:'Jugar 30 segundos',k:'rapid'});}
   {const m=fdMissions()[0];if(m)R.push({t:'Modo director de vuelo',m:`Dirige la cuenta atrás real de ${mname(m)}: pulsa en el momento justo de cada paso, de la carga de combustible a la separación de etapas${fdSteps(m).some(s=>s.ids.includes(19))?' y el aterrizaje':''}. Hasta 50 puntos.`,tab:'flight',btn:'Dirigir la cuenta atrás',k:'flight'});}
   const fl=D.previous.flatMap(l=>(l.stages||[]).map(s=>({...s,l}))).filter(s=>s.flight).sort((a,b)=>b.flight-a.flight)[0];
   if(fl)R.push({t:'Récord de reutilización',m:`El propulsor ${fl.serial} ya lleva ${fl.flight} vuelos. Antes los cohetes se tiraban tras un solo uso. ¿Sabrías decir cuál es el siguiente en llegar a esa cifra?`,tab:'fleet',btn:'Ver la flota',k:'fleet'});

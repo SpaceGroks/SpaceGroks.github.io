@@ -129,3 +129,7 @@ details.learn .lrn{margin:6px 0 8px}details.learn dt{font-size:12px;text-transfo
 .fdnow{width:100%;max-width:520px;margin:14px auto 0;min-height:72px;font-size:24px;font-family:Orbitron,Inter,sans-serif;touch-action:manipulation}
 .fdnow:active{transform:scale(.98)}
 .fdres{min-height:2.6em;margin-top:10px}
+.achc summary{cursor:pointer;min-height:28px;list-style-position:inside}.achc[open] summary{margin-bottom:6px}
+.achs{list-style:none;padding:0;margin:10px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.ach{display:flex;gap:10px;align-items:flex-start;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:10px 12px;opacity:.72}
+.ach.on{opacity:1;border-color:rgba(61,220,132,.4)}.ach .ai{font-size:24px;line-height:1.2;flex:0 0 auto}.ach .tag{margin:0 0 0 4px;padding:1px 8px}.ach .bar{margin-top:4px}

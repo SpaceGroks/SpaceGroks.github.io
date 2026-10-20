@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -60,9 +60,9 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
-  $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`}
+  $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
 function upcomingFuture(){const now=Date.now();return D.upcoming.filter(l=>new Date(l.net)>now-3*H)}
 function renderNext(){
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -414,7 +414,7 @@ function completeDaily(k){try{const d=LS.get('daily',null);if(!d||d.d!==dayKey()
   aviso(`Desafío del día completado: +${d.pts} puntos.`);renderDaily()}catch(e){}}
 function goReto(r){if(r.url){window.open(r.url,'_blank','noopener');completeDaily(r.k)}else{const b=document.querySelector(`nav button[data-tab="${r.tab}"]`);if(b)b.click();try{scrollTo({top:0})}catch(e){}}}
 function aviso(t){let a=$('#aviso');if(!a){a=document.createElement('div');a.id='aviso';a.className='aviso';a.setAttribute('role','status');document.body.appendChild(a)}
-  a.textContent=t;a.classList.add('show');clearTimeout(a._t);a._t=setTimeout(()=>a.classList.remove('show'),4500)}
+  a.textContent=a.classList.contains('show')&&a.textContent&&!a.textContent.includes(t)?a.textContent+' '+t:t;a.classList.add('show');clearTimeout(a._t);a._t=setTimeout(()=>a.classList.remove('show'),4500)}
 function renderDaily(){const el=$('#daily');if(!el||!D)return;const st=LS.get('streak',{n:0,best:0}),n=streakNow(),d=retoDelDia();
   const sig=visitPts(n+1);
   el.innerHTML=`<div class="card daily"><div class="kick">Racha y desafío del día</div>
@@ -569,8 +569,47 @@ function fdResolve(err){const s=FD.st[FD.i],tooSoon=err!=null&&err<-3,p=err==nul
 function fdEnd(){FD.run=false;FD.done=true;removeEventListener('keydown',FD.key);
   const sum=FD.res.reduce((a,r)=>a+r.p,0),pts=Math.round(50*sum/(10*FD.st.length)),all=LS.get('flight',{}),old=all[FD.l.id]||{best:0,n:0},gain=Math.max(0,pts-old.best);
   all[FD.l.id]={best:Math.max(old.best,pts),n:old.n+1,at:Date.now()};LS.set('flight',all);if(gain)addPts('flight',gain);
-  FD.pts=pts;FD.gain=gain;completeDaily('flight');renderFlight();const r=$('#fd-sum');if(r&&r.focus)r.focus({preventScroll:false})}
+  FD.pts=pts;FD.gain=gain;completeDaily('flight');checkAch();renderFlight();const r=$('#fd-sum');if(r&&r.focus)r.focus({preventScroll:false})}
 function fdSummary(){const R=FD.res,ok=R.filter(r=>r.p>=6).length;
   return `<div class="card" id="fd-sum" tabindex="-1"><b>Cuenta atrás terminada: ${FD.pts} de 50</b><div class="mut">${ok} de ${R.length} pasos con 1,5 s de margen o menos.${FD.gain?` Sumas ${FD.gain} puntos nuevos.`:' No mejoras tu mejor marca, así que no suma puntos.'}</div>
   <div class="tscroll"><table><thead><tr><th>Paso</th><th>Hora real</th><th>Tu pulsación</th><th>Puntos</th></tr></thead><tbody>${R.map(r=>`<tr><td>${esc(r.ids.map(tlName).join(' + '))}</td><td>${fdClock(r.t)}</td><td>${r.err==null?'sin pulsar':r.err<-3?'demasiado pronto':Math.abs(r.err).toFixed(1)+' s '+(r.err<0?'antes':'tarde')}</td><td>${r.p}</td></tr>`).join('')}</tbody></table></div>
   <div class="mut">Tiempos de Launch Library 2 para ${esc(mname(FD.l))}. El margen se mide en segundos reales de juego, no de misión.</div></div>`}
+
+// ---------- Logros ----------
+// Se calculan con lo que ya guarda el navegador (predicciones, análisis, apuestas, retos, partidas y racha) frente a los datos reales.
+// Cada logro da sus puntos una sola vez (categoría ach); los desbloqueados se guardan en sxp_ach.
+function predAnswers(){return Object.values(LS.get('preds',{})).filter(p=>p.res).sort((a,b)=>(new Date(a.net)-new Date(b.net))||((a.resAt||0)-(b.resAt||0))).flatMap(p=>p.res)}
+function bestRun(a){let r=0,b=0;for(const x of a){r=x.ok?r+1:0;b=Math.max(b,r)}return b}
+const xDone=()=>Object.values(LS.get('expert',{})).filter(x=>x.res);
+const ACH=[
+ {id:'first',i:'🎯',t:'Primer acierto',d:'Acierta una pregunta de predicción.',p:10,pr:()=>[predAnswers().filter(r=>r.ok).length,1]},
+ {id:'full',i:'💯',t:'Pleno',d:'Acierta todas las preguntas de un mismo lanzamiento.',p:15,pr:()=>[Object.values(LS.get('preds',{})).some(p=>p.res&&p.res.length>=2&&p.res.every(r=>r.ok))?1:0,1]},
+ {id:'run5',i:'🔥',t:'Cinco seguidas',d:'Acierta 5 preguntas de predicción seguidas, por orden de lanzamiento.',p:20,pr:()=>[bestRun(predAnswers()),5]},
+ {id:'contra',i:'🦅',t:'Contra la racha',d:'Di que algo saldrá mal (la carga no llega a su órbita o el propulsor no aterriza) y acierta.',p:30,pr:()=>[predAnswers().some(r=>r.ok&&r.real==='No'&&r.q!=='A tiempo')?1:0,1]},
+ {id:'eng',i:'🛠️',t:'Ojo de ingeniero',d:'En un análisis de experto, acierta los minutos de retraso con 2 minutos de error o menos.',p:20,pr:()=>[xDone().some(x=>!x.res.void&&x.res.err<=2)?1:0,1]},
+ {id:'xp3',i:'🧠',t:'Analista',d:'Ten 3 análisis de experto resueltos con los datos reales.',p:10,pr:()=>[xDone().length,3]},
+ {id:'quiz',i:'🏆',t:'Reto perfecto',d:'Acierta todas las preguntas del reto semanal (con al menos 5 preguntas).',p:25,pr:()=>{const Z=buildQuiz(),s=LS.get('quiz_'+Z.key,{ans:{}});return[Z.qs.filter((q,i)=>s.ans[i]===q.right).length,Math.max(5,Z.qs.length)]}},
+ {id:'bet',i:'♻️',t:'Ojo para la flota',d:'Gana una apuesta «¿volverá a volar?» de un propulsor.',p:10,pr:()=>[Object.values(LS.get('bets',{})).some(b=>b.res&&b.res.ok)?1:0,1]},
+ {id:'fd1',i:'🕹️',t:'Primera cuenta atrás',d:'Termina una partida en modo director de vuelo.',p:5,pr:()=>[Object.values(LS.get('flight',{})).some(f=>f.n>0)?1:0,1]},
+ {id:'fd40',i:'⏱️',t:'Nervios de acero',d:'Consigue 40 de 50 o más en una cuenta atrás del modo director de vuelo.',p:20,pr:()=>[Math.max(0,...Object.values(LS.get('flight',{})).map(f=>f.best||0)),40]},
+ {id:'st3',i:'📅',t:'Tres días seguidos',d:'Entra 3 días seguidos.',p:10,pr:()=>[(LS.get('streak',{}).best)||0,3]},
+ {id:'st7',i:'🌕',t:'Una semana sin fallar',d:'Entra 7 días seguidos.',p:25,pr:()=>[(LS.get('streak',{}).best)||0,7]},
+ {id:'dd5',i:'⭐',t:'Cinco desafíos',d:'Completa 5 desafíos del día.',p:15,pr:()=>[(LS.get('streak',{}).retos)||0,5]}
+];
+let ACH_BUSY=false;
+function checkAch(){if(!D||ACH_BUSY)return;ACH_BUSY=true;
+  try{const got=LS.get('ach',{}),nw=[];
+    for(const a of ACH){if(got[a.id])continue;let pr;try{pr=a.pr()}catch(e){continue}if(pr[1]>0&&pr[0]>=pr[1]){got[a.id]={at:Date.now(),p:a.p};nw.push(a)}}
+    if(!nw.length)return;
+    LS.set('ach',got);const pts=nw.reduce((s,a)=>s+a.p,0),p=points();p.ach=(p.ach||0)+pts;LS.set('points',p);
+    aviso(nw.length===1?`Logro desbloqueado: ${nw[0].t} (+${pts} puntos).`:`${nw.length} logros desbloqueados: ${nw.map(a=>a.t).join(', ')} (+${pts} puntos).`);
+    renderLogros();renderScore();
+  }catch(e){}finally{ACH_BUSY=false}}
+function renderLogros(){const el=$('#logros');if(!el||!D)return;const got=LS.get('ach',{}),on=ACH.filter(a=>got[a.id]),pts=on.reduce((s,a)=>s+(got[a.id].p||a.p),0);
+  const li=a=>{const g=got[a.id];let pr=[0,1];try{pr=a.pr()}catch(e){}const c=Math.min(pr[0],pr[1]);
+    return `<li class="ach${g?' on':''}"><span class="ai" aria-hidden="true">${g?a.i:'🔒'}</span><div><b>${esc(a.t)}</b> <span class="tag${g?' ok':''}">+${a.p}</span><span class="sr">${g?' (conseguido)':' (bloqueado)'}</span><div class="mut">${esc(a.d)}</div><div class="mut">${g?'Conseguido el '+fmtD(g.at):pr[1]>1?`Llevas ${c} de ${pr[1]}`:'Todavía no'}</div>${!g&&pr[1]>1?`<div class="bar" aria-hidden="true"><i style="width:${100*c/pr[1]}%"></i></div>`:''}</div></li>`};
+  el.innerHTML=`<details class="card achc"${LS.get('ach_open',false)?' open':''}><summary><b>Logros</b> · ${on.length} de ${ACH.length} · ${pts} puntos</summary>
+  <p class="mut">Se desbloquean solos cuando tus predicciones, análisis, apuestas, retos y partidas se comparan con lo que pasó de verdad. Cada logro da sus puntos una vez.</p>
+  <div class="bar" aria-hidden="true"><i style="width:${100*on.length/ACH.length}%"></i></div>
+  <ul class="achs">${ACH.filter(a=>got[a.id]).concat(ACH.filter(a=>!got[a.id])).map(li).join('')}</ul></details>`;
+  const d=el.querySelector('details');d.ontoggle=()=>LS.set('ach_open',d.open)}

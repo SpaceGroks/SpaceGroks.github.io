@@ -119,3 +119,13 @@ blockquote.xq{margin:8px 0;padding:8px 12px;border-left:3px solid var(--acc2);co
 .al{margin-top:10px}.al button:disabled{opacity:.75}
 @media(prefers-reduced-motion:reduce){.alertbar{transform:translate(-50%,0);display:none}.alertbar.show{display:block}}
 details.learn .lrn{margin:6px 0 8px}details.learn dt{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--acc);margin-top:10px;font-weight:700}details.learn dd{margin:3px 0 0;line-height:1.5}details.learn a{display:inline-flex;align-items:center;min-height:44px}
+
+.fdl{display:block;margin-top:10px;font-weight:600}
+#fd-m{width:100%;max-width:520px;min-height:44px;margin-top:4px;padding:8px 10px;border-radius:10px;background:var(--card2);color:var(--txt);border:1px solid var(--line);font:inherit}
+.fdgo,.fdnow{display:block;min-height:48px;margin-top:12px;padding:10px 18px;border:0;border-radius:12px;background:linear-gradient(90deg,var(--acc),var(--acc2));color:#05070d;font:700 16px Inter,sans-serif;cursor:pointer}
+.fd{text-align:center}.fdclock{font-variant-numeric:tabular-nums}
+.fdnext{margin:14px auto 0;max-width:520px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card2)}
+.fdnext b{display:block;font-size:20px;margin:4px 0}
+.fdnow{width:100%;max-width:520px;margin:14px auto 0;min-height:72px;font-size:24px;font-family:Orbitron,Inter,sans-serif;touch-action:manipulation}
+.fdnow:active{transform:scale(.98)}
+.fdres{min-height:2.6em;margin-top:10px}

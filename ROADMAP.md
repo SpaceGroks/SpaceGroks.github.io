@@ -13,7 +13,7 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Ficha de cada propulsor con su historial de vuelos, tiempo entre vuelos y apuesta "¿volverá a volar?" (hecho en el reto semanal del 19 oct)
 - [x] "Aprende en 1 minuto" por misión: qué lleva, a qué órbita va y para qué sirve (hecho el 19 oct, 20:56)
 - [x] Instalable en el móvil como app (manifest y service worker)
-- [ ] Modo director de vuelo: pasos reales de la cuenta atrás de un Falcon 9 (carga de combustible, separación de etapas, aterrizaje) pulsando en el momento justo
+- [x] Modo director de vuelo: pasos reales de la cuenta atrás de un Falcon 9 (carga de combustible, separación de etapas, aterrizaje) pulsando en el momento justo (hecho el 20 oct, 11:02)
 - [ ] Logros (primer acierto, 5 predicciones seguidas, apostar contra la racha y acertar...)
 - [ ] Ficha de misión al pulsar un lanzamiento: descripción, propulsor, zona de aterrizaje, enlace al directo
 - [ ] Enlace a "Fórmate" en el globo: la página de la misión y, de vez en cuando, las ofertas de trabajo de SpaceX

@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();renderNext();renderPredict();renderQuiz();renderFleet();renderLog();renderDaily();renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`}
 // ---------- Próximo ----------
@@ -248,6 +248,7 @@ function retosGlobo(){
   {const X=LS.get('expert',{}),l=ups.find(l=>precise(l)&&!X[l.id]);if(l)R.push({t:'Análisis de experto',m:`¿Cuántos minutos se retrasará ${mname(l)} respecto a su hora prevista (${fmt(l.net)})? Razona como un ingeniero con las pistas reales y gana hasta 60 puntos.`,tab:'predict',btn:'Analizar',k:'expert'});}
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),falta=Z.qs.length-Object.keys(st.ans).length;
   if(falta>0)R.push({t:'Reto semanal',m:`Te quedan ${falta} preguntas sobre las misiones reales de esta semana. Solo los mejores directores de vuelo las aciertan todas. ¿Tú qué?`,tab:'quiz',btn:'Aceptar el reto',k:'quiz'});
+  {const m=fdMissions()[0];if(m)R.push({t:'Modo director de vuelo',m:`Dirige la cuenta atrás real de ${mname(m)}: pulsa en el momento justo de cada paso, de la carga de combustible a la separación de etapas${fdSteps(m).some(s=>s.ids.includes(19))?' y el aterrizaje':''}. Hasta 50 puntos.`,tab:'flight',btn:'Dirigir la cuenta atrás',k:'flight'});}
   const fl=D.previous.flatMap(l=>(l.stages||[]).map(s=>({...s,l}))).filter(s=>s.flight).sort((a,b)=>b.flight-a.flight)[0];
   if(fl)R.push({t:'Récord de reutilización',m:`El propulsor ${fl.serial} ya lleva ${fl.flight} vuelos. Antes los cohetes se tiraban tras un solo uso. ¿Sabrías decir cuál es el siguiente en llegar a esa cifra?`,tab:'fleet',btn:'Ver la flota',k:'fleet'});
   {const bs=LS.get('bets',{});const cand=D.previous.flatMap(l=>(l.stages||[]).map(s=>s.serial)).find(x=>{if(!x||/Unknown/.test(x)||(bs[x]&&!bs[x].res))return false;const u=boosterHist(x).at(-1);return u&&u.s.land_attempt!==false&&u.s.land_success!==false});
@@ -497,3 +498,79 @@ function offlineNote(){const f=$('#foot');if(!f)return;let n=$('#offline');
     n.textContent=`Sin conexión: estás viendo los últimos datos guardados${D&&D.generated?' ('+fmt(D.generated)+')':''}.`}else if(n)n.remove()}
 addEventListener('online',offlineNote);addEventListener('offline',offlineNote);
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>{SW_REG=r}).catch(()=>{})})}
+
+// ---------- Modo director de vuelo (pasos reales de la cuenta atrás de Launch Library 2) ----------
+const TL_ES={1:['Luz verde a la carga de propelente','El director de lanzamiento confirma que se puede cargar el propelente'],
+ 2:['Carga de propelente','Empieza la carga de propelente'],3:['Oxígeno líquido en la 1.ª etapa','Empieza la carga de oxígeno líquido en la primera etapa'],
+ 4:['Oxígeno líquido en la 2.ª etapa','Empieza la carga de oxígeno líquido en la segunda etapa'],5:['Enfriamiento de motores','Empieza el enfriamiento de los motores'],
+ 6:['Arranque del ordenador de vuelo','El ordenador de a bordo toma el control de la cuenta atrás y hace las últimas comprobaciones'],
+ 7:['Presurización de tanques','Los tanques se presurizan a nivel de vuelo'],8:['Luz verde al lanzamiento','El director de lanzamiento confirma que se puede lanzar'],
+ 9:['Ignición','Empieza la secuencia de encendido de los motores'],10:['Despegue','Primer movimiento hacia arriba del cohete'],
+ 11:['Max-Q','Momento de máxima presión aerodinámica sobre el cohete'],12:['MECO','Se apagan los motores de la primera etapa'],
+ 13:['Separación de etapas','La segunda etapa se separa de la primera'],14:['SES-1','Primer encendido del motor de la segunda etapa'],
+ 15:['Separación de la cofia','Se suelta la cofia que protege la carga'],16:['Encendido de reentrada','Empieza el encendido de la primera etapa para entrar en la atmósfera'],
+ 17:['Fin del encendido de reentrada','Termina el encendido de reentrada en la atmósfera'],18:['Encendido de aterrizaje','Empieza el encendido de aterrizaje de la primera etapa'],
+ 19:['Aterrizaje de la 1.ª etapa','La primera etapa se posa'],20:['SECO-1','Primer apagado del motor de la segunda etapa'],
+ 21:['SES-2','Segundo encendido del motor de la segunda etapa'],22:['SECO-2','Segundo apagado del motor de la segunda etapa'],
+ 23:['Despliegue de los Starlink','Se sueltan los satélites Starlink'],35:['Separación de la carga','La carga se separa del cohete'],
+ 36:['Retirada del brazo de la tripulación','Se retira el brazo de acceso de la tripulación'],37:['Escape de Dragon armado','Se arma el sistema de escape de Dragon'],
+ 38:['Dragon con energía propia','Dragon pasa a su energía interna'],39:['Encendido de regreso','Empieza el encendido de regreso (boostback) de la primera etapa'],
+ 40:['Fin del encendido de regreso','Termina el encendido de regreso (boostback)'],41:['Separación de Dragon','Dragon se separa de la segunda etapa'],
+ 42:['Apertura del cono de Dragon','Empieza a abrirse el cono delantero de Dragon'],78:['Inicio del despliegue de la carga','Empieza la secuencia de despliegue de la carga'],
+ 79:['Fin del despliegue de la carga','Termina la secuencia de despliegue de la carga'],107:['Giro de la primera etapa','La primera etapa gira para orientarse']};
+const tlName=id=>(TL_ES[id]||(D.tl_types||{})[id]||['Paso '+id])[0];
+const tlDesc=id=>(TL_ES[id]||(D.tl_types||{})[id]||['',''])[1];
+// Se juega hasta el aterrizaje si lo hay (si no, hasta T+10 min); pasos a la misma hora van juntos
+function fdSteps(l){const tl=(l.tl||[]).filter(e=>e[1]<=1200),land=tl.find(e=>e[0]===19),end=land?land[1]:600,g=[];
+  tl.filter(e=>e[1]<=end).forEach(([id,t])=>{const p=g.at(-1);if(p&&p.t===t){if(!p.ids.includes(id))p.ids.push(id)}else g.push({t,ids:[id]})});return g}
+function fdMissions(){const now=Date.now(),ok=l=>/Falcon 9/.test(l.rocket||'')&&fdSteps(l).length>=5;
+  return [...D.upcoming.filter(l=>ok(l)&&new Date(l.net)>now-3*H),...D.previous.filter(ok)].filter((l,i,a)=>a.findIndex(x=>x.id===l.id)===i).slice(0,16)}
+// Velocidad del reloj: x40 en la carga, x3 del último minuto a T+3 min, x8 después (fija, no depende de la misión)
+const FD_SEG=[[-Infinity,-60,40],[-60,180,3],[180,Infinity,8]];
+const fdSpeed=m=>FD_SEG.find(s=>m>=s[0]&&m<s[1])[2];
+function fdReal(a,b){if(a>b)return -fdReal(b,a);let r=0;for(const[x,y,v]of FD_SEG){const lo=Math.max(a,x),hi=Math.min(b,y);if(hi>lo)r+=(hi-lo)/v}return r}
+const fdPts=e=>{e=Math.abs(e);return e<=.5?10:e<=1.5?6:e<=3?3:0};
+const fdClock=m=>{const a=Math.abs(Math.round(m));return (m<0&&a?'T- ':'T+ ')+String(Math.floor(a/60)).padStart(2,'0')+':'+String(a%60).padStart(2,'0')};
+let FD=null,fdSel=null;
+function fdLabel(l){const f=new Date(l.net)>Date.now();return `${mname(l)} · ${f?'próximo, '+fmt(l.net):fmtD(l.net)}`}
+function renderFlight(){const el=$('#flight');if(!el||!D)return;if(FD&&FD.run)return;
+  const ms=fdMissions();if(!ms.length){el.innerHTML='<div class="card"><b>Modo director de vuelo</b><p class="mut">Ahora mismo Launch Library 2 no da los pasos de la cuenta atrás de ningún Falcon 9.</p></div>';return}
+  const l=ms.find(x=>x.id===fdSel)||ms[0];fdSel=l.id;const st=fdSteps(l),rec=LS.get('flight',{})[l.id],b=(l.stages||[])[0]||{};
+  let h=`<div class="card"><div class="kick">Modo director de vuelo</div><b>Dirige la cuenta atrás real de un Falcon 9</b>
+  <p class="mut">Los pasos y sus tiempos son los que publica Launch Library 2 para esta misión. El reloj corre a x40 durante la carga de combustible, a x3 desde el último minuto hasta T+3 min y a x8 después. Te decimos qué toca, pero no cuándo: pulsa «¡Ahora!» (o la barra espaciadora) justo en ese momento. Acertar con medio segundo de margen da 10, con 1,5 s 6 y con 3 s 3. Al acabar ganas hasta 50 puntos por misión; repetirla solo suma si mejoras tu mejor marca.</p>
+  <label class="fdl" for="fd-m">Misión</label><select id="fd-m">${ms.map(x=>`<option value="${esc(x.id)}"${x.id===l.id?' selected':''}>${esc(fdLabel(x))}</option>`).join('')}</select>
+  <div class="mut" style="margin-top:6px">${st.length} pasos, de ${fdClock(st[0].t)} a ${fdClock(st.at(-1).t)}${b.land_loc_name&&st.some(s=>s.ids.includes(19))?` · aterriza en ${esc(b.land_loc_name)}`:''}${rec?` · tu mejor marca: ${rec.best} de 50`:''}</div>
+  <button type="button" class="fdgo" id="fd-start">Empezar la cuenta atrás</button></div><div id="fd-play"></div>`;
+  if(FD&&FD.done&&FD.l.id===l.id)h+=fdSummary();
+  el.innerHTML=h;$('#fd-m').onchange=e=>{fdSel=e.target.value;FD=null;renderFlight()};$('#fd-start').onclick=()=>fdStart(l)}
+function fdStart(l){const st=fdSteps(l);FD={l,st,i:0,m:st[0].t-90,res:[],run:true,last:null};
+  $('#flight').innerHTML=`<div class="card fd"><div class="kick">${esc(mname(l))} · director de vuelo</div>
+  <div class="big fdclock" id="fd-clock" role="timer" aria-live="off">${fdClock(FD.m)}</div><div class="mut" id="fd-speed"></div>
+  <div class="fdnext"><div class="mut">Siguiente paso (<span id="fd-n"></span>)</div><b id="fd-name"></b><div class="mut" id="fd-desc"></div></div>
+  <button type="button" class="fdnow" id="fd-now">¡Ahora!</button>
+  <div id="fd-res" role="status" aria-live="polite" class="fdres"></div>
+  <button type="button" class="lnk" id="fd-stop">Abandonar</button></div>`;
+  $('#fd-now').onclick=fdPress;$('#fd-stop').onclick=()=>{FD.run=false;FD=null;renderFlight()};
+  FD.key=e=>{if(e.code==='Space'&&FD&&FD.run&&$('#flight').classList.contains('on')&&document.activeElement!==$('#fd-now')){e.preventDefault();fdPress()}};
+  addEventListener('keydown',FD.key);fdShow();$('#fd-now').focus({preventScroll:true});requestAnimationFrame(fdTick)}
+function fdShow(){const s=FD.st[FD.i];if(!s)return;$('#fd-n').textContent=`${FD.i+1} de ${FD.st.length}`;
+  $('#fd-name').textContent=s.ids.map(tlName).join(' + ');$('#fd-desc').textContent=s.ids.map(tlDesc).filter(Boolean).join('. ')}
+function fdTick(ts){if(!FD||!FD.run)return;const dt=FD.last==null?0:Math.min(.1,(ts-FD.last)/1e3);FD.last=ts;
+  const c=$('#fd-clock');if(!c){FD.run=false;return}
+  if($('#flight').classList.contains('on')&&!document.hidden)FD.m+=dt*fdSpeed(FD.m);// se pausa al cambiar de pestaña
+  c.textContent=fdClock(FD.m);$('#fd-speed').textContent='Velocidad x'+fdSpeed(FD.m);
+  const s=FD.st[FD.i];if(s&&FD.m>s.t&&fdReal(s.t,FD.m)>3)fdResolve(null);
+  if(FD.run)requestAnimationFrame(fdTick)}
+function fdPress(){if(!FD||!FD.run)return;const s=FD.st[FD.i];if(!s)return;fdResolve(fdReal(s.t,FD.m))}
+function fdResolve(err){const s=FD.st[FD.i],tooSoon=err!=null&&err<-3,p=err==null||tooSoon?0:fdPts(err);
+  FD.res.push({t:s.t,ids:s.ids,err,p});
+  $('#fd-res').textContent=`${s.ids.map(tlName).join(' + ')} fue en ${fdClock(s.t)}: `+(err==null?'no pulsaste a tiempo, 0 puntos.':tooSoon?`demasiado pronto (${Math.abs(err).toFixed(1)} s antes), 0 puntos.`:`${Math.abs(err)<.05?'clavado':Math.abs(err).toFixed(1)+' s '+(err<0?'antes':'tarde')}, ${p} puntos.`);
+  FD.i++;if(FD.i>=FD.st.length)fdEnd();else fdShow()}
+function fdEnd(){FD.run=false;FD.done=true;removeEventListener('keydown',FD.key);
+  const sum=FD.res.reduce((a,r)=>a+r.p,0),pts=Math.round(50*sum/(10*FD.st.length)),all=LS.get('flight',{}),old=all[FD.l.id]||{best:0,n:0},gain=Math.max(0,pts-old.best);
+  all[FD.l.id]={best:Math.max(old.best,pts),n:old.n+1,at:Date.now()};LS.set('flight',all);if(gain)addPts('flight',gain);
+  FD.pts=pts;FD.gain=gain;completeDaily('flight');renderFlight();const r=$('#fd-sum');if(r&&r.focus)r.focus({preventScroll:false})}
+function fdSummary(){const R=FD.res,ok=R.filter(r=>r.p>=6).length;
+  return `<div class="card" id="fd-sum" tabindex="-1"><b>Cuenta atrás terminada: ${FD.pts} de 50</b><div class="mut">${ok} de ${R.length} pasos con 1,5 s de margen o menos.${FD.gain?` Sumas ${FD.gain} puntos nuevos.`:' No mejoras tu mejor marca, así que no suma puntos.'}</div>
+  <div class="tscroll"><table><thead><tr><th>Paso</th><th>Hora real</th><th>Tu pulsación</th><th>Puntos</th></tr></thead><tbody>${R.map(r=>`<tr><td>${esc(r.ids.map(tlName).join(' + '))}</td><td>${fdClock(r.t)}</td><td>${r.err==null?'sin pulsar':r.err<-3?'demasiado pronto':Math.abs(r.err).toFixed(1)+' s '+(r.err<0?'antes':'tarde')}</td><td>${r.p}</td></tr>`).join('')}</tbody></table></div>
+  <div class="mut">Tiempos de Launch Library 2 para ${esc(mname(FD.l))}. El margen se mide en segundos reales de juego, no de misión.</div></div>`}

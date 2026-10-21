@@ -497,6 +497,7 @@ function openMission(id,src,from){const l=findMis(id,src);if(!l)return;
    ${cu.length?`<p class="mut">Cliente: ${cu.map(esc).join(', ')}</p>`:''}
    ${win!=null&&fut?`<p class="mut">Ventana de lanzamiento: ${win?`${win} minutos, de ${new Date(l.ws).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})} a ${new Date(l.we).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}`:'instantánea (hay que despegar a la hora exacta)'}.</p>`:''}
    <h3>Propulsor y aterrizaje</h3>${stH}
+   <h3>Cronología del vuelo</h3>${tlHTML(l)}
    <h3>Directo</h3>${live}
    ${canPred||canFd?`<div class="opts">${canPred?'<button type="button" data-go="predict">Predecir este lanzamiento</button>':''}${canFd?'<button type="button" data-go="flight">Jugar su cuenta atrás</button>':''}</div>`:''}
    ${l.info?`<p><a href="${esc(l.info)}" target="_blank" rel="noopener">Página oficial de la misión<span class="sr"> (se abre en otra pestaña)</span></a></p>`:''}
@@ -513,6 +514,21 @@ function openMission(id,src,from){const l=findMis(id,src);if(!l)return;
   m.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const t=b.dataset.go;close(true);if(t==='flight'){fdSel=l.id;if(!(FD&&FD.run)){FD=null;renderFlight()}}
     showTab(t);try{history.replaceState(null,'','#'+t);scrollTo({top:0})}catch(e){}const tb=document.querySelector(`nav [data-tab="${t}"]`);try{tb&&tb.focus({preventScroll:true})}catch(e){}});
 }
+// ---------- Cronología del vuelo (línea de tiempo publicada en Launch Library 2) ----------
+const tFmt=t=>{const a=Math.abs(t),h=Math.floor(a/3600),m=Math.floor(a%3600/60),x=a%60;return (t<0?'T−':'T+')+(h?h+':'+String(m).padStart(2,'0'):m)+':'+String(x).padStart(2,'0')};
+function tlMedians(l){// mediana de cada paso en los otros lanzamientos del mismo cohete con cronología
+  const M={},o=(D.previous||[]).concat(D.upcoming||[]).filter(x=>x.id!==l.id&&x.rocket===l.rocket&&(x.tl||[]).length);
+  for(const x of o){const seen=new Set();for(const[id,t]of x.tl){if(seen.has(id))continue;seen.add(id);(M[id]=M[id]||[]).push(t)}}
+  const R={};for(const id in M){const v=M[id].sort((a,b)=>a-b);if(v.length>=3)R[id]={m:v.length%2?v[(v.length-1)/2]:Math.round((v[v.length/2-1]+v[v.length/2])/2),n:v.length}}return R}
+function tlHTML(l){const tl=(l.tl||[]).slice().sort((a,b)=>a[1]-b[1]);if(!tl.length)return '<p class="mut">Launch Library 2 todavía no publica la cronología de este vuelo.</p>';
+  const M=tlMedians(l),fut=new Date(l.net)>Date.now(),meco=tl.find(e=>e[0]===12),land=tl.find(e=>e[0]===19),last=tl.at(-1);
+  const rows=tl.map(([id,t])=>{const md=M[id],d=md&&t>0?t-md.m:null,cmp=d==null?'':Math.abs(d)<5?'<span class="mut">como de costumbre</span>':`<span class="mut">${Math.abs(d)} s ${d<0?'antes':'después'} que la mediana (${tFmt(md.m)})</span>`;
+    return `<li${id===10?' class="tl-lift"':''}><span class="tl-t">${tFmt(t)}</span> <span><b>${esc(tlName(id))}</b>${tlDesc(id)?` <span class="mut">· ${esc(tlDesc(id))}</span>`:''}${cmp?`<br>${cmp}`:''}</span></li>`}).join('');
+  const sum=[meco?`apagado del motor principal a ${tFmt(meco[1])}`:'',land?`aterrizaje de la primera etapa a ${tFmt(land[1])}`:'',last&&last!==land&&last[1]>0?`último paso a ${tFmt(last[1])}`:''].filter(Boolean).join(', ');
+  const nM=Object.values(M).reduce((a,b)=>Math.max(a,b.n),0);
+  return `<details class="tlx"><summary>Cronología del vuelo (${tl.length} pasos)</summary>
+   <p class="mut">Horario ${fut?'previsto':'publicado'} por Launch Library 2, en minutos y segundos respecto al despegue${sum?': '+sum:''}.${nM?` Las comparaciones usan la mediana de ese paso en los otros ${nM>1?'lanzamientos':'lanzamiento'} de ${esc(l.rocket)} con cronología que hay en los datos (hasta ${nM}).`:''}</p>
+   <ol class="tl">${rows}</ol></details>`}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button[data-mis]');if(b&&!b.closest('.modal'))openMission(b.dataset.mis,b.dataset.src,b)});
 // ---------- Análisis de experto (razonamiento + predicción medible que se puntúa sola) ----------
 const XDRAFT={},XOPEN=new Set();
@@ -697,7 +713,16 @@ const TL_ES={1:['Luz verde a la carga de propelente','El director de lanzamiento
  38:['Dragon con energía propia','Dragon pasa a su energía interna'],39:['Encendido de regreso','Empieza el encendido de regreso (boostback) de la primera etapa'],
  40:['Fin del encendido de regreso','Termina el encendido de regreso (boostback)'],41:['Separación de Dragon','Dragon se separa de la segunda etapa'],
  42:['Apertura del cono de Dragon','Empieza a abrirse el cono delantero de Dragon'],78:['Inicio del despliegue de la carga','Empieza la secuencia de despliegue de la carga'],
- 79:['Fin del despliegue de la carga','Termina la secuencia de despliegue de la carga'],107:['Giro de la primera etapa','La primera etapa gira para orientarse']};
+ 79:['Fin del despliegue de la carga','Termina la secuencia de despliegue de la carga'],107:['Giro de la primera etapa','La primera etapa gira para orientarse'],
+ 108:['Carga de propelente de la 1.ª etapa','Empieza la carga de propelente en la primera etapa'],109:['Carga de propelente de la 2.ª etapa','Empieza la carga de propelente en la segunda etapa'],
+ 110:['Apagado de los laterales (SBECO)','Se apagan los motores de los propulsores laterales'],111:['Separación de los laterales','Los propulsores laterales se separan'],
+ 259:['Giro de los laterales','Los propulsores laterales giran para orientarse'],112:['Encendido de regreso de los laterales','Empieza el encendido de regreso (boostback) de los laterales'],
+ 113:['Fin del regreso de los laterales','Termina el encendido de regreso (boostback) de los laterales'],114:['Encendido de reentrada de los laterales','Empieza el encendido de reentrada de los laterales'],
+ 115:['Fin de la reentrada de los laterales','Termina el encendido de reentrada de los laterales'],116:['Encendido de aterrizaje de los laterales','Empieza el encendido de aterrizaje de los laterales'],
+ 117:['Aterrizaje de los laterales','Los propulsores laterales se posan'],87:['Carga de metano de la 1.ª etapa','Empieza la carga de metano líquido en la primera etapa'],
+ 86:['Carga de metano de la 2.ª etapa','Empieza la carga de metano líquido en la segunda etapa'],88:['Fin de la carga de la 1.ª etapa','Termina la carga de propelente en la primera etapa'],
+ 89:['Fin de la carga de la 2.ª etapa','Termina la carga de propelente en la segunda etapa'],90:['Activación del deflector de llamas','Se activa el deflector de llamas antes del encendido'],
+ 91:['«Emoción garantizada»','Nombre que da Launch Library 2 a este paso (en inglés, «Excitement Guaranteed»)']};
 const tlName=id=>(TL_ES[id]||(D.tl_types||{})[id]||['Paso '+id])[0];
 const tlDesc=id=>(TL_ES[id]||(D.tl_types||{})[id]||['',''])[1];
 // Se juega hasta el aterrizaje si lo hay (si no, hasta T+10 min); pasos a la misma hora van juntos

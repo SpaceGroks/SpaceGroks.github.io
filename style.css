@@ -149,3 +149,4 @@ button.misb{display:inline-flex;align-items:center;min-height:44px;margin-top:6p
 .tl .tl-t{font-family:ui-monospace,Menlo,Consolas,monospace;min-width:72px;flex:none;color:var(--mut)}
 .tl li.tl-lift .tl-t{color:#7ee0a1;font-weight:700}
 .tlx summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+.rt-opts{flex-wrap:wrap}.rt-opts button{min-width:44px}

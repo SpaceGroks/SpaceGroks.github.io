@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();renderRacha();bindRacha();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -392,6 +392,7 @@ function retosGlobo(){
   {const bs=LS.get('bets',{});const cand=D.previous.flatMap(l=>(l.stages||[]).map(s=>s.serial)).find(x=>{if(!x||/Unknown/.test(x)||(bs[x]&&!bs[x].res))return false;const u=boosterHist(x).at(-1);return u&&u.s.land_attempt!==false&&u.s.land_success!==false});
    if(cand)R.push({t:'¿Volverá a volar?',m:`Abre la ficha del propulsor ${cand}: mira cuántos días suele pasar en tierra entre vuelos y apuesta si volverá a despegar en los próximos 30 días. Se resuelve solo con los datos reales.`,tab:'fleet',btn:'Ver propulsores',k:'bet'});}
   const s=D.stats;if(s&&s.consecutive_successful_landings!=null){const W=rbWeek(),w=(LS.get('rbet',{})[W.k]||{}).bets||{},libre=Date.now()<W.close&&(!w.land||!w.launch);R.push({t:'Racha en directo',m:`SpaceX lleva ${s.consecutive_successful_landings} aterrizajes seguidos sin fallar y ${s.consecutive_successful_launches} lanzamientos seguidos con éxito. ${libre?`¿Seguirá la racha el domingo? Apuesta antes del viernes: «No» da ${RB_PTS.no} puntos si se rompe.`:'Sigue el contador en directo en Próximo.'}`,tab:'next',btn:libre?'Apostar por la racha':'Ver la racha',k:libre?'racha':null,sel:'#rlive'});}
+  {const I=rtInfo(),W=rtWeek();if(I){const libre=Date.now()<W.close&&!LS.get('ritmo',{})[W.k];R.push({t:'Ritmo de lanzamientos',m:`SpaceX ha lanzado ${I.l30} cohetes en los últimos 30 días y esta semana ${I.thisW.length===1?'va 1':'van '+I.thisW.length}. ${libre?`¿Cuántos habrá hasta el domingo? Apuesta antes del jueves: el número exacto da ${RT_PTS.exact} puntos.`:'Mira el récord de cadencia y cómo va la semana.'}`,tab:'next',btn:libre?'Apostar por el ritmo':'Ver el ritmo',k:libre?'ritmo':null,sel:'#ritmo'})}}
   {const f=formate();if(f)R.push(f);}
   return R;
 }
@@ -832,7 +833,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>
@@ -896,4 +897,53 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo()}}catch(e){}}
+// ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
+// Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
+// y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
+const RT_PTS={exact:30,near:10},RT_MAX=10;
+function rtWeek(){const W=rbWeek(),m=new Date(W.k+'T00:00:00');return{...W,start:m.getTime(),close:new Date(m.getFullYear(),m.getMonth(),m.getDate()+3).getTime()}}// se apuesta hasta el miércoles a las 23:59
+const rtNum=n=>n>=RT_MAX?RT_MAX+' o más':String(n);
+const rtHrs=ms=>{const h=ms/H,m=Math.round(ms/6e4),r=Math.round(h);return m<60?`${m} ${m===1?'minuto':'minutos'}`:h<48?`${r} ${r===1?'hora':'horas'}`:`${(ms/DAY).toFixed(1).replace('.',',')} días`};
+function rtInfo(){const d=rlD(),P=(d.previous||[]).filter(l=>!isNaN(new Date(l.net))).slice().sort((a,b)=>new Date(a.net)-new Date(b.net));
+  if(P.length<3)return null;const t=P.map(l=>new Date(l.net).getTime()),gaps=[];for(let i=1;i<t.length;i++)gaps.push({ms:t[i]-t[i-1],a:P[i-1],b:P[i]});
+  const gs=gaps.map(g=>g.ms).sort((a,b)=>a-b),med=gs[Math.floor((gs.length-1)/2)],mean=gs.reduce((s,x)=>s+x,0)/gs.length;
+  const min=gaps.reduce((m,g)=>g.ms<m.ms?g:m),max=gaps.reduce((m,g)=>g.ms>m.ms?g:m),now=Date.now(),W=rtWeek();
+  // semanas completas (lunes a domingo, hora local) que cubren los datos: desde la primera tras el lanzamiento más antiguo hasta la última terminada
+  const wk=x=>{const z=new Date(x),dd=(z.getDay()+6)%7;return new Date(z.getFullYear(),z.getMonth(),z.getDate()-dd).getTime()};
+  const weeks=[];let w0=new Date(wk(t[0]));w0=new Date(w0.getFullYear(),w0.getMonth(),w0.getDate()+7);
+  while(true){const s=w0.getTime(),e=new Date(w0.getFullYear(),w0.getMonth(),w0.getDate()+7).getTime();if(e>W.start)break;
+    weeks.push({s,n:t.filter(x=>x>=s&&x<e).length});w0=new Date(w0.getFullYear(),w0.getMonth(),w0.getDate()+7)}
+  const best=weeks.reduce((m,x)=>!m||x.n>m.n?x:m,null),avgW=weeks.length?weeks.reduce((s,x)=>s+x.n,0)/weeks.length:null;
+  const dist={};for(const x of weeks)dist[Math.min(RT_MAX,x.n)]=(dist[Math.min(RT_MAX,x.n)]||0)+1;
+  const thisW=P.filter(l=>{const x=new Date(l.net).getTime();return x>=W.start&&x<=W.end});
+  const left=(d.upcoming||[]).filter(l=>{const x=new Date(l.net).getTime();return x>Math.max(now,W.start)-3*H&&x<=W.end&&/^(SEC|MIN|HOUR)$/i.test(l.net_precision||'')&&!thisW.some(p=>p.id===l.id)});
+  const last=P[P.length-1],l7=t.filter(x=>x>now-7*DAY).length,l30=t.filter(x=>x>now-30*DAY).length;
+  return{P,med,mean,min,max,weeks,best,avgW,dist,thisW,left,last,sinceLast:now-t[t.length-1],l7,l30,W,gen:d.generated}}
+function resolveRitmo(){const d=rlD();if(!d||!d.previous||!d.previous.length)return;const all=LS.get('ritmo',{}),gen=new Date(d.generated).getTime();let ch=false,won=0;
+  const old=d.previous.reduce((m,l)=>Math.min(m,new Date(l.net).getTime()),Infinity);
+  for(const [k,b] of Object.entries(all)){if(b.res||!b.end||!(gen>b.end+6*H))continue;// espera unas horas a que la fuente pase los lanzamientos del domingo a la lista de pasados
+    const s=new Date(k+'T00:00:00').getTime();if(old>s)continue;// la lista ya no cubre esa semana
+    const n=d.previous.filter(l=>{const x=new Date(l.net).getTime();return x>=s&&x<=b.end}).length,diff=Math.abs(Math.min(RT_MAX,n)-b.pick);
+    b.res={n,ok:diff===0,near:diff===1};b.won=diff===0?RT_PTS.exact:diff===1?RT_PTS.near:0;b.resAt=Date.now();if(b.won)won+=b.won;ch=true}
+  if(ch){LS.set('ritmo',all);if(won){addPts('ritmo',won);aviso(`Apuesta del ritmo resuelta: +${won} puntos.`)}}}
+function ritmoBetHTML(I){const W=I.W,all=LS.get('ritmo',{}),b=all[W.k],open=Date.now()<W.close;
+  const past=Object.entries(all).filter(([k])=>k!==W.k).sort((a,c)=>c[0]<a[0]?-1:1).slice(0,4).map(([k,x])=>`<div class="mut">Semana del ${fmtD(k+'T12:00:00')}: dijiste ${rtNum(x.pick)} · ${x.res?`hubo ${x.res.n} · ${x.res.ok?'exacto':x.res.near?'por uno':'fallaste'}, +${x.won} puntos`:'pendiente de datos'}</div>`).join('');
+  let h=`<h3 id="rt-q">¿Cuántos lanzamientos de SpaceX habrá esta semana?</h3><p class="mut">De lunes a domingo ${fmtD(W.end)} a las 23:59, contando todos los cohetes de SpaceX que despeguen según Launch Library 2. Se apuesta hasta el miércoles a las 23:59. Exacto da ${RT_PTS.exact} puntos y quedarse a uno, ${RT_PTS.near}.</p>`;
+  if(b)h+=`<p>${b.res?ic(b.res.ok||b.res.near,'Acierto','Fallo'):'<span role="img" aria-label="Pendiente">⏳</span>'} Dijiste <b>${rtNum(b.pick)}</b> cuando iban ${b.n0}${b.res?` · hubo ${b.res.n} · +${b.won} puntos`:' · se resuelve sola con los datos de después del domingo'}</p>`;
+  else if(open)h+=`<div class="opts rt-opts" role="group" aria-labelledby="rt-q">${Array.from({length:RT_MAX+1},(_,i)=>i).filter(i=>i>=I.thisW.length).map(i=>`<button type="button" data-rt="${i}">${rtNum(i)}</button>`).join('')}</div>`;
+  else h+='<p class="mut">La apuesta de esta semana cerró el miércoles a las 23:59. El lunes empieza otra.</p>';
+  return h+(past?`<div style="margin-top:8px">${past}</div>`:'')}
+function renderRitmo(){const el=$('#ritmo');if(!el||!D)return;const I=rtInfo();if(!I){el.innerHTML='';return}
+  const dl=Object.entries(I.dist).sort((a,b)=>a[0]-b[0]).map(([n,c])=>`${rtNum(+n)}: ${c} ${c===1?'semana':'semanas'}`).join(' · ');
+  el.innerHTML=`<div class="card daily ritmo"><div class="kick">Ritmo de lanzamientos</div>
+  <div class="stats"><div><b>${rtHrs(I.med)}</b>mediana entre lanzamientos</div><div><b>${I.l7}</b>en los últimos 7 días</div><div><b>${I.l30}</b>en los últimos 30 días</div>${I.avgW!=null?`<div><b>${I.avgW.toFixed(1).replace('.',',')}</b>de media por semana</div>`:''}</div>
+  <p class="mut">Récord de cadencia en los datos: ${rtHrs(I.min.ms)} entre ${esc(mname(I.min.a))} (${esc(I.min.a.rocket||'')}, ${fmt(I.min.a.net)}) y ${esc(mname(I.min.b))} (${esc(I.min.b.rocket||'')}).${I.best&&I.best.n?` Semana con más lanzamientos: ${I.best.n}, la del ${fmtD(I.best.s)}.`:''} Parón más largo: ${rtHrs(I.max.ms)}, antes de ${esc(mname(I.max.b))} (${fmtD(I.max.b.net)}).</p>
+  <p class="mut">Último lanzamiento: ${esc(mname(I.last))}, hace ${rtHrs(I.sinceLast)}. Esta semana ${I.thisW.length===1?'va':'van'} <b>${I.thisW.length}</b>${I.left.length?` y ${I.left.length===1?'queda 1 previsto':`quedan ${I.left.length} previstos`} con hora fijada antes del domingo (${I.left.map(l=>esc(mname(l))).join(', ')})`:' y no queda ninguno con hora fijada antes del domingo'}.</p>
+  ${dl?`<p class="mut">Lanzamientos por semana en las ${I.weeks.length} semanas completas de los datos: ${dl}.</p>`:''}
+  ${ritmoBetHTML(I)}<div class="mut" style="margin-top:6px">Calculado con los últimos ${I.P.length} lanzamientos de SpaceX en Launch Library 2 (desde el ${fmtD(I.P[0].net)}), actualizados ${fmt(I.gen)}.</div></div>`}
+function bindRitmo(){const el=$('#next');if(!el||el._rt)return;el._rt=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-rt]');if(!b)return;
+  const I=rtInfo();if(!I)return;const W=I.W,all=LS.get('ritmo',{});if(Date.now()>=W.close||all[W.k]){renderRitmo();return}
+  all[W.k]={pick:+b.dataset.rt,at:Date.now(),end:W.end,n0:I.thisW.length};LS.set('ritmo',all);
+  aviso(`Apuesta guardada: ${rtNum(+b.dataset.rt)} lanzamientos esta semana.`);completeDaily('ritmo');renderRitmo();
+  const q=$('#rt-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}

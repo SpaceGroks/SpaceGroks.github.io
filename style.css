@@ -142,3 +142,4 @@ button.misb{display:inline-flex;align-items:center;min-height:44px;margin-top:6p
 .hl-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}.hl-b{border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:10px;background:rgba(255,255,255,.03)}
 .hl-s{font:800 18px Orbitron,sans-serif}.hl-n{margin-top:6px}.hl-n b{font:800 24px Orbitron,sans-serif}
 @media (max-width:420px){.hl-pair{grid-template-columns:1fr}}
+.stats h4{margin:12px 0 6px;font-size:14px}.tblw{overflow-x:auto}.stt{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}.stt th,.stt td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}.stt thead th{font-weight:600;color:var(--mut,#9aa)}.stl{margin:0;padding-left:18px}.stl li{margin:4px 0}.stl .bar{max-width:260px}

@@ -113,6 +113,7 @@ function wxHTML(l){const ws=wxStats(),wx=wxList(l);
 function renderPredict(){
   const preds=LS.get('preds',{});
   let h=`<div class="card"><b>Cómo se juega:</b> antes de cada despegue responde a tres preguntas. Cuando el lanzamiento ocurra, comparamos con lo que pasó de verdad. Cada acierto da 10 puntos, acertar las tres da 5 de bonus, y si apuestas por un fallo y aciertas te llevas 50. Abre «Análisis de experto» en cada lanzamiento para razonar y predecir los minutos de retraso (hasta 40 puntos más).</div>`;
+  h+='<div id="mystats">'+statsHTML()+'</div>';
   const list=D.upcoming.filter(predictable);
   if(!list.length)h+='<p class="mut">Ahora mismo no hay lanzamientos confirmados en las próximas tres semanas. Vuelve mañana.</p>';
   list.forEach(l=>{const p=preds[l.id]||{a:{}};const b=(l.stages||[])[0]||{};
@@ -124,7 +125,7 @@ function renderPredict(){
   if(done.length)h+=`<h3>Tus resultados</h3>`+done.sort((a,b)=>b.resAt-a.resAt).map(p=>`<div class="card"><h3>${p.name}</h3>${p.wx0!=null?`<div class="mut">Meteo al predecir: ${p.wx0}% favorable</div>`:''}${p.res.map(r=>`<div>${ic(r.ok)} ${r.q}: dijiste ${r.you}, pasó ${r.real}</div>`).join('')}<b>+${p.pts} puntos</b></div>`).join('');
   h+=expertResultsHTML();
   $('#predict').innerHTML=h;
-  bindExpert();
+  bindExpert();bindStats();
   $('#predict').querySelectorAll('.opts button[data-k]').forEach(bt=>bt.onclick=()=>{
     const id=bt.closest('.card').dataset.id,l=D.upcoming.find(x=>x.id===id);const ps=LS.get('preds',{});
     const p=ps[id]||{a:{},name:mname(l),land:!!((l.stages||[])[0]||{}).land_attempt};p.a[bt.dataset.k]=bt.dataset.v;p.net=l.net;if(l.prob!=null)p.wx0=l.prob;p.saved=Date.now();ps[id]=p;LS.set('preds',ps);completeDaily('pred');renderPredict()});
@@ -793,3 +794,30 @@ function renderLogros(){const el=$('#logros');if(!el||!D)return;const got=LS.get
   <div class="bar" aria-hidden="true"><i style="width:${100*on.length/ACH.length}%"></i></div>
   <ul class="achs">${ACH.filter(a=>got[a.id]).concat(ACH.filter(a=>!got[a.id])).map(li).join('')}</ul></details>`;
   const d=el.querySelector('details');d.ontoggle=()=>LS.set('ach_open',d.open)}
+// ---------- Mis estadísticas: tus aciertos por tipo de pregunta y por categoría, frente a lo que pasó de verdad ----------
+const pct=(a,b)=>b?Math.round(100*a/b)+'%':'—';
+function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órbita?'],['Aterrizaje','¿Aterrizará el propulsor?'],['A tiempo','¿Despegará dentro de las 24 h?']];
+  const ans=predAnswers(),rows=Q.map(([k,t])=>{const a=ans.filter(r=>r.q===k);return{k,t,n:a.length,ok:a.filter(r=>r.ok).length,si:a.filter(r=>r.you==='Sí').length,realSi:a.filter(r=>r.real==='Sí').length}});
+  const P=D.previous,land=P.map(l=>(l.stages||[])[0]||{}).filter(b=>b.land_attempt);
+  const real={'Carga en órbita':[P.filter(l=>l.status==='Success').length,P.length],'Aterrizaje':[land.filter(b=>b.land_success).length,land.length]};
+  const xs=xDone(),xm=xs.filter(x=>!x.res.void),xc=xs.filter(x=>x.res.cpts!=null);
+  const errs=xm.map(x=>x.res.err).sort((a,b)=>a-b),med=errs.length?errs[Math.floor((errs.length-1)/2)]:null;
+  const bets=Object.values(LS.get('bets',{})).filter(b=>b.res);
+  const Z=buildQuiz(),qs=LS.get('quiz_'+Z.key,{ans:{}}),qn=Object.keys(qs.ans).length,qok=Z.qs.filter((q,i)=>qs.ans[i]===q.right).length;
+  return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
+function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
+  const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
+  return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
+  <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>
+  <h4>Predicciones por tipo de pregunta</h4>
+  <div class="tblw"><table class="stt"><thead><tr><th scope="col">Pregunta</th><th scope="col">Tus aciertos</th><th scope="col">Tú dijiste</th><th scope="col">Pasó en tus lanzamientos</th><th scope="col">SpaceX, últimos ${S.nP}</th></tr></thead><tbody>${S.rows.map(row).join('')}</tbody></table></div>
+  ${tot?`<p class="mut">Si hubieras dicho siempre «Sí», habrías acertado ${pct(S.rows.reduce((s,r)=>s+r.realSi,0),tot)}.${best?` Tu mejor tipo de pregunta: ${esc(best.k.toLowerCase())}.`:''}</p>`:'<p class="mut">Predice en los lanzamientos de abajo; cuando despeguen, verás aquí tus porcentajes.</p>'}
+  <h4>Por categoría</h4><ul class="stl">
+  <li>Análisis de experto: ${S.xs.length?`${S.xs.length} resueltos${S.med!=null?`, error mediano de ${S.med} min en el retraso`:''}${S.xc.length?`, confianza en el aterrizaje bien orientada en ${S.xcal} de ${S.xc.length}`:''}`:'<span class="mut">ninguno resuelto todavía</span>'}</li>
+  <li>Reto semanal: ${S.qn?`${S.qok} de ${S.qn} respondidas bien esta semana (${pct(S.qok,S.qn)})`:'<span class="mut">sin respuestas esta semana</span>'}</li>
+  <li>Apuestas de propulsores: ${S.bets.length?`${S.bets.filter(b=>b.res.ok).length} ganadas de ${S.bets.length} (${pct(S.bets.filter(b=>b.res.ok).length,S.bets.length)})`:'<span class="mut">ninguna resuelta todavía</span>'}</li>
+  <li>Reto rápido: récord ${(LS.get('rapid',{}).best)||0} puntos · ¿Más o menos?: mejor racha de ${(LS.get('hilo',{}).best)||0} aciertos</li></ul>
+  <h4>De dónde salen tus ${ptot} puntos</h4><ul class="stl">${cats.map(([k,t])=>`<li>${t}: <b>${P[k]||0}</b>${ptot?` <span class="mut">(${pct(P[k]||0,ptot)})</span>`:''}${ptot?`<div class="bar" aria-hidden="true"><i style="width:${100*(P[k]||0)/ptot}%"></i></div>`:''}</li>`).join('')}</ul></details>`}
+function bindStats(){const d=document.querySelector('#mystats details');if(d)d.ontoggle=()=>LS.set('stats_open',d.open)}

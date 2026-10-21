@@ -24,6 +24,15 @@ def dur(t):
     v=int(m[2] or 0)*86400+int(m[3] or 0)*3600+int(m[4] or 0)*60+float(m[5] or 0)
     return round(-v if m[1] else v)
 TLT={}
+LZ={}
+def lzone(loc,ld):
+    """Zonas de aterrizaje reales (Launch Library 2): coordenadas solo si las da (las barcazas se mueven)."""
+    a=loc.get("abbrev") or loc.get("name")
+    if not a or (loc.get("name") or "Unknown")=="Unknown": return
+    f=lambda v: float(v) if v not in (None,"") else None
+    LZ[a]={"name":loc.get("name"),"lat":f(loc.get("latitude")),"lon":f(loc.get("longitude")),
+      "loc":(loc.get("location") or {}).get("name"),"type":(ld.get("type") or {}).get("abbrev"),
+      "ok":loc.get("successful_landings"),"att":loc.get("attempted_landings"),"active":loc.get("active")}
 def timeline(r):
     """Pasos reales de la cuenta atrás y del vuelo (Launch Library 2), de T-1 h a T+20 min: [id de tipo, segundos]."""
     out=[]
@@ -38,10 +47,11 @@ def slim(r):
     st=[]
     for s in ro.get("launcher_stage") or []:
         L=s.get("launcher") or {}; ld=s.get("landing") or {}; loc=ld.get("landing_location") or {}
+        if loc: lzone(loc,ld)
         st.append({"serial":L.get("serial_number"),"flight":s.get("launcher_flight_number"),
           "reused":s.get("reused"),"type":s.get("type"),"turnaround":s.get("turn_around_time"),
           "land_attempt":ld.get("attempt"),"land_success":ld.get("success"),
-          "land_loc":loc.get("abbrev") or loc.get("name"),"land_loc_name":loc.get("name"),
+          "land_loc":loc.get("abbrev") or loc.get("name"),"land_loc_name":loc.get("name"),"land_type":(ld.get("type") or {}).get("abbrev"),
           "booster_flights":L.get("flights"),"booster_landings":L.get("successful_landings")})
     vids=r.get("vid_urls") or []
     return {"id":r["id"],"name":r.get("name"),"mission":m.get("name"),"mtype":m.get("type"),
@@ -86,6 +96,7 @@ out={"generated":datetime.datetime.now(datetime.timezone.utc).isoformat(timespec
  "stats":{k:lsp.get(k) for k in ["total_launch_count","successful_launches","failed_launches","consecutive_successful_launches","successful_landings","attempted_landings","consecutive_successful_landings","pending_launches"]},
  "upcoming":[slim(r) for r in up["results"]],"previous":[slim(r) for r in prev["results"]]}
 out["tl_types"]=TLT
+out["lzones"]=LZ
 out["jobs"]=jobs()
 try: es=json.load(open("i18n/desc_es.json"))
 except Exception: es={}

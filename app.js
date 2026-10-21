@@ -248,13 +248,35 @@ function renderFleet(){
 }
 // ---------- Mapa ----------
 let mapDone=false,mapObj=null;
+const LZ_T={ASDS:'Barcaza autónoma en el mar',RTLS:'Vuelta a tierra, junto a la plataforma',Ocean:'Amerizaje controlado en el mar',EXP:'Sin recuperación: la etapa se pierde en el mar'};
+const lzLabel=t=>LZ_T[t]||t||'Tipo no indicado';
+function landZones(){const Z={},LZD=D.lzones||{},pid=new Set(D.previous.map(l=>l.id));
+  [...D.previous.map(l=>({l,up:0})),...D.upcoming.filter(l=>!pid.has(l.id)).map(l=>({l,up:1}))].forEach(({l,up})=>(l.stages||[]).forEach(s=>{const k=s.land_loc;
+    if(!k||!LZD[k]||s.land_attempt===false&&s.land_type!=='EXP')return;
+    const z=Z[k]||(Z[k]={k,...LZD[k],done:0,okR:0,up:0,last:null,next:null});
+    if(up){z.up++;if(!z.next||new Date(l.net)<new Date(z.next.net))z.next=l}
+    else{z.done++;if(s.land_success)z.okR++;if(!z.last||new Date(l.net)>new Date(z.last.net))z.last=l}}));
+  return Object.values(Z).sort((a,b)=>(b.done+b.up)-(a.done+a.up))}
+function lzInfo(z){const rec=z.type!=='EXP';
+  return `${esc(lzLabel(z.type))}${z.loc?' · '+esc(z.loc):''}<br>${z.done} usos recientes${rec&&z.done?` (${z.okR} con éxito)`:''} · ${z.up} próximos`+
+   (rec&&z.att?`<br>Historial total: ${z.ok} de ${z.att} aterrizajes con éxito`:'')+
+   (z.last?`<br>Último: ${esc(mname(z.last))} (${fmtD(z.last.net)})`:'')+(z.next?`<br>Siguiente: ${esc(mname(z.next))} (${fmtD(z.next.net)})`:'')+
+   (z.active===false?'<br>Ya no está en servicio':'')}
 function drawMap(){if(mapDone)return;mapDone=true;
   const map=mapObj=L.map('mapdiv').setView([31,-100],3);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap, © CARTO'}).addTo(map);
   const pads={};[...D.previous.map(l=>({...l,up:0})),...D.upcoming.map(l=>({...l,up:1}))].forEach(l=>{if(l.lat==null)return;
     const k=l.pad;const p=pads[k]||(pads[k]={pad:l.pad,loc:l.loc,lat:l.lat,lon:l.lon,done:0,up:0});l.up?p.up++:p.done++});
-  Object.values(pads).forEach(p=>L.circleMarker([p.lat,p.lon],{radius:6+Math.sqrt(p.done+p.up)*2,color:'#4fb3ff',fillColor:'#8a7dff',fillOpacity:.5,weight:2}).addTo(map).bindPopup(`<b>${p.pad}</b><br>${p.loc}<br>${p.done} recientes · ${p.up} próximos`));
-  $('#maplist').innerHTML=Object.values(pads).sort((a,b)=>b.done-a.done).map(p=>`<div class="card"><b>${p.pad}</b><div class="mut">${p.loc} · ${p.done} lanzamientos recientes · ${p.up} próximos</div></div>`).join('');
+  const gP=L.layerGroup().addTo(map),gZ=L.layerGroup().addTo(map);
+  Object.values(pads).forEach(p=>L.circleMarker([p.lat,p.lon],{radius:6+Math.sqrt(p.done+p.up)*2,color:'#4fb3ff',fillColor:'#8a7dff',fillOpacity:.5,weight:2}).addTo(gP).bindPopup(`<b>Plataforma ${esc(p.pad)}</b><br>${esc(p.loc)}<br>${p.done} recientes · ${p.up} próximos`));
+  const zs=landZones(),land=zs.filter(z=>z.lat!=null&&z.lon!=null),sea=zs.filter(z=>z.lat==null||z.lon==null);
+  land.forEach(z=>L.circleMarker([z.lat,z.lon],{radius:5+Math.sqrt(z.done+z.up)*1.6,color:'#4fe3a1',fillColor:'#4fe3a1',fillOpacity:.35,weight:2,dashArray:'3 3'}).addTo(gZ).bindPopup(`<b>Zona de aterrizaje ${esc(z.k)}</b> · ${esc(z.name)}<br>${lzInfo(z)}`));
+  L.control.layers(null,{'<span style="color:#8a7dff">●</span> Plataformas de lanzamiento':gP,'<span style="color:#4fe3a1">●</span> Zonas de aterrizaje en tierra':gZ},{collapsed:false}).addTo(map);
+  const card=z=>`<div class="card"><b>${esc(z.name)}</b>${z.k!==z.name?` <span class="mut">(${esc(z.k)})</span>`:''}<div class="mut">${lzInfo(z)}</div></div>`;
+  $('#maplist').innerHTML=`<h3>Plataformas de lanzamiento</h3>`+Object.values(pads).sort((a,b)=>b.done-a.done).map(p=>`<div class="card"><b>${esc(p.pad)}</b><div class="mut">${esc(p.loc)} · ${p.done} lanzamientos recientes · ${p.up} próximos</div></div>`).join('')+
+   (land.length?`<h3>Zonas de aterrizaje en tierra</h3><p class="mut">Los propulsores que vuelven a tierra aterrizan aquí, a pocos kilómetros de donde despegaron (en verde en el mapa).</p>`+land.map(card).join(''):'')+
+   (sea.length?`<h3>Aterrizajes en el mar</h3><p class="mut">Las barcazas autónomas se colocan en cada misión a cientos de kilómetros de la costa, según la trayectoria, así que Launch Library 2 no les da una posición fija y no salen en el mapa.</p>`+sea.map(card).join(''):'')+
+   `<p class="mut">Usos recientes: de los últimos ${D.previous.length} lanzamientos; próximos: de los ${D.upcoming.length} siguientes. Historial total según Launch Library 2.</p>`;
 }
 // ---------- Historial ----------
 function renderLog(){

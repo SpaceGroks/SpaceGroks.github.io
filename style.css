@@ -139,3 +139,6 @@ button.misb{display:inline-flex;align-items:center;min-height:44px;margin-top:6p
 .rapid{border-color:rgba(106,90,224,.45)}.rapid .kick{font:600 12px Orbitron,sans-serif;letter-spacing:3px;color:var(--acc);text-transform:uppercase;margin-bottom:6px}
 .rp-top{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px}.rp-top b{font:800 22px Orbitron,sans-serif}.rp-top b.low{color:#ff6b7a}
 .rp-qt{margin:12px 0 4px;font-weight:600;font-size:16px}.rp-res h3{margin:10px 0 4px}.rp-q{margin-top:8px;line-height:1.45}
+.hl-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}.hl-b{border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:10px;background:rgba(255,255,255,.03)}
+.hl-s{font:800 18px Orbitron,sans-serif}.hl-n{margin-top:6px}.hl-n b{font:800 24px Orbitron,sans-serif}
+@media (max-width:420px){.hl-pair{grid-template-columns:1fr}}

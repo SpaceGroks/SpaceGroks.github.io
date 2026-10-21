@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
@@ -174,9 +174,9 @@ function quizQs(pool,all,r){
     for(let i=n0;i<Q.length;i++)Q[i].m=l.id;});
   return Q;
 }
-function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="qwk"></div>';return $('#qwk')}
+function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="hilo"></div><div id="qwk"></div>';return $('#qwk')}
 function renderQuiz(){
-  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();
+  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),answered=Object.keys(st.ans).length;
   const correct=Z.qs.filter((q,i)=>st.ans[i]===q.right).length;
   let h=`<div class="card"><b>Reto semanal</b><div class="mut">${Z.title}. Cada lunes sale un reto nuevo. 10 puntos por acierto.</div>
@@ -230,6 +230,41 @@ function rapidEnd(timeout){if(!RP||!RP.run)return;RP.run=false;clearInterval(RP.
   const s=rapidState(),gain=Math.max(0,pts-(s.today||0));s.today=Math.max(s.today||0,pts);s.best=Math.max(s.best||0,pts);s.plays=(s.plays||0)+1;s.todayPlays=(s.todayPlays||0)+1;LS.set('rapid',s);
   Object.assign(RP,{done:true,timeout,left,ok,pts,gain});if(gain)addPts('rapid',gain);completeDaily('rapid');
   renderRapid();const g=$('#rapid').querySelector('.rp-go');if(g&&g.focus)g.focus({preventScroll:true})}
+// ---------- ¿Más o menos? Propulsores encadenados por número de vuelos (datos reales) ----------
+let HL=null;
+const HILO_MAX=10;// cada día cuenta la mejor racha, hasta 10 aciertos (2 puntos cada uno)
+function hiloState(){const s=LS.get('hilo',{best:0,plays:0});if(s.d!==dayKey()){s.d=dayKey();s.today=0}return s}
+function hiloPool(){// por propulsor: su vuelo más reciente en Launch Library 2 (número de vuelo, misión y fecha)
+  if(!D||!D.previous)return[];const B={};
+  for(const l of D.previous)for(const s of(l.stages||[])){const x=s.serial;if(!x||/Unknown/i.test(x)||!s.flight)continue;
+    if(!B[x]||s.flight>B[x].n)B[x]={serial:x,n:s.flight,m:mname(l),net:l.net,rocket:l.rocket||''}}
+  const a=Object.values(B);return new Set(a.map(b=>b.n)).size>=3?a:[]}
+function hiloPick(pool,a,used){const c=pool.filter(b=>b.n!==a.n&&!used.has(b.serial));const r=c.length?c:pool.filter(b=>b.n!==a.n);return r[Math.floor(Math.random()*r.length)]}
+function hiloCard(b,show){return `<div class="hl-b"><div class="hl-s">${esc(b.serial)}</div><div class="mut">${esc(b.rocket)} · último vuelo: ${esc(b.m)}, ${fmtD(b.net)}</div><div class="hl-n">${show?`<b>${b.n}</b> ${b.n===1?'vuelo':'vuelos'}`:'<b>¿?</b> vuelos'}</div></div>`}
+function renderHilo(){const el=$('#hilo');if(!el||!D)return;const s=hiloState(),ok=hiloPool().length>0;
+  let h=`<div class="card rapid hilo"><div class="kick">¿Más o menos?</div>
+  <p class="mut">Dos propulsores reales de SpaceX: ¿el segundo ha volado más o menos veces que el primero? Si aciertas, el segundo pasa a ser el de referencia y sigues hasta fallar. 2 puntos por acierto; cada día cuenta tu mejor racha (hasta ${HILO_MAX} aciertos, 20 puntos) y repetir solo suma si la mejoras. Los vuelos son los de su último lanzamiento en Launch Library 2.</p>
+  <div class="stats"><div><b>${s.today||0}</b>tu mejor racha hoy</div><div><b>${s.best||0}</b>récord</div><div><b>${s.plays||0}</b>partidas jugadas</div></div>`;
+  if(HL&&HL.done)h+=`<div class="rp-res" role="status"><h3>${HL.n} ${HL.n===1?'acierto':'aciertos'} seguidos · +${HL.gain} puntos</h3><p class="mut">${HL.msg}</p></div>`;
+  h+=ok?`<div class="opts"><button type="button" class="hl-go">${HL&&HL.done?'Jugar otra vez':'Empezar'}</button></div>`:'<p class="mut">No hay datos suficientes de propulsores ahora mismo.</p>';
+  el.innerHTML=h+'</div>';const b=el.querySelector('.hl-go');if(b)b.onclick=hiloStart}
+function hiloStart(){const pool=hiloPool();if(!pool.length)return;const a=pool[Math.floor(Math.random()*pool.length)],used=new Set([a.serial]),b=hiloPick(pool,a,used);used.add(b.serial);
+  HL={pool,a,b,used,n:0,run:true,lock:false};hiloShow();completeDaily('hilo')}
+function hiloShow(){$('#hilo').innerHTML=`<div class="card rapid hilo on"><div class="kick">¿Más o menos? · ${HL.n} ${HL.n===1?'acierto':'aciertos'}</div>
+  <div class="hl-pair">${hiloCard(HL.a,true)}${hiloCard(HL.b,false)}</div>
+  <div id="hl-q" class="rp-qt">¿${esc(HL.b.serial)} ha volado más o menos veces que ${esc(HL.a.serial)} (${HL.a.n})?</div>
+  <div class="sr" id="hl-live" role="status" aria-live="polite"></div>
+  <div class="opts" role="group" aria-labelledby="hl-q"><button type="button" data-v="mas">Más</button><button type="button" data-v="menos">Menos</button></div></div>`;
+  const o=$('#hilo').querySelectorAll('.opts button');o.forEach(b=>b.onclick=()=>hiloAnswer(b));if(o[0]&&o[0].focus)o[0].focus({preventScroll:true})}
+function hiloAnswer(btn){if(!HL||!HL.run||HL.lock)return;HL.lock=true;const{a,b}=HL,right=b.n>a.n?'mas':'menos',ok=btn.dataset.v===right;
+  const card=$('#hilo').querySelectorAll('.hl-n')[1];if(card)card.innerHTML=`<b>${b.n}</b> ${b.n===1?'vuelo':'vuelos'}`;
+  $('#hilo').querySelectorAll('.opts button').forEach(x=>{x.disabled=true;if(x.dataset.v===right)x.classList.add('right');else if(x===btn)x.classList.add('wrong')});
+  const lv=$('#hl-live');if(lv)lv.textContent=(ok?'Acierto. ':'Fallo. ')+`${b.serial} lleva ${b.n} vuelos.`;
+  setTimeout(()=>{if(!HL||!HL.run)return;if(ok){HL.n++;if(HL.n>=HILO_MAX)return hiloEnd(`¡Racha máxima de ${HILO_MAX}! ${b.serial} lleva ${b.n} vuelos.`);HL.a=b;HL.b=hiloPick(HL.pool,b,HL.used);HL.used.add(HL.b.serial);HL.lock=false;hiloShow()}
+    else hiloEnd(`${b.serial} lleva ${b.n} ${b.n===1?'vuelo':'vuelos'} y ${a.serial}, ${a.n}: ${b.n>a.n?'más':'menos'}.`)},ok?700:1200)}
+function hiloEnd(msg){HL.run=false;HL.done=true;HL.msg=msg;const s=hiloState(),n=Math.min(HILO_MAX,HL.n),gain=2*Math.max(0,n-(s.today||0));
+  s.today=Math.max(s.today||0,n);s.best=Math.max(s.best||0,HL.n);s.plays=(s.plays||0)+1;LS.set('hilo',s);HL.gain=gain;if(gain)addPts('hilo',gain);
+  renderHilo();const g=$('#hilo').querySelector('.hl-go');if(g&&g.focus)g.focus({preventScroll:true})}
 // ---------- Propulsores ----------
 let fleetSort='flights';
 function renderFleet(){
@@ -349,6 +384,7 @@ function retosGlobo(){
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),falta=Z.qs.length-Object.keys(st.ans).length;
   if(falta>0)R.push({t:'Reto semanal',m:`Te quedan ${falta} preguntas sobre las misiones reales de esta semana. Solo los mejores directores de vuelo las aciertan todas. ¿Tú qué?`,tab:'quiz',btn:'Aceptar el reto',k:'quiz'});
   if(rapidQs().length===3){const rs=rapidState();R.push({t:'Reto rápido',m:`Tres preguntas sobre misiones reales de SpaceX en 30 segundos. ${rs.best?`Tu récord es de ${rs.best} puntos. ¿Lo superas?`:'Hasta 30 puntos si las aciertas todas rápido.'}`,tab:'quiz',btn:'Jugar 30 segundos',k:'rapid'});}
+  if(hiloPool().length){const hs=hiloState();R.push({t:'¿Más o menos?',m:`¿Qué propulsor de SpaceX ha volado más veces? Encadena aciertos con los vuelos reales de cada uno. ${hs.best?`Tu récord es de ${hs.best} seguidos. ¿Lo superas?`:'Hasta 20 puntos al día.'}`,tab:'quiz',btn:'Jugar a ¿Más o menos?',k:'hilo'});}
   {const m=fdMissions()[0];if(m)R.push({t:'Modo director de vuelo',m:`Dirige la cuenta atrás real de ${mname(m)}: pulsa en el momento justo de cada paso, de la carga de combustible a la separación de etapas${fdSteps(m).some(s=>s.ids.includes(19))?' y el aterrizaje':''}. Hasta 50 puntos.`,tab:'flight',btn:'Dirigir la cuenta atrás',k:'flight'});}
   const fl=D.previous.flatMap(l=>(l.stages||[]).map(s=>({...s,l}))).filter(s=>s.flight).sort((a,b)=>b.flight-a.flight)[0];
   if(fl)R.push({t:'Récord de reutilización',m:`El propulsor ${fl.serial} ya lleva ${fl.flight} vuelos. Antes los cohetes se tiraban tras un solo uso. ¿Sabrías decir cuál es el siguiente en llegar a esa cifra?`,tab:'fleet',btn:'Ver la flota',k:'fleet'});
@@ -735,6 +771,7 @@ const ACH=[
  {id:'bet',i:'♻️',t:'Ojo para la flota',d:'Gana una apuesta «¿volverá a volar?» de un propulsor.',p:10,pr:()=>[Object.values(LS.get('bets',{})).some(b=>b.res&&b.res.ok)?1:0,1]},
  {id:'fd1',i:'🕹️',t:'Primera cuenta atrás',d:'Termina una partida en modo director de vuelo.',p:5,pr:()=>[Object.values(LS.get('flight',{})).some(f=>f.n>0)?1:0,1]},
  {id:'fd40',i:'⏱️',t:'Nervios de acero',d:'Consigue 40 de 50 o más en una cuenta atrás del modo director de vuelo.',p:20,pr:()=>[Math.max(0,...Object.values(LS.get('flight',{})).map(f=>f.best||0)),40]},
+ {id:'hilo5',i:'🔧',t:'Ojo de mecánico',d:'Encadena 5 aciertos seguidos en el juego «¿Más o menos?».',p:10,pr:()=>[(LS.get('hilo',{}).best)||0,5]},
  {id:'st3',i:'📅',t:'Tres días seguidos',d:'Entra 3 días seguidos.',p:10,pr:()=>[(LS.get('streak',{}).best)||0,3]},
  {id:'st7',i:'🌕',t:'Una semana sin fallar',d:'Entra 7 días seguidos.',p:25,pr:()=>[(LS.get('streak',{}).best)||0,7]},
  {id:'dd5',i:'⭐',t:'Cinco desafíos',d:'Completa 5 desafíos del día.',p:15,pr:()=>[(LS.get('streak',{}).retos)||0,5]}

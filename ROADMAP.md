@@ -20,3 +20,6 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Reto rápido de 30 segundos con 3 preguntas (hecho el 20 oct, 18:57)
 - [x] Probabilidad meteorológica en las predicciones cuando esté disponible (hecho el 20 oct, 20:55)
 - [x] Mapa con zonas de aterrizaje además de plataformas (hecho el 21 oct, 08:56)
+- [x] Juego «¿Más o menos?»: ¿qué propulsor real ha volado más veces? Se encadenan aciertos hasta fallar (hecho el 21 oct, 10:53)
+- [ ] Mis estadísticas: tu porcentaje de aciertos por tipo de pregunta de predicción y por categoría, comparado con lo que pasó de verdad
+- [ ] Contador en directo de la racha real de aterrizajes y lanzamientos seguidos de SpaceX, con una apuesta semanal «¿seguirá la racha el domingo?» que se resuelve con los datos

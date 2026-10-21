@@ -25,4 +25,4 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Contador en directo de la racha real de aterrizajes y lanzamientos seguidos de SpaceX, con una apuesta semanal «¿seguirá la racha el domingo?» que se resuelve con los datos (hecho el 21 oct, 14:52)
 - [x] Cronología del vuelo en la ficha de misión: todos los pasos publicados por Launch Library 2 (de la carga de propelente al aterrizaje y la separación de la carga) en T−/T+, traducidos, comparando cada paso con la mediana de ese cohete (hecho el 21 oct, 16:58)
 - [x] Ritmo de lanzamientos: días entre lanzamientos de SpaceX en los datos, récord de cadencia y apuesta «¿cuántos lanzamientos habrá esta semana?» que se resuelve sola (hecho el 21 oct, 18:58)
-- [ ] Comparar dos propulsores lado a lado: vuelos, aterrizajes, días medios en tierra, zonas de aterrizaje usadas y último vuelo
+- [x] Comparar dos propulsores lado a lado: vuelos, aterrizajes, días medios en tierra, zonas de aterrizaje usadas y último vuelo (hecho el 21 oct, 20:58)

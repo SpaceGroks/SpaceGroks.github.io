@@ -268,6 +268,44 @@ function hiloEnd(msg){HL.run=false;HL.done=true;HL.msg=msg;const s=hiloState(),n
   renderHilo();const g=$('#hilo').querySelector('.hl-go');if(g&&g.focus)g.focus({preventScroll:true})}
 // ---------- Propulsores ----------
 let fleetSort='flights';
+// ---------- Comparar dos propulsores ----------
+let CMP=[null,null];
+function boosterSum(serial){
+  const h=boosterHist(serial);if(!h.length)return null;
+  const last=h.at(-1),flights=Math.max(...h.map(x=>x.s.flight||0),last.s.booster_flights||0);
+  const tds=h.map(x=>tdays(x.s.turnaround)).filter(x=>x!=null&&x>0);
+  const zones=[...new Set(h.filter(x=>x.s.land_success&&x.s.land_loc_name&&!/Unknown/.test(x.s.land_loc_name)).map(x=>x.s.land_loc_name))];
+  const next=D.upcoming.find(l=>(l.stages||[]).some(s=>s.serial===serial));
+  return{serial,flights,landings:last.s.booster_landings??null,avg:tds.length?Math.round(tds.reduce((a,b)=>a+b,0)/tds.length):null,best:tds.length?Math.min(...tds):null,
+    zones,inData:h.length,last,next,since:Math.floor((Date.now()-new Date(last.l.net))/DAY)};
+}
+function cmpHTML(rows){
+  if(rows.length<2)return'';
+  const ser=rows.map(r=>r.serial);
+  if(!ser.includes(CMP[0]))CMP[0]=ser[0];
+  if(!ser.includes(CMP[1])||CMP[1]===CMP[0])CMP[1]=ser.find(x=>x!==CMP[0]);
+  const A=boosterSum(CMP[0]),B=boosterSum(CMP[1]);if(!A||!B)return'';
+  const opt=i=>`<select data-cmp="${i}" id="cmp-${i}" aria-label="Propulsor ${i+1} a comparar">${ser.map(x=>`<option value="${esc(x)}"${x===CMP[i]?' selected':''}>${esc(x)}</option>`).join('')}</select>`;
+  // win: 1 si gana A, -1 si gana B, 0 empate o sin dato
+  const cmpN=(a,b,hi)=>a==null||b==null||a===b?0:((a>b)===hi?1:-1);
+  const cell=(v,w,side)=>`<td${w===side?' class="ok"':''}>${v}${w===side?' <span aria-label="mejor">★</span>':''}</td>`;
+  const row=(lbl,va,vb,w)=>`<tr><th scope="row">${lbl}</th>${cell(va,w,1)}${cell(vb,w,-1)}</tr>`;
+  const lastT=x=>`${fmtD(x.last.l.net)}<div class="mut">${esc(mname(x.last.l))} · hace ${x.since} días</div>`;
+  const nextT=x=>x.next?`${esc(mname(x.next))}<div class="mut">${fmtD(x.next.net)}</div>`:'<span class="mut">Sin misión anunciada</span>';
+  const zT=x=>x.zones.length?x.zones.map(esc).join(', '):'<span class="mut">—</span>';
+  return `<div class="card" id="cmp"><b>Comparar dos propulsores</b><div class="mut">Elige dos primeras etapas y míralas lado a lado. La estrella marca cuál va por delante en cada dato.</div>
+  <div class="opts" style="align-items:center">${opt(0)} <span aria-hidden="true">frente a</span> ${opt(1)}</div>
+  <div class="tscroll"><table><caption class="sr">Comparación entre ${esc(A.serial)} y ${esc(B.serial)}</caption><tr><th scope="col">Dato</th><th scope="col">${esc(A.serial)}</th><th scope="col">${esc(B.serial)}</th></tr>
+  ${row('Vuelos totales',A.flights,B.flights,cmpN(A.flights,B.flights,true))}
+  ${row('Aterrizajes con éxito',A.landings??'—',B.landings??'—',cmpN(A.landings,B.landings,true))}
+  ${row('Días medios en tierra entre vuelos',A.avg!=null?A.avg+' d':'—',B.avg!=null?B.avg+' d':'—',cmpN(A.avg,B.avg,false))}
+  ${row('Récord de días en tierra',A.best!=null?A.best+' d':'—',B.best!=null?B.best+' d':'—',cmpN(A.best,B.best,false))}
+  ${row('Zonas de aterrizaje usadas',zT(A),zT(B),0)}
+  ${row('Último vuelo',lastT(A),lastT(B),cmpN(+new Date(A.last.l.net),+new Date(B.last.l.net),true))}
+  ${row('Próxima misión',nextT(A),nextT(B),0)}
+  </table></div>
+  <p class="mut">Totales de vuelos y aterrizajes según Launch Library 2; días en tierra y zonas, de sus vuelos entre los últimos ${D.previous.length} lanzamientos (${esc(A.serial)}: ${A.inData}, ${esc(B.serial)}: ${B.inData}).</p></div>`;
+}
 function renderFleet(){
   const m={};
   [...D.previous].reverse().forEach(l=>(l.stages||[]).forEach(s=>{if(!s.serial||/Unknown/.test(s.serial))return;
@@ -276,10 +314,11 @@ function renderFleet(){
   D.upcoming.forEach(l=>(l.stages||[]).forEach(s=>{const b=m[s.serial];if(b&&!b.next)b.next=l}));
   const rows=Object.values(m).sort((a,b)=>fleetSort==='flights'?b.flights-a.flights:new Date(b.last)-new Date(a.last));
   const max=Math.max(...rows.map(r=>r.flights),1);
-  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Las primeras etapas que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar y un propulsor para ver su ficha y apostar si volverá a volar.</div></div>${betsHTML()}
+  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Las primeras etapas que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar y un propulsor para ver su ficha y apostar si volverá a volar.</div></div>${betsHTML()}${cmpHTML(rows)}
   <div class="tscroll"><table><caption class="sr">Flota de propulsores, ordenada por ${fleetSort==='flights'?'número de vuelos':'último vuelo'}</caption><tr><th scope="col">Propulsor</th><th scope="col" aria-sort="${fleetSort==='flights'?'descending':'none'}"><button type="button" class="lnk" data-s="flights">Vuelos</button></th><th scope="col" aria-sort="${fleetSort==='last'?'descending':'none'}"><button type="button" class="lnk" data-s="last">Último vuelo</button></th><th scope="col">Próximo</th></tr>
   ${rows.map(r=>`<tr class="clic" data-serial="${r.serial}"><td><button type="button" class="lnk" data-open="${r.serial}" aria-label="Abrir la ficha del propulsor ${r.serial}"><b>${r.serial}</b> <span class="mut" aria-hidden="true">ficha ›</span></button></td><td>${r.flights}<div class="bar"><i style="width:${100*r.flights/max}%"></i></div></td><td>${fmtD(r.last)}<div class="mut">${r.missions.at(-1)}</div></td><td>${r.next?`${mname(r.next)}<div class="mut">${fmtD(r.next.net)}</div>`:'—'}</td></tr>`).join('')}</table></div>`;
   $('#fleet').querySelectorAll('button[data-s]').forEach(t=>t.onclick=()=>{fleetSort=t.dataset.s;renderFleet();const f=$('#fleet').querySelector(`button[data-s="${t.dataset.s}"]`);f&&f.focus()});
+  $('#fleet').querySelectorAll('select[data-cmp]').forEach(sel=>sel.onchange=()=>{CMP[+sel.dataset.cmp]=sel.value;renderFleet();const f=$('#fleet').querySelector(`select[data-cmp="${sel.dataset.cmp}"]`);f&&f.focus()});
   $('#fleet').querySelectorAll('tr[data-serial]').forEach(t=>t.onclick=e=>{if(e.target.closest('button[data-s]'))return;openBooster(t.dataset.serial)});
 }
 // ---------- Mapa ----------

@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();renderRacha();bindRacha();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -391,7 +391,7 @@ function retosGlobo(){
   if(fl)R.push({t:'Récord de reutilización',m:`El propulsor ${fl.serial} ya lleva ${fl.flight} vuelos. Antes los cohetes se tiraban tras un solo uso. ¿Sabrías decir cuál es el siguiente en llegar a esa cifra?`,tab:'fleet',btn:'Ver la flota',k:'fleet'});
   {const bs=LS.get('bets',{});const cand=D.previous.flatMap(l=>(l.stages||[]).map(s=>s.serial)).find(x=>{if(!x||/Unknown/.test(x)||(bs[x]&&!bs[x].res))return false;const u=boosterHist(x).at(-1);return u&&u.s.land_attempt!==false&&u.s.land_success!==false});
    if(cand)R.push({t:'¿Volverá a volar?',m:`Abre la ficha del propulsor ${cand}: mira cuántos días suele pasar en tierra entre vuelos y apuesta si volverá a despegar en los próximos 30 días. Se resuelve solo con los datos reales.`,tab:'fleet',btn:'Ver propulsores',k:'bet'});}
-  const s=D.stats;if(s&&s.consecutive_successful_landings)R.push({t:'Racha en directo',m:`SpaceX lleva ${s.consecutive_successful_landings} aterrizajes seguidos sin fallar y ${s.consecutive_successful_launches} lanzamientos seguidos con éxito. ¿Crees que la racha aguanta esta semana? Demuéstralo con tus predicciones.`,tab:'predict',btn:'Apostar',k:ups.length?'pred':null});
+  const s=D.stats;if(s&&s.consecutive_successful_landings!=null){const W=rbWeek(),w=(LS.get('rbet',{})[W.k]||{}).bets||{},libre=Date.now()<W.close&&(!w.land||!w.launch);R.push({t:'Racha en directo',m:`SpaceX lleva ${s.consecutive_successful_landings} aterrizajes seguidos sin fallar y ${s.consecutive_successful_launches} lanzamientos seguidos con éxito. ${libre?`¿Seguirá la racha el domingo? Apuesta antes del viernes: «No» da ${RB_PTS.no} puntos si se rompe.`:'Sigue el contador en directo en Próximo.'}`,tab:'next',btn:libre?'Apostar por la racha':'Ver la racha',k:libre?'racha':null,sel:'#rlive'});}
   {const f=formate();if(f)R.push(f);}
   return R;
 }
@@ -587,12 +587,12 @@ function checkIn(){try{const t=dayKey(),st=LS.get('streak',{n:0,best:0,last:null
 function retoDelDia(){const t=dayKey(),d=LS.get('daily',null);if(d&&d.d===t)return d;
   const R=retosGlobo().filter(r=>r.k);if(!R.length)return null;
   const num=Math.round(new Date(t+'T12:00:00')/DAY),r=R[num%R.length];
-  const nd={d:t,k:r.k,t:r.t,m:r.m,btn:r.btn,tab:r.tab||null,url:r.url||null,done:false};LS.set('daily',nd);return nd}
+  const nd={d:t,k:r.k,t:r.t,m:r.m,btn:r.btn,tab:r.tab||null,url:r.url||null,sel:r.sel||null,done:false};LS.set('daily',nd);return nd}
 function completeDaily(k){try{const d=LS.get('daily',null);if(!d||d.d!==dayKey()||d.done||d.k!==k)return;
   d.done=true;d.pts=dailyPts();d.at=Date.now();LS.set('daily',d);addPts('streak',d.pts);
   const st=LS.get('streak',{});st.retos=(st.retos||0)+1;LS.set('streak',st);
   aviso(`Desafío del día completado: +${d.pts} puntos.`);renderDaily()}catch(e){}}
-function goReto(r){if(r.url){window.open(r.url,'_blank','noopener');completeDaily(r.k)}else{const b=document.querySelector(`nav button[data-tab="${r.tab}"]`);if(b)b.click();try{scrollTo({top:0})}catch(e){}}}
+function goReto(r){if(r.url){window.open(r.url,'_blank','noopener');completeDaily(r.k)}else{const b=document.querySelector(`nav button[data-tab="${r.tab}"]`);if(b)b.click();try{const t=r.sel&&document.querySelector(r.sel);if(t)t.scrollIntoView({block:'start'});else scrollTo({top:0})}catch(e){}}}
 function aviso(t){let a=$('#aviso');if(!a){a=document.createElement('div');a.id='aviso';a.className='aviso';a.setAttribute('role','status');document.body.appendChild(a)}
   a.textContent=a.classList.contains('show')&&a.textContent&&!a.textContent.includes(t)?a.textContent+' '+t:t;a.classList.add('show');clearTimeout(a._t);a._t=setTimeout(()=>a.classList.remove('show'),4500)}
 function renderDaily(){const el=$('#daily');if(!el||!D)return;const st=LS.get('streak',{n:0,best:0}),n=streakNow(),d=retoDelDia();
@@ -807,7 +807,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>
@@ -821,3 +821,54 @@ function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)
   <li>Reto rápido: récord ${(LS.get('rapid',{}).best)||0} puntos · ¿Más o menos?: mejor racha de ${(LS.get('hilo',{}).best)||0} aciertos</li></ul>
   <h4>De dónde salen tus ${ptot} puntos</h4><ul class="stl">${cats.map(([k,t])=>`<li>${t}: <b>${P[k]||0}</b>${ptot?` <span class="mut">(${pct(P[k]||0,ptot)})</span>`:''}${ptot?`<div class="bar" aria-hidden="true"><i style="width:${100*(P[k]||0)/ptot}%"></i></div>`:''}</li>`).join('')}</ul></details>`}
 function bindStats(){const d=document.querySelector('#mystats details');if(d)d.ontoggle=()=>LS.set('stats_open',d.open)}
+// ---------- Racha en directo y apuesta semanal «¿seguirá la racha el domingo?» ----------
+// Los contadores salen de las estadísticas de SpaceX en Launch Library 2; la apuesta se resuelve con los lanzamientos reales de la semana.
+// Se guarda en sxp_rbet (por semana) y los puntos van a la categoría racha.
+let RL=null;// datos más recientes leídos en segundo plano (cada 20 minutos)
+const rlD=()=>RL||D;
+const RB_PTS={si:10,no:40};
+const RB_Q={land:['aterrizajes','consecutive_successful_landings','¿Seguirá la racha de aterrizajes de propulsores sin fallos hasta el domingo?'],
+  launch:['lanzamientos','consecutive_successful_launches','¿Seguirá la racha de lanzamientos con éxito hasta el domingo?']};
+function rbWeek(){const m=weekKey(),k=m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')+'-'+String(m.getDate()).padStart(2,'0');
+  const end=new Date(m.getFullYear(),m.getMonth(),m.getDate()+7).getTime()-1,close=new Date(m.getFullYear(),m.getMonth(),m.getDate()+5).getTime();return{k,end,close}}
+const landFail=l=>(l.stages||[]).some(s=>s.land_attempt&&s.land_success===false);
+const landPend=l=>(l.stages||[]).some(s=>s.land_attempt&&s.land_success!==true&&s.land_success!==false);
+const launchFail=l=>/Failure/i.test(l.status||'');
+function rlInfo(){const d=rlD(),P=(d.previous||[]).slice().sort((a,b)=>new Date(b.net)-new Date(a.net)),s=d.stats||{};
+  const okL=P.filter(l=>(l.stages||[]).some(x=>x.land_attempt&&x.land_success===true)),lf=P.find(landFail),lnf=P.find(launchFail);
+  const since=lf?P.filter(l=>new Date(l.net)>new Date(lf.net)).reduce((n,l)=>n+(l.stages||[]).filter(x=>x.land_attempt&&x.land_success===true).length,0):null;
+  const nx=(d.upcoming||[]).filter(l=>new Date(l.net)>Date.now()-3*H&&(l.stages||[]).some(x=>x.land_attempt)).sort((a,b)=>new Date(a.net)-new Date(b.net))[0];
+  return{s,P,lastOk:okL[0],lf,lnf,since,nx,gen:d.generated}}
+function resolveRbet(){const d=rlD();if(!d||!d.previous)return;const all=LS.get('rbet',{});let ch=false,won=0;const gen=new Date(d.generated).getTime();
+  for(const w of Object.values(all))for(const [k,b] of Object.entries(w.bets||{})){if(b.res)continue;if(!(gen>w.end))continue;
+    const win=d.previous.filter(l=>{const t=new Date(l.net).getTime();return t>b.at&&t<=w.end});
+    const fail=k==='land'?win.find(landFail):win.find(launchFail);
+    if(!fail&&k==='land'&&win.some(landPend)&&gen<w.end+2*DAY)continue;// espera a que la fuente confirme el aterrizaje
+    let held=!fail;const old=d.previous.reduce((m,l)=>Math.min(m,new Date(l.net).getTime()),Infinity);
+    if(!fail&&old>b.at)held=((d.stats||{})[RB_Q[k][1]]||0)>=b.v0;// la lista no cubre la semana: se usa el contador
+    const ok=(b.pick==='Sí')===held;b.res={held,ok,by:fail?mname(fail):null,n:k==='land'?win.reduce((n,l)=>n+(l.stages||[]).filter(x=>x.land_attempt&&x.land_success===true).length,0):win.filter(l=>l.status==='Success').length};
+    b.won=ok?(b.pick==='Sí'?RB_PTS.si:RB_PTS.no):0;b.resAt=Date.now();if(b.won)won+=b.won;ch=true}
+  if(ch){LS.set('rbet',all);if(won){addPts('racha',won);aviso(`Apuesta de la racha resuelta: +${won} puntos.`)}}}
+function rbetHTML(){const W=rbWeek(),all=LS.get('rbet',{}),w=all[W.k]||{bets:{}},I=rlInfo(),open=Date.now()<W.close;
+  const q=k=>{const b=(w.bets||{})[k],[nm,f,t]=RB_Q[k],v=I.s[f];if(v==null)return '';
+    return `<div style="margin-top:10px"><div id="rb-${k}">${t} <span class="mut">(ahora ${v} ${nm} seguidos)</span></div>
+    ${b?`<p>${b.res?ic(b.res.ok):'<span role="img" aria-label="Pendiente">⏳</span>'} Dijiste <b>${b.pick}</b> con la racha en ${b.v0}${b.res?` · ${b.res.held?'la racha aguantó':'se rompió'+(b.res.by?' en '+esc(b.res.by):'')} (${b.res.n} ${k==='land'?'aterrizajes':'lanzamientos'} con éxito en la semana desde tu apuesta) · +${b.won} puntos`:` · se resuelve con los datos de después del domingo ${fmtD(W.end)} a las 23:59`}</p>`
+    :open?`<div class="opts" role="group" aria-labelledby="rb-${k}"><button type="button" data-rb="${k}" data-v="Sí">Sí, aguanta (+${RB_PTS.si})</button><button type="button" data-rb="${k}" data-v="No">No, se romperá (+${RB_PTS.no})</button></div>`
+    :'<p class="mut">Las apuestas de esta semana cerraron el viernes a las 23:59. El lunes empieza otra.</p>'}</div>`};
+  const past=Object.entries(all).filter(([k])=>k!==W.k).sort((a,b)=>b[0]<a[0]?-1:1).slice(0,4).flatMap(([k,x])=>Object.entries(x.bets||{}).map(([q,b])=>`<div class="mut">Semana del ${fmtD(k+'T12:00:00')} · ${RB_Q[q][0]}: dijiste ${b.pick} · ${b.res?`${b.res.ok?'acertaste':'fallaste'}, +${b.won} puntos`:'pendiente de datos'}</div>`));
+  return `<h3>Apuesta de la semana</h3><p class="mut">Apuesta hasta el viernes a las 23:59 por la racha tal como está al apostar. «Sí» da ${RB_PTS.si} puntos y «No», que es más difícil, ${RB_PTS.no}. Se resuelve sola con los lanzamientos reales hasta el domingo a las 23:59.</p>${q('land')}${q('launch')}${past.length?`<div style="margin-top:8px">${past.join('')}</div>`:''}`}
+function renderRacha(){const el=$('#rlive');if(!el||!D)return;const I=rlInfo(),s=I.s;if(s.consecutive_successful_landings==null){el.innerHTML='';return}
+  const lo=I.lastOk,lb=lo&&(lo.stages||[]).find(x=>x.land_attempt&&x.land_success===true),nb=I.nx&&(I.nx.stages||[]).find(x=>x.land_attempt);
+  el.innerHTML=`<div class="card daily rlive"><div class="kick">Racha en directo</div>
+  <div class="stats"><div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos sin fallos</div><div><b>${s.consecutive_successful_launches}</b>lanzamientos seguidos con éxito</div>
+  <div><b>${pct(s.successful_landings,s.attempted_landings)}</b>aterrizajes con éxito en total (${s.successful_landings} de ${s.attempted_landings})</div></div>
+  ${lb?`<p class="mut">Último aterrizaje que sumó: ${esc(lb.serial)} en ${esc(mname(lo))}, ${fmt(lo.net)}${lb.land_loc_name?` (${esc(lb.land_loc_name)})`:''}.</p>`:''}
+  ${I.lf&&I.since===s.consecutive_successful_landings?`<p class="mut">La racha empezó tras el último fallo: ${esc(mname(I.lf))} (${esc(I.lf.rocket||'')}), ${fmtD(I.lf.net)}.</p>`:''}
+  ${I.nx?`<p class="mut">Próximo intento de aterrizaje: ${esc(mname(I.nx))}, ${fmt(I.nx.net)}${nb&&nb.serial&&!/Unknown/.test(nb.serial)?` con ${esc(nb.serial)}`:''}${nb&&nb.land_loc_name?` en ${esc(nb.land_loc_name)}`:''}.</p>`:''}
+  ${rbetHTML()}<div class="mut" style="margin-top:6px">Contadores de Launch Library 2, actualizados ${fmt(I.gen)}. Se vuelven a leer cada 20 minutos.</div></div>`}
+function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-rb]');if(!b)return;
+  const W=rbWeek();if(Date.now()>=W.close){renderRacha();return}const all=LS.get('rbet',{}),w=all[W.k]||(all[W.k]={end:W.end,bets:{}}),k=b.dataset.rb;if(w.bets[k])return;
+  const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
+  aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
+  const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha()}}catch(e){}}

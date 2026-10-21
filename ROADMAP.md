@@ -22,4 +22,4 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Mapa con zonas de aterrizaje además de plataformas (hecho el 21 oct, 08:56)
 - [x] Juego «¿Más o menos?»: ¿qué propulsor real ha volado más veces? Se encadenan aciertos hasta fallar (hecho el 21 oct, 10:53)
 - [x] Mis estadísticas: tu porcentaje de aciertos por tipo de pregunta de predicción y por categoría, comparado con lo que pasó de verdad (hecho el 21 oct, 12:58)
-- [ ] Contador en directo de la racha real de aterrizajes y lanzamientos seguidos de SpaceX, con una apuesta semanal «¿seguirá la racha el domingo?» que se resuelve con los datos
+- [x] Contador en directo de la racha real de aterrizajes y lanzamientos seguidos de SpaceX, con una apuesta semanal «¿seguirá la racha el domingo?» que se resuelve con los datos (hecho el 21 oct, 14:52)

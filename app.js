@@ -348,11 +348,34 @@ function drawMap(){if(mapDone)return;mapDone=true;
   land.forEach(z=>L.circleMarker([z.lat,z.lon],{radius:5+Math.sqrt(z.done+z.up)*1.6,color:'#4fe3a1',fillColor:'#4fe3a1',fillOpacity:.35,weight:2,dashArray:'3 3'}).addTo(gZ).bindPopup(`<b>Zona de aterrizaje ${esc(z.k)}</b> · ${esc(z.name)}<br>${lzInfo(z)}`));
   L.control.layers(null,{'<span style="color:#8a7dff">●</span> Plataformas de lanzamiento':gP,'<span style="color:#4fe3a1">●</span> Zonas de aterrizaje en tierra':gZ},{collapsed:false}).addTo(map);
   const card=z=>`<div class="card"><b>${esc(z.name)}</b>${z.k!==z.name?` <span class="mut">(${esc(z.k)})</span>`:''}<div class="mut">${lzInfo(z)}</div></div>`;
-  $('#maplist').innerHTML=`<h3>Plataformas de lanzamiento</h3>`+Object.values(pads).sort((a,b)=>b.done-a.done).map(p=>`<div class="card"><b>${esc(p.pad)}</b><div class="mut">${esc(p.loc)} · ${p.done} lanzamientos recientes · ${p.up} próximos</div></div>`).join('')+
+  $('#maplist').innerHTML=padListHTML()+
    (land.length?`<h3>Zonas de aterrizaje en tierra</h3><p class="mut">Los propulsores que vuelven a tierra aterrizan aquí, a pocos kilómetros de donde despegaron (en verde en el mapa).</p>`+land.map(card).join(''):'')+
    (sea.length?`<h3>Aterrizajes en el mar</h3><p class="mut">Las barcazas autónomas se colocan en cada misión a cientos de kilómetros de la costa, según la trayectoria, así que Launch Library 2 no les da una posición fija y no salen en el mapa.</p>`+sea.map(card).join(''):'')+
    `<p class="mut">Usos recientes: de los últimos ${D.previous.length} lanzamientos; próximos: de los ${D.upcoming.length} siguientes. Historial total según Launch Library 2.</p>`;
 }
+// ---------- Ritmo de cada plataforma ----------
+// Con los lanzamientos reales de data.json (Launch Library 2): días entre lanzamientos desde la misma plataforma, récord de rapidez
+// en los datos y si el siguiente previsto lo batiría si sale a su hora. Solo lectura: no toca puntuaciones.
+function padStats(){const P={},pid=new Set(D.previous.map(l=>l.id)),now=Date.now();
+  const ok=l=>l.pad&&!/^Unknown/i.test(l.pad)&&!isNaN(new Date(l.net));
+  D.previous.filter(ok).forEach(l=>{(P[l.pad]||(P[l.pad]={pad:l.pad,loc:l.loc,past:[],next:[]})).past.push(l)});
+  D.upcoming.filter(l=>ok(l)&&!pid.has(l.id)&&new Date(l.net)>now-3*H).forEach(l=>{(P[l.pad]||(P[l.pad]={pad:l.pad,loc:l.loc,past:[],next:[]})).next.push(l)});
+  return Object.values(P).map(p=>{const T=l=>new Date(l.net).getTime();p.past.sort((a,b)=>T(a)-T(b));p.next.sort((a,b)=>T(a)-T(b));
+    const g=[];for(let i=1;i<p.past.length;i++)g.push({ms:T(p.past[i])-T(p.past[i-1]),a:p.past[i-1],b:p.past[i]});
+    const s=g.map(x=>x.ms).sort((a,b)=>a-b);p.gaps=g;p.med=s.length?s[Math.floor((s.length-1)/2)]:null;p.rec=g.length?g.reduce((m,x)=>x.ms<m.ms?x:m):null;
+    p.last=p.past[p.past.length-1]||null;p.nx=p.next[0]||null;p.since=p.last?now-T(p.last):null;
+    p.precise=p.nx&&/^(SEC|MIN|HOUR)$/i.test(p.nx.net_precision||'');p.gapNx=p.nx&&p.last?T(p.nx)-T(p.last):null;
+    p.beat=!!(p.precise&&p.rec&&p.gapNx!=null&&p.gapNx>0&&p.gapNx<p.rec.ms);return p}).sort((a,b)=>b.past.length-a.past.length||b.next.length-a.next.length)}
+function padHTML(p){const d=ms=>rtHrs(ms),n=p.past.length;
+  let h=`<div class="card pad"><b>${esc(p.pad)}</b><div class="mut">${esc(p.loc||'')} · ${n} ${n===1?'lanzamiento reciente':'lanzamientos recientes'} · ${p.next.length} ${p.next.length===1?'próximo':'próximos'}</div>`;
+  if(p.med!=null)h+=`<div class="stats"><div><b>${d(p.med)}</b>mediana entre lanzamientos desde aquí</div>${p.rec?`<div><b>${d(p.rec.ms)}</b>récord en los datos</div>`:''}${p.since!=null?`<div><b>${d(p.since)}</b>desde el último</div>`:''}</div>`;
+  if(p.rec)h+=`<p class="mut">Récord: de ${esc(mname(p.rec.a))} (${fmtD(p.rec.a.net)}) a ${esc(mname(p.rec.b))} (${fmtD(p.rec.b.net)}).</p>`;
+  if(p.last)h+=`<p class="mut">Último: ${esc(mname(p.last))} (${esc(p.last.rocket||'')}, ${fmtD(p.last.net)}).</p>`;
+  if(p.nx)h+=`<p class="mut">Siguiente: ${esc(mname(p.nx))}, ${p.precise?fmt(p.nx.net):'fecha aún sin hora fijada ('+fmtD(p.nx.net)+')'}${p.precise&&p.gapNx!=null&&p.gapNx>0?`, ${d(p.gapNx)} después del último`:''}.</p>`;
+  if(p.beat)h+=`<p><span aria-hidden="true">🏁</span> <b>Si despega a su hora, batirá el récord de rapidez de esta plataforma en los datos</b> (${d(p.gapNx)} frente a ${d(p.rec.ms)}).</p>`;
+  return h+'</div>'}
+function padListHTML(){const S=padStats();if(!S.length)return '';
+  return `<h3>Plataformas de lanzamiento</h3><p class="mut">Cada plataforma necesita días para reparar, limpiar y preparar el siguiente cohete. Aquí ves cada cuánto despega SpaceX desde cada una, con los últimos ${D.previous.length} lanzamientos de Launch Library 2.</p>`+S.map(padHTML).join('')}
 // ---------- Historial ----------
 function renderLog(){
   $('#log').innerHTML=D.previous.map(l=>{const b=(l.stages||[])[0]||{};const ok=l.status==='Success';

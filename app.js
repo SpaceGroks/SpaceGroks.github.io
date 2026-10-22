@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="clientes"></div><div id="ventanas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -504,6 +504,7 @@ function retosGlobo(){
   {const I=rtInfo(),W=rtWeek();if(I){const libre=Date.now()<W.close&&!LS.get('ritmo',{})[W.k];R.push({t:'Ritmo de lanzamientos',m:`SpaceX ha lanzado ${I.l30} cohetes en los últimos 30 días y esta semana ${I.thisW.length===1?'va 1':'van '+I.thisW.length}. ${libre?`¿Cuántos habrá hasta el domingo? Apuesta antes del jueves: el número exacto da ${RT_PTS.exact} puntos.`:'Mira el récord de cadencia y cómo va la semana.'}`,tab:'next',btn:libre?'Apostar por el ritmo':'Ver el ritmo',k:libre?'ritmo':null,sel:'#ritmo'})}}
   {const I=cliInfo();if(I&&I.opts.length){const cur=cliState().cur,top=I.rows.find(r=>r.c!=='SpaceX');R.push({t:'Clientes de SpaceX',m:`${top?`${cliN(top.c)} es el cliente externo con más lanzamientos recientes (${top.n}). `:''}${cur?'Tu apuesta sigue en juego: mira quién encarga los próximos.':`¿De quién será el siguiente lanzamiento que no sea Starlink ni de la propia SpaceX? Acertar da hasta ${CLI_PTS.other} puntos.`}`,tab:'next',btn:cur?'Ver los clientes':'Apostar por un cliente',k:cur?null:'cli',sel:'#clientes'})}}
   {const I=venInfo(),l=I&&I.U.find(venOpen);if(l){const cur=!!venState().cur[l.id];R.push({t:'Ventanas de lanzamiento',m:`La ventana de ${mname(l)} dura ${venTxt(venDur(l))}. Solo ${I.first} de los últimos ${I.W.length} lanzamientos con ventana salieron en su primer minuto. ${cur?'Tu apuesta sigue en juego.':`¿Saldrá este en el primer minuto? Acertar «Sí» da ${VEN_PTS.si} puntos.`}`,tab:'next',btn:cur?'Ver las ventanas':'Apostar por la ventana',k:cur?null:'ven',sel:'#ventanas'})}}
+  {const I=zonInfo();if(I&&I.opts.length){const cur=zonState().cur,top=I.rows[0];R.push({t:'Zonas de aterrizaje',m:`${top&&top.rn?`${top.name||top.k} es la zona más usada en los últimos lanzamientos (${top.rn} veces). `:''}${cur?'Tu apuesta sigue en juego: mira qué zona usa el próximo propulsor.':`¿Dónde aterrizará el próximo propulsor? Acertar una zona poco usada da hasta ${ZON_MAX} puntos.`}`,tab:'next',btn:cur?'Ver las zonas':'Apostar por una zona',k:cur?null:'zon',sel:'#zonas'})}}
   {const f=formate();if(f)R.push(f);}
   return R;
 }
@@ -944,7 +945,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>
@@ -1008,7 +1009,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -1152,6 +1153,55 @@ function bindVentanas(){const el=$('#next');if(!el||el._ven)return;el._ven=true;
   s.cur[id]={pick:b.dataset.v==='si'?'si':'no',at:Date.now(),ws:l.ws,we:l.we,m:mname(l)};LS.set('ven',s);
   aviso(`Apuesta guardada: ${mname(l)} ${b.dataset.v==='si'?'saldrá en el primer minuto':'no saldrá en el primer minuto'}.`);completeDaily('ven');renderVentanas();
   const q=$('#ven-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}
+
+// ---------- Zonas de aterrizaje y apuesta «¿dónde aterrizará el próximo propulsor?» ----------
+// Historial total (lzones: aterrizajes logrados e intentados) y usos recientes (stages[].land_loc) salen de Launch Library 2 (data.json).
+// La apuesta se guarda en sxp_zon y se resuelve sola con el primer lanzamiento del historial con zona indicada que despegue al menos
+// 2 horas después de apostar (si lleva varios propulsores, vale cualquiera de sus zonas).
+const ZON_GAP=2*H,ZON_FAV=5,ZON_MIN=5,ZON_MAX=50;
+function zonInfo(){const d=rlD(),Z=d&&d.lzones;if(!Z||!Object.keys(Z).length)return null;
+  const P=(d.previous||[]).filter(l=>!isNaN(new Date(l.net))).slice().sort((a,b)=>new Date(b.net)-new Date(a.net));
+  const R={};let tot=0;for(const l of P)for(const s of (l.stages||[])){const k=s.land_loc;if(!k||!Z[k])continue;
+    const r=R[k]||(R[k]={n:0,ok:0,last:null});r.n++;tot++;if(s.land_success)r.ok++;if(!r.last)r.last=l}
+  const U=(d.upcoming||[]).filter(l=>!isNaN(new Date(l.net))&&new Date(l.net)>Date.now()-3*H).slice().sort((a,b)=>new Date(a.net)-new Date(b.net));
+  const nx={};for(const l of U)for(const s of (l.stages||[])){const k=s.land_loc;if(k&&Z[k]&&!nx[k])nx[k]=l}
+  const firstL=U.find(l=>(l.stages||[]).some(s=>s.land_loc&&Z[s.land_loc]))||null;
+  const fav=firstL?(firstL.stages.find(s=>s.land_loc&&Z[s.land_loc])||{}).land_loc:null;
+  const rows=Object.entries(Z).map(([k,z])=>({k,...z,rn:(R[k]||{}).n||0,rok:(R[k]||{}).ok||0,last:(R[k]||{}).last||null,next:nx[k]||null}))
+    .sort((a,b)=>b.rn-a.rn||(b.att||0)-(a.att||0));
+  const pts=k=>{if(k===fav)return ZON_FAV;const n=(R[k]||{}).n||0;return n&&tot?Math.max(ZON_MIN,Math.min(ZON_MAX,Math.round(5*tot/n))):ZON_MAX};
+  const opts=rows.filter(r=>r.active!==false&&(r.rn||r.next)).map(r=>({k:r.k,pts:pts(r.k)}));
+  return{P,rows,tot,fav,firstL,opts,gen:d.generated}}
+function zonState(){const s=LS.get('zon',{cur:null,hist:[]});s.hist=s.hist||[];return s}
+function resolveZon(){const d=rlD();if(!d||!d.previous||!d.lzones)return;const s=zonState(),b=s.cur;if(!b)return;
+  const gen=new Date(d.generated).getTime();if(!(gen>b.at))return;
+  const c=d.previous.filter(l=>new Date(l.net).getTime()>=b.at+ZON_GAP&&(l.stages||[]).some(x=>x.land_loc&&d.lzones[x.land_loc])).sort((x,y)=>new Date(x.net)-new Date(y.net))[0];if(!c)return;
+  const ks=[...new Set(c.stages.filter(x=>x.land_loc&&d.lzones[x.land_loc]).map(x=>x.land_loc))],ok=ks.includes(b.pick),won=ok?b.pts:0;
+  s.hist.unshift({...b,res:{m:mname(c),net:c.net,ks},ok,won,resAt:Date.now()});s.hist=s.hist.slice(0,20);s.cur=null;LS.set('zon',s);
+  if(won)addPts('zon',won);aviso(`Apuesta de aterrizaje resuelta: ${mname(c)} usó ${ks.join(', ')}. ${ok?`+${won} puntos.`:'Esta vez no.'}`)}
+const zonPct=(a,b)=>b?Math.round(100*a/b)+' %':'—';
+function zonName(I,k){const z=(I.rows.find(r=>r.k===k)||{});return z.name&&z.name!==k?`${z.name} (${k})`:k}
+function zonBetHTML(I){const s=zonState(),b=s.cur;
+  let h=`<h3 id="zon-q">¿Dónde aterrizará el próximo propulsor?</h3><p class="mut">Cuenta el primer lanzamiento que despegue al menos 2 horas después de apostar con zona de recuperación indicada en Launch Library 2 (barcaza, zona en tierra o el mar si la etapa no se recupera). Los puntos dependen de lo raro que sea: ${I.fav?`la zona asignada al primer lanzamiento previsto (${esc(I.fav)}, para ${esc(mname(I.firstL))}) da solo ${ZON_FAV}; `:''}las demás, según lo poco que se han usado en los últimos lanzamientos, hasta ${ZON_MAX}.</p>`;
+  if(b)h+=`<p><span role="img" aria-label="Pendiente">⏳</span> Apostaste por <b>${esc(b.name||b.pick)}</b> (+${b.pts}) el ${fmt(b.at)} · se resuelve sola con el siguiente lanzamiento con zona.</p>`;
+  else if(I.opts.length)h+=`<div class="opts zon-opts" role="group" aria-labelledby="zon-q">${I.opts.map(o=>`<button type="button" data-zon="${esc(o.k)}">${esc(o.k)} (+${o.pts})</button>`).join('')}</div>`;
+  else h+='<p class="mut">Ahora no hay zonas activas con usos recientes o previstos en Launch Library 2.</p>';
+  const past=s.hist.slice(0,4).map(x=>`<div class="mut">${ic(x.ok)} Dijiste ${esc(x.pick)} · ${esc(x.res.m)} usó ${esc(x.res.ks.join(', '))} (${fmtD(x.res.net)}) · +${x.won} puntos</div>`).join('');
+  return h+(past?`<div style="margin-top:8px">${past}</div>`:'')}
+function renderZonas(){const el=$('#zonas');if(!el||!D)return;const I=zonInfo();if(!I){el.innerHTML='';return}
+  const rec=I.rows.filter(r=>r.type!=='EXP'),ok=rec.reduce((a,r)=>a+(r.ok||0),0),att=rec.reduce((a,r)=>a+(r.att||0),0);
+  const row=r=>`<tr><th scope="row">${esc(r.k)}<div class="mut">${esc(r.name||'')}${r.active===false?' · ya no está en servicio':''}</div></th><td>${esc(lzLabel(r.type))}</td><td>${r.type==='EXP'?`${r.att||0} etapas sin recuperar`:`${zonPct(r.ok||0,r.att||0)}<div class="mut">${r.ok||0} de ${r.att||0}</div>`}</td><td>${r.rn}${r.rn&&r.type!=='EXP'?`<div class="mut">${r.rok} con éxito</div>`:''}</td><td>${r.next?`${esc(mname(r.next))}<div class="mut">${fmtD(r.next.net)}</div>`:'—'}</td></tr>`;
+  el.innerHTML=`<div class="card daily zonas"><div class="kick">Zonas de aterrizaje</div>
+  <div class="stats"><div><b>${zonPct(ok,att)}</b>aterrizajes con éxito en todas las zonas (${ok} de ${att})</div><div><b>${I.tot}</b>usos en los últimos ${I.P.length} lanzamientos</div><div><b>${I.rows.filter(r=>r.active!==false).length}</b>zonas en servicio</div></div>
+  <p class="mut">Porcentaje de éxito de cada barcaza y zona en tierra con los aterrizajes logrados e intentados de todo su historial según Launch Library 2, cuántas veces se usó cada una en los últimos ${I.P.length} lanzamientos de SpaceX y cuál es su siguiente misión prevista.</p>
+  <div class="tblw"><table class="stt"><thead><tr><th scope="col">Zona</th><th scope="col">Tipo</th><th scope="col">Éxito histórico</th><th scope="col">Usos recientes</th><th scope="col">Siguiente</th></tr></thead><tbody>${I.rows.map(row).join('')}</tbody></table></div>
+  ${zonBetHTML(I)}<div class="mut" style="margin-top:6px">Datos de Launch Library 2 actualizados ${fmt(I.gen)}.</div></div>`}
+function bindZonas(){const el=$('#next');if(!el||el._zon)return;el._zon=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-zon]');if(!b)return;
+  const I=zonInfo(),s=zonState();if(!I||s.cur){renderZonas();return}
+  const o=I.opts.find(x=>x.k===b.dataset.zon);if(!o){renderZonas();return}
+  s.cur={pick:o.k,name:zonName(I,o.k),pts:o.pts,at:Date.now()};LS.set('zon',s);
+  aviso(`Apuesta guardada: ${o.k} (+${o.pts} si aciertas).`);completeDaily('zon');renderZonas();
+  const q=$('#zon-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}
 
 // ---------- Trabajar en SpaceX por ciudades ----------
 // Ofertas reales del tablón público de SpaceX en Greenhouse (data.json → jobs.cities y jobs.interns), agrupadas por ubicación.

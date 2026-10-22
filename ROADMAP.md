@@ -27,5 +27,5 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Ritmo de lanzamientos: días entre lanzamientos de SpaceX en los datos, récord de cadencia y apuesta «¿cuántos lanzamientos habrá esta semana?» que se resuelve sola (hecho el 21 oct, 18:58)
 - [x] Comparar dos propulsores lado a lado: vuelos, aterrizajes, días medios en tierra, zonas de aterrizaje usadas y último vuelo (hecho el 21 oct, 20:58)
 - [x] Ritmo de cada plataforma en el Mapa: días entre lanzamientos desde la misma plataforma, récord de rapidez en los datos, tiempo desde el último y aviso si el siguiente previsto batiría el récord (hecho el 22 oct, 08:58)
-- [ ] Juego «¿Adónde va?»: con una misión real reciente, adivina su órbita (LEO, SSO, GTO...) y su plataforma; puntúa con los datos de Launch Library 2
+- [x] Juego «¿Adónde va?»: con una misión real reciente, adivina su órbita (LEO, SSO, GTO...) y su plataforma; puntúa con los datos de Launch Library 2 (hecho el 22 oct, 10:58)
 - [ ] Clientes de SpaceX: quién ha contratado los últimos lanzamientos (agencias y empresas reales), cuántos cada uno y qué órbitas usan, con apuesta «¿de quién será el siguiente lanzamiento que no sea Starlink?»

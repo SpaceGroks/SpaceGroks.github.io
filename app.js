@@ -352,6 +352,35 @@ function cmpHTML(rows){
   </table></div>
   <p class="mut">Totales de vuelos y aterrizajes según Launch Library 2; días en tierra y zonas, de sus vuelos entre los últimos ${D.previous.length} lanzamientos (${esc(A.serial)}: ${A.inData}, ${esc(B.serial)}: ${B.inData}).</p></div>`;
 }
+// ---------- Carrera por el récord de la flota ----------
+function raceData(){
+  const okS=x=>x&&!/Unknown/i.test(x),B={};
+  for(const l of [...D.previous].sort((a,b)=>new Date(a.net)-new Date(b.net)))for(const s of(l.stages||[])){if(!okS(s.serial)||!s.flight)continue;
+    const b=B[s.serial]||(B[s.serial]={serial:s.serial,flights:0,rocket:l.rocket||''});
+    if(s.flight>=b.flights){b.flights=s.flight;b.lost=s.land_attempt===false||s.land_success===false;b.last=l}}
+  const nx={};
+  for(const l of [...D.upcoming].sort((a,b)=>new Date(a.net)-new Date(b.net)))for(const s of(l.stages||[])){if(!okS(s.serial))continue;
+    const b=B[s.serial]||(B[s.serial]={serial:s.serial,flights:s.booster_flights||0,rocket:l.rocket||'',upOnly:true});
+    if(b.upOnly)b.flights=Math.max(b.flights,s.booster_flights||0);
+    if(!nx[s.serial]&&s.flight){nx[s.serial]=1;b.next=l;b.nextFlight=s.flight}}
+  const all=Object.values(B).filter(b=>b.flights>0);if(!all.length)return null;
+  const rec=Math.max(...all.map(b=>b.flights)),holders=all.filter(b=>b.flights===rec);
+  const act=all.filter(b=>!b.lost||b.next).sort((a,b)=>b.flights-a.flights||(a.next?new Date(a.next.net):Infinity)-(b.next?new Date(b.next.net):Infinity));
+  const alerts=act.filter(b=>b.next&&b.nextFlight>=rec).sort((a,b)=>new Date(a.next.net)-new Date(b.next.net));
+  return{rec,holders,act,alerts,lost:all.filter(b=>b.lost&&!b.next).length};
+}
+function raceHTML(){
+  const r=raceData();if(!r)return'';const{rec,holders,act,alerts}=r,hs=holders.map(h=>h.serial).join(' y ');
+  const al=alerts.map(b=>{const own=holders.some(h=>h.serial===b.serial),t=b.nextFlight>rec?(own?'ampliará el récord':'batirá el récord'):'igualará el récord';
+    return `<div style="margin-top:6px"><span role="img" aria-label="Aviso">🏁</span> <b>${esc(b.serial)}</b> ${t} con su vuelo nº ${b.nextFlight} en ${esc(mname(b.next))}, ${fmtD(b.next.net)}</div>`}).join('');
+  const top=act.slice(0,10);
+  return `<div class="card"><b>Carrera por el récord de la flota</b>
+  <div class="mut">El más veterano en los datos es ${esc(hs)}, con ${rec} vuelos. Cuántos vuelos le faltan a cada propulsor en activo para igualarlo o batirlo.</div>
+  ${al||`<div class="mut" style="margin-top:6px">Ninguna misión prevista con propulsor asignado iguala ni bate ahora mismo el récord.</div>`}
+  <div class="tscroll"><table><caption class="sr">Vuelos que le faltan a cada propulsor para el récord de ${rec}</caption><tr><th scope="col">Propulsor</th><th scope="col">Vuelos</th><th scope="col">Para igualar</th><th scope="col">Próxima misión</th></tr>
+  ${top.map(b=>{const f=rec-b.flights;return `<tr><td><b>${esc(b.serial)}</b><div class="mut">${esc(b.rocket)}</div></td><td>${b.flights}<div class="bar"><i style="width:${100*b.flights/rec}%"></i></div></td><td>${f===0?'Tiene el récord':`${f} ${f===1?'vuelo':'vuelos'}`}</td><td>${b.next?`${esc(mname(b.next))} (vuelo nº ${b.nextFlight})<div class="mut">${fmtD(b.next.net)}</div>`:'—'}</td></tr>`}).join('')}</table></div>
+  <p class="mut">Vuelos según Launch Library 2 de los propulsores de los últimos ${D.previous.length} lanzamientos y de los próximos con propulsor asignado; en activo quiere decir que su último vuelo no acabó en pérdida o que ya tiene otra misión. Puede haber propulsores retirados fuera de estos datos.</p></div>`;
+}
 function renderFleet(){
   const m={};
   [...D.previous].reverse().forEach(l=>(l.stages||[]).forEach(s=>{if(!s.serial||/Unknown/.test(s.serial))return;
@@ -360,7 +389,7 @@ function renderFleet(){
   D.upcoming.forEach(l=>(l.stages||[]).forEach(s=>{const b=m[s.serial];if(b&&!b.next)b.next=l}));
   const rows=Object.values(m).sort((a,b)=>fleetSort==='flights'?b.flights-a.flights:new Date(b.last)-new Date(a.last));
   const max=Math.max(...rows.map(r=>r.flights),1);
-  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Las primeras etapas que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar y un propulsor para ver su ficha y apostar si volverá a volar.</div></div>${betsHTML()}${cmpHTML(rows)}
+  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Las primeras etapas que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar y un propulsor para ver su ficha y apostar si volverá a volar.</div></div>${betsHTML()}${cmpHTML(rows)}${raceHTML()}
   <div class="tscroll"><table><caption class="sr">Flota de propulsores, ordenada por ${fleetSort==='flights'?'número de vuelos':'último vuelo'}</caption><tr><th scope="col">Propulsor</th><th scope="col" aria-sort="${fleetSort==='flights'?'descending':'none'}"><button type="button" class="lnk" data-s="flights">Vuelos</button></th><th scope="col" aria-sort="${fleetSort==='last'?'descending':'none'}"><button type="button" class="lnk" data-s="last">Último vuelo</button></th><th scope="col">Próximo</th></tr>
   ${rows.map(r=>`<tr class="clic" data-serial="${r.serial}"><td><button type="button" class="lnk" data-open="${r.serial}" aria-label="Abrir la ficha del propulsor ${r.serial}"><b>${r.serial}</b> <span class="mut" aria-hidden="true">ficha ›</span></button></td><td>${r.flights}<div class="bar"><i style="width:${100*r.flights/max}%"></i></div></td><td>${fmtD(r.last)}<div class="mut">${r.missions.at(-1)}</div></td><td>${r.next?`${mname(r.next)}<div class="mut">${fmtD(r.next.net)}</div>`:'—'}</td></tr>`).join('')}</table></div>`;
   $('#fleet').querySelectorAll('button[data-s]').forEach(t=>t.onclick=()=>{fleetSort=t.dataset.s;renderFleet();const f=$('#fleet').querySelector(`button[data-s="${t.dataset.s}"]`);f&&f.focus()});

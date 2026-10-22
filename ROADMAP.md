@@ -28,4 +28,7 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Comparar dos propulsores lado a lado: vuelos, aterrizajes, días medios en tierra, zonas de aterrizaje usadas y último vuelo (hecho el 21 oct, 20:58)
 - [x] Ritmo de cada plataforma en el Mapa: días entre lanzamientos desde la misma plataforma, récord de rapidez en los datos, tiempo desde el último y aviso si el siguiente previsto batiría el récord (hecho el 22 oct, 08:58)
 - [x] Juego «¿Adónde va?»: con una misión real reciente, adivina su órbita (LEO, SSO, GTO...) y su plataforma; puntúa con los datos de Launch Library 2 (hecho el 22 oct, 10:52)
-- [ ] Clientes de SpaceX: quién ha contratado los últimos lanzamientos (agencias y empresas reales), cuántos cada uno y qué órbitas usan, con apuesta «¿de quién será el siguiente lanzamiento que no sea Starlink?»
+- [x] Clientes de SpaceX: quién ha contratado los últimos lanzamientos (agencias y empresas reales), cuántos cada uno y qué órbitas usan, con apuesta «¿de quién será el siguiente lanzamiento que no sea Starlink?» (hecho el 22 oct, 12:52)
+- [ ] Ventanas de lanzamiento: duración de la ventana de cada próximo lanzamiento y en qué minuto de su ventana despegaron los anteriores (apertura, cierre y hora real de Launch Library 2), con apuesta «¿saldrá en el primer minuto de la ventana?» que se resuelve sola
+- [ ] Galería «¿Qué misión es?»: fotos de lanzamientos recientes con licencia clara de Launch Library 2 (con su crédito) y adivinar la misión entre 4 opciones reales
+- [ ] Trabajar en SpaceX por ciudades: las ofertas reales de la página de empleo (Greenhouse) agrupadas por ubicación, con las de prácticas destacadas y enlace a cada una

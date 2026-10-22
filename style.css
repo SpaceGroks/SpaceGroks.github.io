@@ -152,3 +152,8 @@ button.misb{display:inline-flex;align-items:center;min-height:44px;margin-top:6p
 .rt-opts{flex-wrap:wrap}.rt-opts button{min-width:44px}
 .pad .stats b{font-size:20px}.pad p{margin:6px 0}
 .adonde .hl-b{margin-top:8px}
+
+.empleo .emp-top{list-style:none;padding:0}.empleo .emp-top li{margin:6px 0}
+.empbar{height:6px;background:rgba(127,127,127,.2);border-radius:3px;margin-top:3px}.empbar span{display:block;height:100%;background:currentColor;opacity:.6;border-radius:3px}
+.empleo select{max-width:100%;padding:6px;margin:4px 0}
+.linkish{background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font:inherit}.linkish[aria-current]{font-weight:700}

@@ -80,7 +80,16 @@ def jobs():
             if n: loc[n]=loc.get(n,0)+1
         intern=[j for j in J if re.search(r"\bintern(ship)?s?\b",j.get("title") or "",re.I)]
         rec=sorted([j for j in J if j.get("first_published") and j.get("absolute_url")],key=lambda j:j["first_published"],reverse=True)[:5]
+        job=lambda j:{"t":j["title"],"url":j["absolute_url"],"pub":(j.get("first_published") or "")[:10]}
+        byc={}
+        for j in J:
+            n=((j.get("location") or {}).get("name") or "").strip()
+            if n and j.get("absolute_url"): byc.setdefault(n,[]).append(j)
+        cities=[{"loc":n,"n":len(v),"intern":sum(1 for j in v if j in intern),
+          "recent":[job(j) for j in sorted(v,key=lambda j:j.get("first_published") or "",reverse=True)[:3]]}
+          for n,v in sorted(byc.items(),key=lambda x:(-len(x[1]),x[0]))]
         return {"total":len(J),"intern":len(intern),"url":"https://www.spacex.com/careers/",
+          "cities":cities,"interns":[{**job(j),"loc":((j.get("location") or {}).get("name") or "").strip()} for j in intern if j.get("absolute_url")],
           "locs":sorted(loc.items(),key=lambda x:-x[1])[:5],
           "recent":[{"t":j["title"],"loc":(j.get("location") or {}).get("name"),"url":j["absolute_url"],"pub":j["first_published"][:10]} for j in rec],
           "at":datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),"source":"SpaceX en Greenhouse"}

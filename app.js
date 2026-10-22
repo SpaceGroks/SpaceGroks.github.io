@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="clientes"></div><div id="ventanas"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="clientes"></div><div id="ventanas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -1152,3 +1152,27 @@ function bindVentanas(){const el=$('#next');if(!el||el._ven)return;el._ven=true;
   s.cur[id]={pick:b.dataset.v==='si'?'si':'no',at:Date.now(),ws:l.ws,we:l.we,m:mname(l)};LS.set('ven',s);
   aviso(`Apuesta guardada: ${mname(l)} ${b.dataset.v==='si'?'saldrá en el primer minuto':'no saldrá en el primer minuto'}.`);completeDaily('ven');renderVentanas();
   const q=$('#ven-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}
+
+// ---------- Trabajar en SpaceX por ciudades ----------
+// Ofertas reales del tablón público de SpaceX en Greenhouse (data.json → jobs.cities y jobs.interns), agrupadas por ubicación.
+let EMP_SEL=null;
+const empLoc=n=>{n=(n||'').trim();if(/^Flexible\b/i.test(n))return 'Cualquier sede de SpaceX (flexible)';const r=n.match(/^Remote\s*-\s*(.+)$/i);return r?`En remoto (${r[1]})`:n};
+function empInfo(){const J=D&&D.jobs;if(!J||!J.total||!Array.isArray(J.cities)||!J.cities.length)return null;return J}
+function renderEmpleo(){const el=$('#empleo');if(!el||!D)return;const J=empInfo();if(!J){el.innerHTML='';return}
+  const C=J.cities,sel=C.find(c=>c.loc===EMP_SEL)||C[0],max=C[0].n,top=C.slice(0,8);
+  const bar=c=>`<li><button type="button" class="linkish" data-emp="${esc(c.loc)}"${c.loc===sel.loc?' aria-current="true"':''}>${esc(empLoc(c.loc))}</button> <b>${c.n.toLocaleString('es-ES')}</b>${c.intern?` · ${c.intern} de prácticas`:''}<div class="empbar" aria-hidden="true"><span style="width:${Math.max(2,Math.round(c.n/max*100))}%"></span></div></li>`;
+  const job=j=>`<li><a href="${esc(j.url)}" target="_blank" rel="noopener">${esc(j.t)}<span class="sr"> (se abre en otra pestaña)</span></a>${j.loc?` · ${esc(empLoc(j.loc))}`:''}${j.pub?` <span class="mut">· publicada el ${fmtD(j.pub+'T12:00:00Z')}</span>`:''}</li>`;
+  const ints=(J.interns||[]).slice(0,12);
+  el.innerHTML=`<div class="card daily empleo"><div class="kick">Trabajar en SpaceX por ciudades</div>
+  <div class="stats"><div><b>${J.total.toLocaleString('es-ES')}</b>ofertas abiertas</div><div><b>${C.length}</b>ubicaciones</div><div><b>${J.intern||0}</b>de prácticas</div></div>
+  <p class="mut">Todas las ofertas publicadas ahora mismo en el tablón de empleo de SpaceX (Greenhouse), agrupadas por la ubicación que indica cada una. Elige una ciudad para ver sus ofertas más recientes.</p>
+  <label for="emp-sel">Ciudad</label> <select id="emp-sel">${C.map(c=>`<option value="${esc(c.loc)}"${c.loc===sel.loc?' selected':''}>${esc(empLoc(c.loc))} (${c.n})</option>`).join('')}</select>
+  <h4 id="emp-city">${esc(empLoc(sel.loc))}: ${sel.n.toLocaleString('es-ES')} ${sel.n===1?'oferta':'ofertas'}${sel.intern?`, ${sel.intern} de prácticas`:''}</h4>
+  <ul>${(sel.recent||[]).map(job).join('')}</ul>${sel.n>(sel.recent||[]).length?`<p class="mut">Estas son las ${(sel.recent||[]).length} más recientes; el resto está en la <a href="${esc(J.url||'https://www.spacex.com/careers/')}" target="_blank" rel="noopener">página de empleo de SpaceX</a>.</p>`:''}
+  <h4>Dónde hay más ofertas</h4><ul class="emp-top">${top.map(bar).join('')}</ul>
+  ${ints.length?`<h4><span aria-hidden="true">⭐</span> Prácticas</h4><ul class="emp-int">${ints.map(job).join('')}</ul>`:'<p class="mut">Ahora mismo no hay ofertas de prácticas publicadas.</p>'}
+  <div class="mut" style="margin-top:6px">Fuente: ${esc(J.source||'SpaceX en Greenhouse')}, actualizado ${fmt(J.at)}.</div></div>`}
+function bindEmpleo(){const el=$('#next');if(!el||el._emp)return;el._emp=true;
+  const go=(v,f)=>{EMP_SEL=v;renderEmpleo();const q=$(f?'#emp-sel':'#emp-city');try{q&&(q.tabIndex=q.tabIndex<0?-1:q.tabIndex,q.focus())}catch(e){}};
+  el.addEventListener('change',e=>{if(e.target&&e.target.id==='emp-sel')go(e.target.value,true)});
+  el.addEventListener('click',e=>{const b=e.target.closest('button[data-emp]');if(b)go(b.dataset.emp,false)})}

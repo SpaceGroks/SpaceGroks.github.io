@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderMeteo();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="meteo"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -1041,7 +1041,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderMeteo()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -1495,3 +1495,34 @@ function bindTipos(){const el=$('#next');if(!el||el._tipo)return;el._tipo=true;e
   s.cur={pick,at:Date.now()};LS.set('tipo',s);
   aviso(`Apuesta guardada: ${pick} de los próximos ${TIPO_N} serán Starlink (+${TIPO_PTS.exacto} si aciertas, +${TIPO_PTS.cerca} si te quedas a uno).`);completeDaily('tipo');renderTipos();
   const q=$('#tipo-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}
+
+// ---------- Previsión del tiempo ----------
+// Con probability y weather_concerns de Launch Library 2: la previsión publicada para los próximos lanzamientos,
+// lo que más preocupa a los meteorólogos y cómo fue la previsión de los que ya despegaron (con su resultado real
+// y el minuto de la ventana en que salieron, de window_start y net).
+function meteoInfo(){const d=rlD();if(!d||!Array.isArray(d.previous))return null;const now=Date.now();
+  const pid=new Set(d.previous.map(l=>l.id));
+  const U=(d.upcoming||[]).filter(l=>!pid.has(l.id)&&!isNaN(new Date(l.net))&&new Date(l.net).getTime()>now-3*H).slice().sort((a,b)=>new Date(a.net)-new Date(b.net));
+  const P=d.previous.filter(l=>l.prob!=null&&!isNaN(new Date(l.net))).slice().sort((a,b)=>new Date(b.net)-new Date(a.net));
+  const Uf=U.filter(l=>l.prob!=null);
+  const cnt={};P.forEach(l=>wxList(l).forEach(x=>cnt[x]=(cnt[x]||0)+1));const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+  const min=l=>{const a=new Date(l.ws).getTime(),b=new Date(l.net).getTime();return isNaN(a)||isNaN(b)?null:Math.round((b-a)/6e4)};
+  const ok=l=>/Success/i.test(l.status||'');
+  const bands=[['90 % o más',p=>p>=90],['80–89 %',p=>p>=80&&p<90],['60–79 %',p=>p>=60&&p<80],['menos del 60 %',p=>p<60]].map(([t,f])=>{const L=P.filter(l=>f(l.prob)),M=L.map(min).filter(m=>m!=null);
+    return{t,n:L.length,ok:L.filter(ok).length,open:M.filter(m=>m<=1).length,m:M.length}}).filter(b=>b.n);
+  return{U,Uf,P,top,bands,min,ok,tot:d.previous.length,gen:d.generated}}
+function renderMeteo(){const el=$('#meteo');if(!el||!D)return;const I=meteoInfo();if(!I){el.innerHTML='';return}
+  const pct=(a,b)=>b?Math.round(100*a/b)+' %':'—';
+  const up=I.U.slice(0,6).map(l=>`<li><b>${esc(mname(l))}</b> <span class="mut">· ${fmt(l.net)}</span> ${l.prob!=null?`<span class="tag ${wxCls(l.prob)}">${l.prob}% favorable</span>${wxList(l).length?` <span class="mut">Preocupa: ${esc(wxList(l).join(', '))}.</span>`:''}`:'<span class="mut">aún sin previsión publicada</span>'}</li>`).join('');
+  const minTxt=m=>m==null?'':m<=1?'en la apertura de la ventana':`${m} min después de abrir la ventana`;
+  const past=I.P.slice(0,8).map(l=>{const m=I.min(l);return `<tr><td>${esc(mname(l))}<div class="mut">${fmtD(l.net)}</div></td><td><span class="tag ${wxCls(l.prob)}">${l.prob}%</span></td><td>${wxList(l).length?esc(wxList(l).join(', ')):'<span class="mut">nada destacado</span>'}</td><td>${I.ok(l)?'Despegó con éxito':esc(l.status_name||l.status||'')}${m!=null?`<div class="mut">${minTxt(m)}</div>`:''}</td></tr>`}).join('');
+  const nP=I.P.length;
+  el.innerHTML=`<div class="card daily meteo"><div class="kick">Previsión del tiempo</div>
+  <p class="mut">Antes de muchos lanzamientos se publica la probabilidad de que el tiempo permita despegar y qué reglas meteorológicas podrían impedirlo. Launch Library 2 la recoge cuando sale, así que aparece a medida que se acerca cada lanzamiento.</p>
+  <h4>Próximos lanzamientos</h4>${up?`<ul class="stl">${up}</ul>`:'<p class="mut">No hay lanzamientos próximos en la lista.</p>'}
+  ${I.Uf.length?'':'<p class="mut">Ninguno de los próximos tiene aún previsión publicada.</p>'}
+  ${nP?`<h4>Lo que más preocupa</h4><ul class="stl">${I.top.slice(0,5).map(([t,c])=>`<li>${esc(t)}: <b>${c}</b> de ${nP} <span class="mut">(${pct(c,nP)})</span><div class="bar" aria-hidden="true"><i style="width:${100*c/nP}%"></i></div></li>`).join('')||'<li class="mut">Ninguna regla destacada en los datos.</li>'}</ul>
+  <h4>Cómo fue la previsión de los que ya despegaron</h4>
+  <ul class="stl">${I.bands.map(b=>`<li>Con meteo favorable del ${b.t}: <b>${b.n}</b> ${b.n===1?'lanzamiento':'lanzamientos'}, ${b.ok} con éxito${b.m?`, ${b.open} de ${b.m} salieron en la apertura de su ventana`:''}.</li>`).join('')}</ul>
+  <div class="tblw"><table class="stt"><thead><tr><th>Misión</th><th>Meteo</th><th>Preocupaba</th><th>Qué pasó</th></tr></thead><tbody>${past}</tbody></table></div>`:'<p class="mut">Ninguno de los lanzamientos recientes tiene previsión en los datos.</p>'}
+  <div class="mut" style="margin-top:6px">Datos de Launch Library 2 (probability y weather_concerns), actualizados ${fmt(I.gen)}: ${nP} de los últimos ${I.tot} lanzamientos de SpaceX tienen previsión publicada (${I.P.filter(l=>/FL/.test(l.loc||"")).length} de ellos en Florida). Es la última previsión que guarda la fuente, no la de días antes.</div></div>`}

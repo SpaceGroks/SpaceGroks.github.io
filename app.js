@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0)+(p.hora||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0)+(p.hora||0)+(p.tipo||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -536,6 +536,7 @@ function retosGlobo(){
   {const I=zonInfo();if(I&&I.opts.length){const cur=zonState().cur,top=I.rows[0];R.push({t:'Zonas de aterrizaje',m:`${top&&top.rn?`${top.name||top.k} es la zona más usada en los últimos lanzamientos (${top.rn} veces). `:''}${cur?'Tu apuesta sigue en juego: mira qué zona usa el próximo propulsor.':`¿Dónde aterrizará el próximo propulsor? Acertar una zona poco usada da hasta ${ZON_MAX} puntos.`}`,tab:'next',btn:cur?'Ver las zonas':'Apostar por una zona',k:cur?null:'zon',sel:'#zonas'})}}
   {const I=horaInfo();if(I){const b=horaState().cur,f=I.first;R.push({t:'Hora del despegue',m:`El ${Math.round(100*I.nN/I.P.length)} % de los últimos despegues de SpaceX fueron de noche en la plataforma. ${b?'Tu apuesta sigue en juego: mira cuándo despega el siguiente.':`¿Despegará de noche el próximo?${f?` ${mname(f.l)} está previsto ${f.night?'de noche':'de día'}, pero un retraso lo puede cambiar.`:''}`}`,tab:'next',btn:b?'Ver la hora del despegue':'Apostar por la hora',k:b?null:'hora',sel:'#hora'})}}
   {const I=mesInfo();if(I&&I.Pv){const b=LS.get('mes',{})[I.cur],need=I.Pv.n-I.C.n+1,libre=!b&&need>0&&Date.now()<I.close;if(b||libre)R.push({t:'Lanzamientos por mes',m:`Este mes SpaceX lleva ${I.C.n} lanzamientos y el anterior hizo ${I.Pv.n}. ${libre?`¿Lo superará? Acertar «Sí» da ${mesSiPts(need)} puntos.`:'Tu apuesta sigue en juego: mira cómo va el mes.'}`,tab:'next',btn:libre?'Apostar por el mes':'Ver el gráfico',k:libre?'mes':null,sel:'#meses'})}}
+  {const I=tipoInfo();if(I){const b=tipoState().cur;R.push({t:'Tipos de misión',m:`El ${Math.round(100*I.sl/I.P.length)} % de los últimos lanzamientos de SpaceX fueron Starlink. ${b?`Tu apuesta (${b.pick} de ${TIPO_N}) sigue en juego.`:`¿Cuántos de los próximos ${TIPO_N} serán Starlink?`}`,tab:'next',btn:b?'Ver los tipos de misión':'Apostar por Starlink',k:b?null:'tipo',sel:'#tipos'})}}
   {const f=formate();if(f)R.push(f);}
   return R;
 }
@@ -976,7 +977,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['tipo','Apuesta de Starlink'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>
@@ -1040,7 +1041,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -1445,3 +1446,52 @@ function renderBarcazas(){const el=$('#barcazas');if(!el||!D)return;const I=barI
   <div class="coh-grid">${I.rows.map(card).join('')}</div>
   ${top?`<h4>Turnos más rápidos</h4><ol class="stl">${top}</ol>`:''}
   <div class="mut" style="margin-top:6px">Calculado con los aterrizajes en barcaza de los últimos ${I.P.length} lanzamientos de SpaceX en Launch Library 2${I.from?` (desde el ${fmtD(I.from)})`:''} y las barcazas asignadas en su lista de próximos, actualizados ${fmt(I.gen)}. Las fechas futuras son previstas y pueden cambiar.</div></div>`}
+
+// ---------- Tipos de misión ----------
+// Reparto de los últimos lanzamientos por tipo de misión (Launch Library 2) y apuesta «¿cuántos Starlink habrá en los próximos 5?».
+// La apuesta se guarda en sxp_tipo ({cur,hist}) y se resuelve sola con los 5 primeros lanzamientos que despeguen al menos 2 h después de apostar.
+const TIPO_N=5,TIPO_GAP=2*H,TIPO_PTS={exacto:30,cerca:10};
+const TIPO_ES={'Communications':'Comunicaciones','Government/Top Secret':'Gobierno o defensa','Dedicated Rideshare':'Vuelo compartido','Resupply':'Reabastecimiento','Human Exploration':'Vuelo tripulado','Astrophysics':'Astrofísica','Test Flight':'Vuelo de prueba','Mission Extension':'Extensión de vida de satélites','Technology':'Tecnología','Earth Science':'Ciencias de la Tierra','Lunar Exploration':'Exploración lunar','Planetary Science':'Ciencia planetaria','Heliophysics':'Física solar','Navigation':'Navegación','Robotic Exploration':'Exploración robótica','Tourism':'Turismo espacial','Unknown':'Sin especificar'};
+const isStarlink=l=>/starlink/i.test((l.mission||'')+' '+(l.name||''));
+const tipoK=l=>isStarlink(l)?'Starlink':(l.mtype||'Unknown');
+const tipoN=k=>k==='Starlink'?'Starlink':(TIPO_ES[k]||k);
+function tipoInfo(){const d=rlD();if(!d||!Array.isArray(d.previous)||!d.previous.length)return null;const now=Date.now();
+  const P=[...d.previous].sort((a,b)=>new Date(b.net)-new Date(a.net));
+  const cnt=L=>{const c={};for(const l of L){const k=tipoK(l);c[k]=(c[k]||0)+1}return Object.entries(c).map(([k,n])=>({k,n})).sort((a,b)=>b.n-a.n||(a.k<b.k?-1:1))};
+  const U=(d.upcoming||[]).filter(l=>new Date(l.net).getTime()>now-3*H&&!d.previous.some(p=>p.id===l.id)).sort((a,b)=>new Date(a.net)-new Date(b.net));
+  const sl=P.filter(isStarlink).length;
+  const g=[];for(let i=0;i+TIPO_N<=P.length;i+=TIPO_N)g.push(P.slice(i,i+TIPO_N).filter(isStarlink).length);// tandas de 5 seguidos en los datos
+  const freq=[...Array(TIPO_N+1)].map((_,n)=>g.filter(x=>x===n).length);
+  let run=0;for(const l of P){if(isStarlink(l))run++;else break}
+  return{P,rows:cnt(P),U,nx:U.slice(0,10),nxRows:cnt(U.slice(0,10)),sl,g,freq,run,gen:d.generated}}
+function tipoState(){const s=LS.get('tipo',{cur:null,hist:[]});s.hist=s.hist||[];return s}
+function resolveTipo(){const d=rlD();if(!d||!d.previous)return;const s=tipoState(),b=s.cur;if(!b)return;
+  if(!(new Date(d.generated).getTime()>b.at))return;
+  const L=d.previous.filter(l=>new Date(l.net).getTime()>=b.at+TIPO_GAP).sort((x,y)=>new Date(x.net)-new Date(y.net));
+  if(L.length<TIPO_N){const old=d.previous.reduce((m,l)=>Math.min(m,new Date(l.net).getTime()),Infinity);if(old>b.at+TIPO_GAP&&Date.now()>b.at+120*DAY){s.cur=null;LS.set('tipo',s)}return}
+  const five=L.slice(0,TIPO_N),n=five.filter(isStarlink).length,diff=Math.abs(n-b.pick),won=diff===0?TIPO_PTS.exacto:diff===1?TIPO_PTS.cerca:0;
+  s.hist.unshift({...b,res:{n,ms:five.map(l=>mname(l)),last:five[TIPO_N-1].net},ok:diff===0,won,resAt:Date.now()});s.hist=s.hist.slice(0,20);s.cur=null;LS.set('tipo',s);
+  if(won)addPts('tipo',won);aviso(`Apuesta de Starlink resuelta: ${n} de los ${TIPO_N} lanzamientos fueron Starlink. ${won?`+${won} puntos.`:'Esta vez no.'}`)}
+function tipoBetHTML(I){const s=tipoState(),b=s.cur;
+  let h=`<h3 id="tipo-q">¿Cuántos de los próximos ${TIPO_N} lanzamientos serán Starlink?</h3><p class="mut">Cuentan los ${TIPO_N} primeros lanzamientos de SpaceX que despeguen al menos 2 horas después de apostar, sean cuales sean (los de la lista de próximos pueden cambiar de orden o retrasarse). Acertar el número exacto da ${TIPO_PTS.exacto} puntos y quedarse a uno, ${TIPO_PTS.cerca}. Se resuelve sola cuando la fuente pasa el quinto al historial.${I.g.length?` En los datos, de cada ${TIPO_N} lanzamientos seguidos: ${I.freq.map((f,n)=>f?`${n} Starlink ${f} ${f===1?'vez':'veces'}`:'').filter(Boolean).join(', ')} (${I.g.length} tandas).`:''}</p>`;
+  if(b)h+=`<p><span role="img" aria-label="Pendiente">⏳</span> Dijiste <b>${b.pick} de ${TIPO_N}</b> el ${fmt(b.at)} · se resuelve sola cuando hayan despegado ${TIPO_N}.</p>`;
+  else h+=`<div class="opts" role="group" aria-labelledby="tipo-q">${[...Array(TIPO_N+1)].map((_,n)=>`<button type="button" data-tipo="${n}">${n}</button>`).join('')}</div>`;
+  const past=s.hist.slice(0,4).map(x=>`<div class="mut">${ic(x.won>0)} Dijiste ${x.pick} de ${TIPO_N} · fueron ${x.res.n} (hasta ${esc(x.res.ms[x.res.ms.length-1]||'')}, ${fmtD(x.res.last)}) · +${x.won} puntos</div>`).join('');
+  return h+(past?`<div style="margin-top:8px">${past}</div>`:'')}
+function renderTipos(){const el=$('#tipos');if(!el||!D)return;const I=tipoInfo();if(!I){el.innerHTML='';return}
+  const n=I.P.length,bars=(a,tot,lbl)=>{const m=Math.max(1,...a.map(r=>r.n));return `<ul class="emp-top" aria-label="${esc(lbl)}">${a.map(r=>`<li>${esc(tipoN(r.k))} <b>${r.n}</b> <span class="mut">· ${Math.round(100*r.n/tot)} %</span><div class="empbar" aria-hidden="true"><span style="width:${Math.max(2,Math.round(r.n/m*100))}%"></span></div></li>`).join('')}</ul>`};
+  const learn=I.rows.filter(r=>r.k!=='Starlink'&&TYPE_LEARN[r.k]).slice(0,3).map(r=>{const t=TYPE_LEARN[r.k],i=t.indexOf(': ');return i>0&&i<40?`<li><b>${esc(t.slice(0,i))}:</b> ${esc(t.slice(i+2))}</li>`:`<li><b>${esc(tipoN(r.k))}.</b> ${esc(t)}</li>`}).join('');
+  const nx=I.nx.length?`<h4>Próximos ${I.nx.length} de la lista</h4>${bars(I.nxRows,I.nx.length,'Próximos lanzamientos por tipo de misión')}<p class="mut">Los ${Math.min(TIPO_N,I.nx.length)} primeros: ${I.nx.slice(0,TIPO_N).map(l=>`${esc(mname(l))} (${esc(tipoN(tipoK(l)))})`).join('; ')}.</p>`:'';
+  el.innerHTML=`<div class="card daily tipos"><div class="kick">Tipos de misión</div>
+  <div class="stats"><div><b>${Math.round(100*I.sl/n)} %</b>Starlink (${I.sl} de ${n})</div><div><b>${n-I.sl}</b>para otros clientes y misiones</div><div><b>${I.run}</b>Starlink seguidos en los últimos despegues</div></div>
+  <p class="mut">Starlink es la red de satélites de internet de la propia SpaceX; aquí va aparte del resto de misiones de comunicaciones.</p>
+  <h4>Últimos ${n} lanzamientos</h4>${bars(I.rows,n,'Últimos lanzamientos por tipo de misión')}
+  ${learn?`<ul class="stl">${learn}</ul>`:''}
+  ${nx}
+  ${tipoBetHTML(I)}<div class="mut" style="margin-top:6px">Calculado con los últimos ${n} lanzamientos de SpaceX en Launch Library 2 (desde el ${fmtD(I.P[n-1].net)}) y su lista de próximos, con el tipo de misión que da la fuente, actualizados ${fmt(I.gen)}.</div></div>`}
+function bindTipos(){const el=$('#next');if(!el||el._tipo)return;el._tipo=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-tipo]');if(!b)return;
+  const I=tipoInfo(),s=tipoState();if(!I||s.cur){renderTipos();return}
+  const pick=Math.max(0,Math.min(TIPO_N,parseInt(b.dataset.tipo,10)||0));
+  s.cur={pick,at:Date.now()};LS.set('tipo',s);
+  aviso(`Apuesta guardada: ${pick} de los próximos ${TIPO_N} serán Starlink (+${TIPO_PTS.exacto} si aciertas, +${TIPO_PTS.cerca} si te quedas a uno).`);completeDaily('tipo');renderTipos();
+  const q=$('#tipo-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}

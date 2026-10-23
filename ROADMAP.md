@@ -36,5 +36,5 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Carrera por el récord de la flota: cuántos vuelos le faltan a cada propulsor activo para igualar o batir al más veterano, con aviso cuando su próxima misión asignada lo bata (hecho el 22 oct, 20:51)
 - [x] Lanzamientos por mes: gráfico de barras de los últimos 60 lanzamientos de SpaceX por mes y por cohete, comparando el mes actual con el anterior y apuesta «¿superará este mes al anterior?» (hecho el 23 oct, 08:58)
 - [x] Récord de cada cohete: el Falcon 9, el Falcon Heavy y Starship por separado, con lanzamientos y aterrizajes en los datos, días desde su último vuelo y su próximo lanzamiento previsto (hecho el 23 oct, 10:56)
-- [ ] Hora del despegue: en qué franja del día (hora local de la plataforma y de España) despegaron los últimos lanzamientos y apuesta «¿despegará de noche el próximo?» que se resuelve sola
+- [x] Hora del despegue: en qué franja del día (hora local de la plataforma y de España) despegaron los últimos lanzamientos y apuesta «¿despegará de noche el próximo?» que se resuelve sola (hecho el 23 oct, 12:55)
 - [ ] Turnos de las barcazas: días que tarda cada barcaza entre un aterrizaje y el siguiente según los datos, y aviso si la próxima misión asignada le deja menos margen que su récord

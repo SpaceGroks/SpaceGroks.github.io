@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0)+(p.hora||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -534,6 +534,7 @@ function retosGlobo(){
   {const I=cliInfo();if(I&&I.opts.length){const cur=cliState().cur,top=I.rows.find(r=>r.c!=='SpaceX');R.push({t:'Clientes de SpaceX',m:`${top?`${cliN(top.c)} es el cliente externo con más lanzamientos recientes (${top.n}). `:''}${cur?'Tu apuesta sigue en juego: mira quién encarga los próximos.':`¿De quién será el siguiente lanzamiento que no sea Starlink ni de la propia SpaceX? Acertar da hasta ${CLI_PTS.other} puntos.`}`,tab:'next',btn:cur?'Ver los clientes':'Apostar por un cliente',k:cur?null:'cli',sel:'#clientes'})}}
   {const I=venInfo(),l=I&&I.U.find(venOpen);if(l){const cur=!!venState().cur[l.id];R.push({t:'Ventanas de lanzamiento',m:`La ventana de ${mname(l)} dura ${venTxt(venDur(l))}. Solo ${I.first} de los últimos ${I.W.length} lanzamientos con ventana salieron en su primer minuto. ${cur?'Tu apuesta sigue en juego.':`¿Saldrá este en el primer minuto? Acertar «Sí» da ${VEN_PTS.si} puntos.`}`,tab:'next',btn:cur?'Ver las ventanas':'Apostar por la ventana',k:cur?null:'ven',sel:'#ventanas'})}}
   {const I=zonInfo();if(I&&I.opts.length){const cur=zonState().cur,top=I.rows[0];R.push({t:'Zonas de aterrizaje',m:`${top&&top.rn?`${top.name||top.k} es la zona más usada en los últimos lanzamientos (${top.rn} veces). `:''}${cur?'Tu apuesta sigue en juego: mira qué zona usa el próximo propulsor.':`¿Dónde aterrizará el próximo propulsor? Acertar una zona poco usada da hasta ${ZON_MAX} puntos.`}`,tab:'next',btn:cur?'Ver las zonas':'Apostar por una zona',k:cur?null:'zon',sel:'#zonas'})}}
+  {const I=horaInfo();if(I){const b=horaState().cur,f=I.first;R.push({t:'Hora del despegue',m:`El ${Math.round(100*I.nN/I.P.length)} % de los últimos despegues de SpaceX fueron de noche en la plataforma. ${b?'Tu apuesta sigue en juego: mira cuándo despega el siguiente.':`¿Despegará de noche el próximo?${f?` ${mname(f.l)} está previsto ${f.night?'de noche':'de día'}, pero un retraso lo puede cambiar.`:''}`}`,tab:'next',btn:b?'Ver la hora del despegue':'Apostar por la hora',k:b?null:'hora',sel:'#hora'})}}
   {const I=mesInfo();if(I&&I.Pv){const b=LS.get('mes',{})[I.cur],need=I.Pv.n-I.C.n+1,libre=!b&&need>0&&Date.now()<I.close;if(b||libre)R.push({t:'Lanzamientos por mes',m:`Este mes SpaceX lleva ${I.C.n} lanzamientos y el anterior hizo ${I.Pv.n}. ${libre?`¿Lo superará? Acertar «Sí» da ${mesSiPts(need)} puntos.`:'Tu apuesta sigue en juego: mira cómo va el mes.'}`,tab:'next',btn:libre?'Apostar por el mes':'Ver el gráfico',k:libre?'mes':null,sel:'#meses'})}}
   {const f=formate();if(f)R.push(f);}
   return R;
@@ -975,7 +976,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>
@@ -1039,7 +1040,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -1346,3 +1347,66 @@ function renderCohetes(){const el=$('#cohetes');if(!el||!D)return;const I=cohInf
   <div class="coh-grid">${I.rows.map(card).join('')}</div>
   ${busy?`<p class="mut">El último en volar fue el ${esc(busy.k)}, hace ${busy.days} ${busy.days===1?'día':'días'}. Los aterrizajes cuentan cada propulsor que intentó volver (en el Falcon Heavy, los laterales y el central por separado).</p>`:''}
   <div class="mut" style="margin-top:6px">Calculado con los últimos ${I.P.length} lanzamientos de SpaceX en Launch Library 2 (desde el ${fmtD(I.P[0].net)}) y su lista de próximos, actualizados ${fmt(I.gen)}.</div></div>`}
+
+// ---------- Hora del despegue y apuesta «¿despegará de noche el próximo?» ----------
+// Con la hora real de despegue de Launch Library 2 y las coordenadas de la plataforma: hora local de la plataforma,
+// hora de España y si el Sol estaba bajo el horizonte (cálculo astronómico estándar, sin datos inventados).
+// La apuesta se guarda en sxp_hora ({cur,hist}) y se resuelve sola con el primer lanzamiento que despegue al menos 2 h después de apostar.
+const HORA_GAP=2*H,HORA_PTS={fav:5,contra:25,base:10,dudosa:20};
+const HORA_TZ=[[/Vandenberg/i,'America/Los_Angeles'],[/Canaveral|Kennedy|Florida/i,'America/New_York'],[/Starbase|Boca Chica|Texas/i,'America/Chicago']];
+const horaTz=l=>{const m=HORA_TZ.find(([r])=>r.test(l.loc||''));return m?m[1]:null};
+const horaLoc=l=>String(l.loc||'').split(',')[0];
+function horaH(t,tz){try{const p=new Intl.DateTimeFormat('en-GB',{timeZone:tz,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(t));
+  return +p.find(x=>x.type==='hour').value+(+p.find(x=>x.type==='minute').value)/60}catch(e){return null}}
+const horaFmt=(t,tz)=>{try{return new Date(t).toLocaleTimeString('es-ES',{timeZone:tz,hour:'2-digit',minute:'2-digit'})}catch(e){return ''}};
+function sunEl(t,lat,lon){// elevación del Sol en grados (aproximación del Astronomical Almanac, error < 1°)
+  const r=Math.PI/180,d=t/DAY+2440587.5-2451545,g=(357.529+0.98560028*d)*r,q=280.459+0.98564736*d,L=(q+1.915*Math.sin(g)+0.02*Math.sin(2*g))*r,e=(23.439-3.6e-7*d)*r;
+  const ra=Math.atan2(Math.cos(e)*Math.sin(L),Math.cos(L)),dec=Math.asin(Math.sin(e)*Math.sin(L)),gmst=((18.697374558+24.06570982441908*d)%24+24)%24;
+  const ha=(gmst*15+lon)*r-ra;return Math.asin(Math.sin(lat*r)*Math.sin(dec)+Math.cos(lat*r)*Math.cos(dec)*Math.cos(ha))/r}
+const HORA_FR=[['Madrugada','de 0:00 a 6:00',0,6],['Mañana','de 6:00 a 12:00',6,12],['Tarde','de 12:00 a 20:00',12,20],['Noche','de 20:00 a 24:00',20,24]];
+const horaFr=h=>h==null?null:HORA_FR.find(f=>h>=f[2]&&h<f[3]);
+function horaOf(l){const t=new Date(l.net).getTime(),tz=horaTz(l);if(isNaN(t)||l.lat==null||l.lon==null)return null;
+  const el=sunEl(t,+l.lat,+l.lon),h=tz?horaH(t,tz):null;
+  return{l,t,tz,h,fr:horaFr(h),es:horaFr(horaH(t,'Europe/Madrid')),el,night:el<-0.833,tw:el<-0.833&&el>=-6}}
+function horaInfo(){const d=rlD();if(!d||!Array.isArray(d.previous)||!d.previous.length)return null;const now=Date.now();
+  const P=d.previous.filter(l=>precise(l)).map(horaOf).filter(Boolean).sort((a,b)=>b.t-a.t);if(!P.length)return null;
+  const U=(d.upcoming||[]).filter(l=>precise(l)&&!/TBD/i.test(l.status||'')&&new Date(l.net).getTime()>now+HORA_GAP&&!d.previous.some(p=>p.id===l.id)).map(horaOf).filter(Boolean).sort((a,b)=>a.t-b.t);
+  const cnt=(arr,f)=>HORA_FR.map(x=>({x,n:arr.filter(o=>f(o)&&f(o)[0]===x[0]).length}));
+  const nN=P.filter(o=>o.night).length,tw=P.filter(o=>o.tw).length;
+  const by={};for(const o of P){const k=horaLoc(o.l),b=by[k]||(by[k]={k,n:0,night:0});b.n++;if(o.night)b.night++}
+  const first=U[0]||null,base=nN*2>=P.length;// sin hora prevista, favorito = lo más habitual en los datos
+  const pts=pick=>first?((pick==='si')===first.night?HORA_PTS.fav:HORA_PTS.contra):((pick==='si')===base?HORA_PTS.base:HORA_PTS.dudosa);
+  return{P,U,fr:cnt(P,o=>o.fr),es:cnt(P,o=>o.es),nN,tw,by:Object.values(by).sort((a,b)=>b.n-a.n),first,pts,gen:d.generated}}
+function horaState(){const s=LS.get('hora',{cur:null,hist:[]});s.hist=s.hist||[];return s}
+function resolveHora(){const d=rlD();if(!d||!d.previous)return;const s=horaState(),b=s.cur;if(!b)return;
+  if(!(new Date(d.generated).getTime()>b.at))return;
+  const c=d.previous.filter(l=>precise(l)&&new Date(l.net).getTime()>=b.at+HORA_GAP).map(horaOf).filter(Boolean).sort((x,y)=>x.t-y.t)[0];if(!c)return;
+  const ok=(b.pick==='si')===c.night,won=ok?b.pts:0;
+  s.hist.unshift({...b,res:{m:mname(c.l),net:c.l.net,night:c.night,tw:c.tw,loc:horaLoc(c.l),lh:c.tz?horaFmt(c.t,c.tz):''},ok,won,resAt:Date.now()});s.hist=s.hist.slice(0,20);s.cur=null;LS.set('hora',s);
+  if(won)addPts('hora',won);aviso(`Apuesta de la hora resuelta: ${mname(c.l)} despegó ${c.night?'de noche':'de día'}. ${ok?`+${won} puntos.`:'Esta vez no.'}`)}
+function horaBetHTML(I){const s=horaState(),b=s.cur,f=I.first;
+  let h=`<h3 id="hora-q">¿Despegará de noche el próximo lanzamiento?</h3><p class="mut">Cuenta el primer lanzamiento de SpaceX que despegue al menos 2 horas después de apostar, sea cual sea. «De noche» quiere decir con el Sol bajo el horizonte en la plataforma, calculado con la hora real de despegue de Launch Library 2 y sus coordenadas. ${f?`El primero con hora fijada es ${esc(mname(f.l))} (${esc(horaLoc(f.l))}), previsto a las ${esc(horaFmt(f.t,f.tz))} hora local, ${f.night?'de noche':'de día'}: acertar con el horario previsto da ${HORA_PTS.fav} puntos y apostar a que un retraso lo cambia, ${HORA_PTS.contra}.`:`Ahora no hay ninguno con hora fijada, así que lo más habitual en los datos (${I.nN*2>=I.P.length?'de noche':'de día'}) da ${HORA_PTS.base} puntos y lo contrario, ${HORA_PTS.dudosa}.`}</p>`;
+  if(b)h+=`<p><span role="img" aria-label="Pendiente">⏳</span> Dijiste <b>${b.pick==='si'?'Sí, de noche':'No, de día'}</b> (+${b.pts}) el ${fmt(b.at)} · se resuelve sola con el siguiente despegue.</p>`;
+  else h+=`<div class="opts" role="group" aria-labelledby="hora-q"><button type="button" data-hora="si">Sí, de noche (+${I.pts('si')})</button><button type="button" data-hora="no">No, de día (+${I.pts('no')})</button></div>`;
+  const past=s.hist.slice(0,4).map(x=>`<div class="mut">${ic(x.ok)} Dijiste ${x.pick==='si'?'de noche':'de día'} · ${esc(x.res.m)} despegó ${x.res.night?(x.res.tw?'de noche (en el crepúsculo)':'de noche'):'de día'}${x.res.lh?` a las ${esc(x.res.lh)} hora local`:''} (${fmtD(x.res.net)}) · +${x.won} puntos</div>`).join('');
+  return h+(past?`<div style="margin-top:8px">${past}</div>`:'')}
+function renderHora(){const el=$('#hora');if(!el||!D)return;const I=horaInfo();if(!I){el.innerHTML='';return}
+  const n=I.P.length,mx=a=>Math.max(1,...a.map(r=>r.n));
+  const bars=(a,lbl)=>{const m=mx(a);return `<ul class="emp-top" aria-label="${esc(lbl)}">${a.map(r=>`<li>${esc(r.x[0])} <span class="mut">(${esc(r.x[1])})</span> <b>${r.n}</b> <span class="mut">· ${Math.round(100*r.n/n)} %</span><div class="empbar" aria-hidden="true"><span style="width:${Math.max(2,Math.round(r.n/m*100))}%"></span></div></li>`).join('')}</ul>`};
+  const last=I.P.slice(0,5).map(o=>`<li>${esc(mname(o.l))} <span class="mut">· ${esc(horaLoc(o.l))}, ${fmtD(o.l.net)}</span><div class="mut">${o.tz?`${esc(horaFmt(o.t,o.tz))} hora local · `:''}${esc(horaFmt(o.t,'Europe/Madrid'))} en España · ${o.night?(o.tw?'de noche, en el crepúsculo':'de noche'):'de día'}</div></li>`).join('');
+  const nx=I.U.slice(0,3).map(o=>`<li>${esc(mname(o.l))} <span class="mut">· ${esc(horaLoc(o.l))}</span><div class="mut">${o.tz?`${esc(horaFmt(o.t,o.tz))} hora local · `:''}${esc(fmt(o.t))} en tu hora · ${o.night?'sería de noche':'sería de día'}</div></li>`).join('');
+  const sites=I.by.map(b=>`${esc(b.k)} ${b.night} de ${b.n}`).join('; ');
+  el.innerHTML=`<div class="card daily hora"><div class="kick">Hora del despegue</div>
+  <div class="stats"><div><b>${Math.round(100*I.nN/n)} %</b>de noche en la plataforma (${I.nN} de ${n})</div><div><b>${I.tw}</b>en el crepúsculo, con el Sol hasta 6° bajo el horizonte</div><div><b>${n-I.nN}</b>de día</div></div>
+  <p class="mut">De noche por sitio: ${sites}.</p>
+  <h4>Hora local de la plataforma</h4>${bars(I.fr,'Despegues por franja horaria en la hora local de la plataforma')}
+  <h4>Hora de España</h4>${bars(I.es,'Despegues por franja horaria en la hora de España')}
+  <h4>Últimos despegues</h4><ul class="emp-top">${last}</ul>
+  ${nx?`<h4>Próximos con hora fijada</h4><ul class="emp-top">${nx}</ul>`:''}
+  ${horaBetHTML(I)}<div class="mut" style="margin-top:6px">Calculado con los ${n} últimos lanzamientos de SpaceX con hora exacta en Launch Library 2 y las coordenadas de cada plataforma, actualizados ${fmt(I.gen)}. Día o noche según la posición del Sol en la plataforma a la hora del despegue.</div></div>`}
+function bindHora(){const el=$('#next');if(!el||el._hora)return;el._hora=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-hora]');if(!b)return;
+  const I=horaInfo(),s=horaState();if(!I||s.cur){renderHora();return}
+  const pick=b.dataset.hora==='si'?'si':'no',pts=I.pts(pick);
+  s.cur={pick,pts,at:Date.now(),ref:I.first?{m:mname(I.first.l),net:I.first.l.net,night:I.first.night}:null};LS.set('hora',s);
+  aviso(`Apuesta guardada: el próximo despegará ${pick==='si'?'de noche':'de día'} (+${pts} si aciertas).`);completeDaily('hora');renderHora();
+  const q=$('#hora-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}

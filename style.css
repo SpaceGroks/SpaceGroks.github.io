@@ -205,3 +205,6 @@ h3,.card h3{font-family:var(--sans);text-transform:uppercase;letter-spacing:.12e
 .modal .mph img{max-height:340px;border-radius:2px}
 @media(max-width:480px){.hero{min-height:0}.hero .in{padding:170px 16px 18px}
  .card.row:has(> figure.ph){padding:0}.card.row > figure.ph{width:auto}.card.row > figure.ph img{width:100%;height:180px;border-radius:0}}
+/* Reto del día y globos: sin dorado, estilo oscuro */
+.daily{border-color:var(--line)}
+.daily .kick,.globo .gk{font:600 11px var(--sans);letter-spacing:.3em;color:#fff;opacity:.8}

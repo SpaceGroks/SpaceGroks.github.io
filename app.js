@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -1040,7 +1040,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -1410,3 +1410,38 @@ function bindHora(){const el=$('#next');if(!el||el._hora)return;el._hora=true;el
   s.cur={pick,pts,at:Date.now(),ref:I.first?{m:mname(I.first.l),net:I.first.l.net,night:I.first.night}:null};LS.set('hora',s);
   aviso(`Apuesta guardada: el próximo despegará ${pick==='si'?'de noche':'de día'} (+${pts} si aciertas).`);completeDaily('hora');renderHora();
   const q=$('#hora-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}
+
+// ---------- Turnos de las barcazas ----------
+// Con los aterrizajes en barcaza (stages[].land_type ASDS y land_loc) de los últimos lanzamientos de Launch Library 2:
+// días entre un aterrizaje y el siguiente de cada barcaza, su turno más rápido en los datos y el margen que le deja
+// cada misión ya asignada en la lista de próximos (desde su último aterrizaje o desde la misión asignada anterior).
+const barExact=l=>/^(SEC|MIN|HR|HOUR|D|DAY)$/i.test(l.net_precision||''),barDays=ms=>ms/DAY,barFmt=d=>d<10?d.toFixed(1).replace('.',','):String(Math.round(d));
+function barInfo(){const d=rlD();if(!d||!Array.isArray(d.previous))return null;const Z=d.lzones||{},now=Date.now();
+  const isB=(s,k)=>k&&k!=='N/A'&&!/unknown/i.test(s.land_loc_name||'')&&(s.land_type==='ASDS'||(Z[k]&&Z[k].type==='ASDS'));
+  const P=d.previous.filter(l=>!isNaN(new Date(l.net))).slice().sort((a,b)=>new Date(a.net)-new Date(b.net));
+  const B={};for(const l of P)for(const s of (l.stages||[])){const k=s.land_loc;if(!isB(s,k)||!s.land_attempt)continue;
+    const b=B[k]||(B[k]={k,name:s.land_loc_name||(Z[k]||{}).name||k,L:[],U:[]});if(!b.L.some(x=>x.l.id===l.id))b.L.push({l,t:new Date(l.net).getTime(),ok:s.land_success})}
+  const pid=new Set(P.map(l=>l.id));
+  const U=(d.upcoming||[]).filter(l=>!pid.has(l.id)&&!isNaN(new Date(l.net))&&new Date(l.net).getTime()>now-3*H).slice().sort((a,b)=>new Date(a.net)-new Date(b.net));
+  for(const l of U)for(const s of (l.stages||[])){const k=s.land_loc;if(!isB(s,k))continue;
+    const b=B[k]||(B[k]={k,name:s.land_loc_name||(Z[k]||{}).name||k,L:[],U:[]});if(!b.U.some(x=>x.l.id===l.id))b.U.push({l,t:new Date(l.net).getTime(),ex:barExact(l)})}
+  const rows=Object.values(B).map(b=>{const G=[];for(let i=1;i<b.L.length;i++)G.push({d:barDays(b.L[i].t-b.L[i-1].t),a:b.L[i-1].l,b:b.L[i].l});
+    const rec=G.length?G.reduce((m,g)=>g.d<m.d?g:m):null,avg=G.length?G.reduce((s,g)=>s+g.d,0)/G.length:null,last=b.L[b.L.length-1]||null;
+    let prev=last?{t:last.t,l:last.l,past:true}:null;const N=b.U.map(u=>{if(!u.ex)return{...u,from:null,m:null,tight:false};const m=prev?barDays(u.t-prev.t):null,o={...u,from:prev,m,tight:rec!=null&&m!=null&&m<rec.d};prev={t:u.t,l:u.l,past:false};return o});
+    return{...b,G,rec,avg,last,N,since:last?barDays(now-last.t):null}}).filter(r=>r.L.length||r.N.length).sort((a,b)=>b.L.length-a.L.length);
+  if(!rows.length)return null;
+  const all=rows.flatMap(r=>r.G.map(g=>({...g,k:r.k}))).sort((a,b)=>a.d-b.d);
+  return{rows,all,P,gen:d.generated,from:P.length?P[0].net:null}}
+function renderBarcazas(){const el=$('#barcazas');if(!el||!D)return;const I=barInfo();if(!I){el.innerHTML='';return}
+  const nm=r=>r.name&&r.name!==r.k?`${esc(r.name)} (${esc(r.k)})`:esc(r.k);
+  const card=r=>{const n=r.N[0];return `<div class="coh"><h3>${nm(r)}</h3><div class="stats"><div><b>${r.L.length}</b>${r.L.length===1?'aterrizaje':'aterrizajes'} en los datos</div><div><b>${r.rec?barFmt(r.rec.d):'—'}</b>${r.rec?'días, su turno más rápido':'sin dos aterrizajes para medir'}</div><div><b>${r.avg!=null?barFmt(r.avg):'—'}</b>días de media entre aterrizajes</div></div>
+    ${r.rec?`<p class="mut">Récord: de ${esc(mname(r.rec.a))} (${fmtD(r.rec.a.net)}) a ${esc(mname(r.rec.b))} (${fmtD(r.rec.b.net)}).</p>`:''}
+    ${r.last?`<p class="mut">Último aterrizaje: ${esc(mname(r.last.l))}, ${fmtD(r.last.l.net)} (hace ${barFmt(r.since)} días)${r.last.ok===false?', fallido':''}.</p>`:''}
+    ${n?`<p${n.tight?' class="warn"':' class="mut"'}>${n.tight?'<span role="img" aria-label="Aviso">⚠️</span> ':''}Próxima misión asignada: ${esc(mname(n.l))}, ${n.ex?fmtD(n.l.net):'con fecha aún sin concretar'}${n.m!=null?`, ${barFmt(n.m)} días después de ${n.from.past?'su último aterrizaje':esc(mname(n.from.l))}`:''}. ${n.tight?`Le deja menos margen que su récord de ${barFmt(r.rec.d)} días: si se cumple la fecha, sería su turno más rápido en los datos.`:n.m!=null&&r.rec?`Tiene ${barFmt(n.m-r.rec.d)} días más que su récord.`:''}</p>`:'<p class="mut">No tiene misiones asignadas en la lista de próximos lanzamientos.</p>'}
+    ${r.N.slice(1).filter(x=>x.tight).map(x=>`<p class="warn"><span role="img" aria-label="Aviso">⚠️</span> Después: ${esc(mname(x.l))} (${fmtD(x.l.net)}) quedaría a ${barFmt(x.m)} días de ${esc(mname(x.from.l))}, por debajo de su récord.</p>`).join('')}</div>`};
+  const top=I.all.slice(0,5).map(g=>`<li><b>${barFmt(g.d)} días</b> · ${esc(g.k)} <span class="mut">· de ${esc(mname(g.a))} (${fmtD(g.a.net)}) a ${esc(mname(g.b))} (${fmtD(g.b.net)})</span></li>`).join('');
+  el.innerHTML=`<div class="card daily barcazas"><div class="kick">Turnos de las barcazas</div>
+  <p class="mut">Cuántos días pasan entre un aterrizaje y el siguiente en cada barcaza (el tiempo de volver a puerto, descargar el propulsor y salir otra vez), y si la próxima misión asignada le deja menos margen que su turno más rápido.</p>
+  <div class="coh-grid">${I.rows.map(card).join('')}</div>
+  ${top?`<h4>Turnos más rápidos</h4><ol class="stl">${top}</ol>`:''}
+  <div class="mut" style="margin-top:6px">Calculado con los aterrizajes en barcaza de los últimos ${I.P.length} lanzamientos de SpaceX en Launch Library 2${I.from?` (desde el ${fmtD(I.from)})`:''} y las barcazas asignadas en su lista de próximos, actualizados ${fmt(I.gen)}. Las fechas futuras son previstas y pueden cambiar.</div></div>`}

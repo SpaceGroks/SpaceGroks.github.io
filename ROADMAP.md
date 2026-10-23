@@ -34,4 +34,7 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Trabajar en SpaceX por ciudades: las ofertas reales de la página de empleo (Greenhouse) agrupadas por ubicación, con las de prácticas destacadas y enlace a cada una (hecho el 22 oct, 16:55)
 - [x] Zonas de aterrizaje en juego: porcentaje de éxito de cada barcaza y zona en tierra (aterrizajes logrados e intentados de Launch Library 2) y apuesta «¿dónde aterrizará el próximo propulsor?» que se resuelve sola con el historial
 - [x] Carrera por el récord de la flota: cuántos vuelos le faltan a cada propulsor activo para igualar o batir al más veterano, con aviso cuando su próxima misión asignada lo bata (hecho el 22 oct, 20:51)
-- [ ] Lanzamientos por mes: gráfico de barras de los últimos 60 lanzamientos de SpaceX por mes y por cohete, comparando el mes actual con el anterior y apuesta «¿superará este mes al anterior?»
+- [x] Lanzamientos por mes: gráfico de barras de los últimos 60 lanzamientos de SpaceX por mes y por cohete, comparando el mes actual con el anterior y apuesta «¿superará este mes al anterior?» (hecho el 23 oct, 08:58)
+- [ ] Récord de cada cohete: el Falcon 9, el Falcon Heavy y Starship por separado, con lanzamientos y aterrizajes en los datos, días desde su último vuelo y su próximo lanzamiento previsto
+- [ ] Hora del despegue: en qué franja del día (hora local de la plataforma y de España) despegaron los últimos lanzamientos y apuesta «¿despegará de noche el próximo?» que se resuelve sola
+- [ ] Turnos de las barcazas: días que tarda cada barcaza entre un aterrizaje y el siguiente según los datos, y aviso si la próxima misión asignada le deja menos margen que su récord

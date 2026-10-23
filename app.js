@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -534,6 +534,7 @@ function retosGlobo(){
   {const I=cliInfo();if(I&&I.opts.length){const cur=cliState().cur,top=I.rows.find(r=>r.c!=='SpaceX');R.push({t:'Clientes de SpaceX',m:`${top?`${cliN(top.c)} es el cliente externo con más lanzamientos recientes (${top.n}). `:''}${cur?'Tu apuesta sigue en juego: mira quién encarga los próximos.':`¿De quién será el siguiente lanzamiento que no sea Starlink ni de la propia SpaceX? Acertar da hasta ${CLI_PTS.other} puntos.`}`,tab:'next',btn:cur?'Ver los clientes':'Apostar por un cliente',k:cur?null:'cli',sel:'#clientes'})}}
   {const I=venInfo(),l=I&&I.U.find(venOpen);if(l){const cur=!!venState().cur[l.id];R.push({t:'Ventanas de lanzamiento',m:`La ventana de ${mname(l)} dura ${venTxt(venDur(l))}. Solo ${I.first} de los últimos ${I.W.length} lanzamientos con ventana salieron en su primer minuto. ${cur?'Tu apuesta sigue en juego.':`¿Saldrá este en el primer minuto? Acertar «Sí» da ${VEN_PTS.si} puntos.`}`,tab:'next',btn:cur?'Ver las ventanas':'Apostar por la ventana',k:cur?null:'ven',sel:'#ventanas'})}}
   {const I=zonInfo();if(I&&I.opts.length){const cur=zonState().cur,top=I.rows[0];R.push({t:'Zonas de aterrizaje',m:`${top&&top.rn?`${top.name||top.k} es la zona más usada en los últimos lanzamientos (${top.rn} veces). `:''}${cur?'Tu apuesta sigue en juego: mira qué zona usa el próximo propulsor.':`¿Dónde aterrizará el próximo propulsor? Acertar una zona poco usada da hasta ${ZON_MAX} puntos.`}`,tab:'next',btn:cur?'Ver las zonas':'Apostar por una zona',k:cur?null:'zon',sel:'#zonas'})}}
+  {const I=mesInfo();if(I&&I.Pv){const b=LS.get('mes',{})[I.cur],need=I.Pv.n-I.C.n+1,libre=!b&&need>0&&Date.now()<I.close;if(b||libre)R.push({t:'Lanzamientos por mes',m:`Este mes SpaceX lleva ${I.C.n} lanzamientos y el anterior hizo ${I.Pv.n}. ${libre?`¿Lo superará? Acertar «Sí» da ${mesSiPts(need)} puntos.`:'Tu apuesta sigue en juego: mira cómo va el mes.'}`,tab:'next',btn:libre?'Apostar por el mes':'Ver el gráfico',k:libre?'mes':null,sel:'#meses'})}}
   {const f=formate();if(f)R.push(f);}
   return R;
 }
@@ -974,7 +975,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>
@@ -1038,7 +1039,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -1255,3 +1256,63 @@ function bindEmpleo(){const el=$('#next');if(!el||el._emp)return;el._emp=true;
   const go=(v,f)=>{EMP_SEL=v;renderEmpleo();const q=$(f?'#emp-sel':'#emp-city');try{q&&(q.tabIndex=q.tabIndex<0?-1:q.tabIndex,q.focus())}catch(e){}};
   el.addEventListener('change',e=>{if(e.target&&e.target.id==='emp-sel')go(e.target.value,true)});
   el.addEventListener('click',e=>{const b=e.target.closest('button[data-emp]');if(b)go(b.dataset.emp,false)})}
+
+// ---------- Lanzamientos por mes y apuesta «¿superará este mes al anterior?» ----------
+// Barras por mes (hora local) y por cohete con los últimos lanzamientos de SpaceX de data.json (Launch Library 2).
+// La apuesta se guarda en sxp_mes (por mes), cierra 7 días antes de que acabe el mes y se resuelve sola con los datos de después.
+const MES_PTS={no:20,min:10,max:40},MES_CLOSE=7*DAY;
+const MES_N=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const mesKey=t=>{const z=new Date(t);return z.getFullYear()+'-'+String(z.getMonth()+1).padStart(2,'0')};
+const mesStart=k=>{const[y,m]=k.split('-').map(Number);return new Date(y,m-1,1).getTime()};
+const mesEnd=k=>{const[y,m]=k.split('-').map(Number);return new Date(y,m,1).getTime()-1};
+const mesPrev=k=>{const[y,m]=k.split('-').map(Number);return mesKey(new Date(y,m-2,1))};
+const mesName=k=>{const[y,m]=k.split('-').map(Number);return MES_N[m-1]+' de '+y};
+const mesRk=r=>/Starship/i.test(r||'')?'Starship':/Heavy/i.test(r||'')?'Falcon Heavy':/Falcon 9/i.test(r||'')?'Falcon 9':(r||'Otro');
+const MES_COL={'Falcon 9':'#cfd8e3','Falcon Heavy':'#6ea8ff','Starship':'#ffb547'};
+function mesInfo(){const d=rlD(),P=(d.previous||[]).filter(l=>!isNaN(new Date(l.net))).slice().sort((a,b)=>new Date(a.net)-new Date(b.net));if(!P.length)return null;
+  const now=Date.now(),cur=mesKey(now),prev=mesPrev(cur),old=new Date(P[0].net).getTime(),M={};
+  for(const l of P){const k=mesKey(l.net),m=M[k]||(M[k]={k,n:0,by:{}});m.n++;const r=mesRk(l.rocket);m.by[r]=(m.by[r]||0)+1}
+  const keys=[];for(let k=mesKey(old);k<=cur;){keys.push(k);const[y,m]=k.split('-').map(Number);k=mesKey(new Date(y,m,1))}
+  const rows=keys.map(k=>({...(M[k]||{k,n:0,by:{}}),part:mesStart(k)<old,cur:k===cur}));// part: los datos no cubren el mes entero
+  const C=rows.find(r=>r.k===cur),Pv=rows.find(r=>r.k===prev),full=rows.filter(r=>!r.part&&!r.cur);
+  const left=(d.upcoming||[]).filter(l=>{const x=new Date(l.net).getTime();return precise(l)&&x>now-3*H&&x<=mesEnd(cur)&&!P.some(p=>p.id===l.id)});
+  const rk=[...new Set(P.map(l=>mesRk(l.rocket)))].sort((a,b)=>(a==='Falcon 9'?-1:b==='Falcon 9'?1:a<b?-1:1));
+  const best=full.reduce((m,r)=>!m||r.n>m.n?r:m,null),avg=full.length?full.reduce((s,r)=>s+r.n,0)/full.length:null;
+  const close=mesEnd(cur)+1-MES_CLOSE;
+  return{P,rows,cur,prev,C:C||{k:cur,n:0,by:{}},Pv:Pv&&!Pv.part?Pv:null,left,rk,best,avg,full,close,gen:d.generated}}
+function mesSiPts(need){return Math.max(MES_PTS.min,Math.min(MES_PTS.max,10*need))}
+function resolveMes(){const d=rlD();if(!d||!d.previous||!d.previous.length)return;const all=LS.get('mes',{}),gen=new Date(d.generated).getTime();let ch=false,won=0;
+  const old=d.previous.reduce((m,l)=>Math.min(m,new Date(l.net).getTime()),Infinity);
+  for(const [k,b] of Object.entries(all)){if(b.res)continue;const e=mesEnd(k);if(!(gen>e+6*H))continue;// espera unas horas a que la fuente pase los últimos lanzamientos del mes al historial
+    if(old>mesStart(k)){if(Date.now()>e+30*DAY){delete all[k];ch=true}continue}// la lista ya no cubre ese mes
+    const n=d.previous.filter(l=>mesKey(l.net)===k).length,beat=n>b.prev,ok=(b.pick==='si')===beat;
+    b.res={n,beat};b.won=ok?b.pts:0;b.ok=ok;b.resAt=Date.now();if(b.won)won+=b.won;ch=true}
+  if(ch){LS.set('mes',all);if(won){addPts('mes',won);aviso(`Apuesta del mes resuelta: +${won} puntos.`)}}}
+function mesBetHTML(I){const all=LS.get('mes',{}),b=all[I.cur],open=Date.now()<I.close,pv=I.Pv,need=pv?pv.n-I.C.n+1:null;
+  const past=Object.entries(all).filter(([k])=>k!==I.cur).sort((a,c)=>c[0]<a[0]?-1:1).slice(0,4).map(([k,x])=>`<div class="mut">${x.res?ic(x.ok):''} ${esc(mesName(k))}: dijiste ${x.pick==='si'?'que superaría':'que no superaría'} los ${x.prev} del mes anterior · ${x.res?`hubo ${x.res.n} · +${x.won} puntos`:'pendiente de datos'}</div>`).join('');
+  let h=`<h3 id="mes-q">¿Superará ${esc(mesName(I.cur).split(' de ')[0])} a ${esc(mesName(I.prev).split(' de ')[0])}?</h3>`;
+  if(!pv)return h+'<p class="mut">Los datos no cubren el mes anterior entero, así que este mes no hay apuesta.</p>'+past;
+  h+=`<p class="mut">Gana «Sí» si este mes hay más lanzamientos de SpaceX que los ${pv.n} de ${esc(mesName(I.prev).split(' de ')[0])}; empatar cuenta como «No». Se apuesta hasta 7 días antes de que acabe el mes (${fmt(I.close-1)}). «Sí» da más puntos cuantos más lanzamientos falten (10 por cada uno, de ${MES_PTS.min} a ${MES_PTS.max}); «No», ${MES_PTS.no}. Se resuelve sola con los datos del mes ya cerrado.</p>`;
+  if(b)h+=`<p><span role="img" aria-label="Pendiente">⏳</span> Dijiste <b>${b.pick==='si'?'Sí, lo superará':'No lo superará'}</b> cuando iban ${b.n0} de ${b.prev} (+${b.pts} si aciertas) · se resuelve sola cuando acabe el mes.</p>`;
+  else if(need<=0)h+=`<p class="mut">Este mes ya lleva ${I.C.n} y ha superado los ${pv.n} del anterior, así que la apuesta está decidida. El mes que viene hay otra.</p>`;
+  else if(open)h+=`<div class="opts" role="group" aria-labelledby="mes-q"><button type="button" data-mes="si">Sí, lo superará (+${mesSiPts(need)})</button><button type="button" data-mes="no">No (+${MES_PTS.no})</button></div>`;
+  else h+='<p class="mut">La apuesta de este mes cerró 7 días antes de su final. El día 1 empieza otra.</p>';
+  return h+(past?`<div style="margin-top:8px">${past}</div>`:'')}
+function renderMeses(){const el=$('#meses');if(!el||!D)return;const I=mesInfo();if(!I){el.innerHTML='';return}
+  const max=Math.max(1,...I.rows.map(r=>r.n)),pv=I.Pv,dif=pv?I.C.n-pv.n:null;
+  const bar=r=>{const segs=I.rk.filter(k=>r.by[k]).map(k=>`<span style="height:${r.by[k]/max*100}%;background:${MES_COL[k]||'#888'}" title="${esc(k)}: ${r.by[k]}"></span>`).join('');
+    const lab=mesName(r.k).split(' de ')[0].slice(0,3);
+    return `<li class="${r.cur?'cur':''}${r.part?' part':''}"><div class="mb-n">${r.n}</div><div class="mb-b" aria-hidden="true">${segs}</div><div class="mb-l">${lab}${r.cur?'*':r.part?'†':''}</div><span class="sr">${esc(mesName(r.k))}: ${r.n} ${r.n===1?'lanzamiento':'lanzamientos'}${Object.keys(r.by).length?' ('+I.rk.filter(k=>r.by[k]).map(k=>`${k} ${r.by[k]}`).join(', ')+')':''}${r.cur?', mes en curso':r.part?', los datos no cubren el mes entero':''}</span></li>`};
+  const leg=I.rk.map(k=>`<span class="mb-k"><i style="background:${MES_COL[k]||'#888'}"></i>${esc(k)}</span>`).join('');
+  el.innerHTML=`<div class="card daily meses"><div class="kick">Lanzamientos por mes</div>
+  <div class="stats"><div><b>${I.C.n}</b>en ${esc(mesName(I.cur).split(' de ')[0])} (hasta hoy)</div>${pv?`<div><b>${pv.n}</b>en ${esc(mesName(I.prev).split(' de ')[0])}</div>`:''}${I.avg!=null?`<div><b>${I.avg.toFixed(1).replace('.',',')}</b>de media en los meses completos</div>`:''}</div>
+  <ul class="mbars" role="list" aria-label="Lanzamientos de SpaceX por mes">${I.rows.map(bar).join('')}</ul><div class="mb-leg">${leg}</div>
+  <p class="mut">${pv?(dif>0?`Este mes ya lleva ${dif} más que el anterior.`:dif===0?'Este mes va empatado con el anterior.':`A este mes le ${-dif+1===1?'falta 1 lanzamiento':`faltan ${-dif+1} lanzamientos`} para superar al anterior.`):''} ${I.left.length?`Quedan ${I.left.length} ${I.left.length===1?'previsto':'previstos'} con hora fijada antes de que acabe el mes (${I.left.map(l=>`${esc(mname(l))}, ${fmtD(l.net)}`).join('; ')}).`:'No queda ningún lanzamiento con hora fijada antes de que acabe el mes.'}${I.best?` Mes con más lanzamientos en los datos: ${esc(mesName(I.best.k))}, con ${I.best.n}.`:''}</p>
+  <p class="mut">* mes en curso${I.rows.some(r=>r.part)?' · † los datos no cubren el mes entero':''}.</p>
+  ${mesBetHTML(I)}<div class="mut" style="margin-top:6px">Calculado con los últimos ${I.P.length} lanzamientos de SpaceX en Launch Library 2 (desde el ${fmtD(I.P[0].net)}), por mes en tu hora local, actualizados ${fmt(I.gen)}.</div></div>`}
+function bindMeses(){const el=$('#next');if(!el||el._mes)return;el._mes=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-mes]');if(!b)return;
+  const I=mesInfo();if(!I||!I.Pv){renderMeses();return}const all=LS.get('mes',{}),need=I.Pv.n-I.C.n+1;if(Date.now()>=I.close||all[I.cur]||need<=0){renderMeses();return}
+  const pick=b.dataset.mes==='si'?'si':'no',pts=pick==='si'?mesSiPts(need):MES_PTS.no;
+  all[I.cur]={pick,pts,at:Date.now(),n0:I.C.n,prev:I.Pv.n};LS.set('mes',all);
+  aviso(`Apuesta guardada: ${pick==='si'?'este mes superará':'este mes no superará'} al anterior (+${pts} si aciertas).`);completeDaily('mes');renderMeses();
+  const q=$('#mes-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}

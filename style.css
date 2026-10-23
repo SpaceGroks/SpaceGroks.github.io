@@ -208,3 +208,7 @@ h3,.card h3{font-family:var(--sans);text-transform:uppercase;letter-spacing:.12e
 /* Reto del día y globos: sin dorado, estilo oscuro */
 .daily{border-color:var(--line)}
 .daily .kick,.globo .gk{font:600 11px var(--sans);letter-spacing:.3em;color:#fff;opacity:.8}
+.mbars{list-style:none;display:flex;gap:6px;align-items:flex-end;padding:0;margin:12px 0 4px;height:170px}.mbars li{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0;position:relative}
+.mb-b{width:100%;max-width:46px;height:120px;display:flex;flex-direction:column-reverse}.mb-b span{display:block;width:100%}.mb-b span:last-child{border-radius:3px 3px 0 0}
+.mb-n{font-size:13px;font-weight:600;margin-bottom:3px}.mb-l{font-size:12px;opacity:.75;margin-top:4px;text-transform:capitalize}.mbars li.cur .mb-l{opacity:1;font-weight:600}.mbars li.part .mb-b{opacity:.45}
+.mb-leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;opacity:.85}.mb-k i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}

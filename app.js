@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderMeteo();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderMeteo();resolveVet();renderVeterania();bindVeterania();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0)+(p.hora||0)+(p.tipo||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0)+(p.hora||0)+(p.tipo||0)+(p.vet||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="meteo"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="meteo"></div><div id="veterania"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -537,6 +537,7 @@ function retosGlobo(){
   {const I=horaInfo();if(I){const b=horaState().cur,f=I.first;R.push({t:'Hora del despegue',m:`El ${Math.round(100*I.nN/I.P.length)} % de los últimos despegues de SpaceX fueron de noche en la plataforma. ${b?'Tu apuesta sigue en juego: mira cuándo despega el siguiente.':`¿Despegará de noche el próximo?${f?` ${mname(f.l)} está previsto ${f.night?'de noche':'de día'}, pero un retraso lo puede cambiar.`:''}`}`,tab:'next',btn:b?'Ver la hora del despegue':'Apostar por la hora',k:b?null:'hora',sel:'#hora'})}}
   {const I=mesInfo();if(I&&I.Pv){const b=LS.get('mes',{})[I.cur],need=I.Pv.n-I.C.n+1,libre=!b&&need>0&&Date.now()<I.close;if(b||libre)R.push({t:'Lanzamientos por mes',m:`Este mes SpaceX lleva ${I.C.n} lanzamientos y el anterior hizo ${I.Pv.n}. ${libre?`¿Lo superará? Acertar «Sí» da ${mesSiPts(need)} puntos.`:'Tu apuesta sigue en juego: mira cómo va el mes.'}`,tab:'next',btn:libre?'Apostar por el mes':'Ver el gráfico',k:libre?'mes':null,sel:'#meses'})}}
   {const I=tipoInfo();if(I){const b=tipoState().cur;R.push({t:'Tipos de misión',m:`El ${Math.round(100*I.sl/I.P.length)} % de los últimos lanzamientos de SpaceX fueron Starlink. ${b?`Tu apuesta (${b.pick} de ${TIPO_N}) sigue en juego.`:`¿Cuántos de los próximos ${TIPO_N} serán Starlink?`}`,tab:'next',btn:b?'Ver los tipos de misión':'Apostar por Starlink',k:b?null:'tipo',sel:'#tipos'})}}
+  {const I=vetInfo();if(I){const b=vetState().cur;R.push({t:'Veteranía de los propulsores',m:`El ${Math.round(100*I.old/I.P.length)} % de los últimos lanzamientos de SpaceX volaron con un propulsor de más de 20 vuelos. ${b?'Tu apuesta sigue en juego: mira con qué propulsor despega el siguiente.':`¿Volará el próximo con uno de más de 20?${I.nf!=null?` ${mname(I.nxt)} lleva asignado ${I.nc.serial} en su vuelo nº ${I.nf}.`:''}`}`,tab:'next',btn:b?'Ver la veteranía':'Apostar por la veteranía',k:b?null:'vet',sel:'#veterania'})}}
   {const f=formate();if(f)R.push(f);}
   return R;
 }
@@ -977,7 +978,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['tipo','Apuesta de Starlink'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>
@@ -1041,7 +1042,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderMeteo()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderMeteo();resolveVet();renderVeterania()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -1526,3 +1527,58 @@ function renderMeteo(){const el=$('#meteo');if(!el||!D)return;const I=meteoInfo(
   <ul class="stl">${I.bands.map(b=>`<li>Con meteo favorable del ${b.t}: <b>${b.n}</b> ${b.n===1?'lanzamiento':'lanzamientos'}, ${b.ok} con éxito${b.m?`, ${b.open} de ${b.m} salieron en la apertura de su ventana`:''}.</li>`).join('')}</ul>
   <div class="tblw"><table class="stt"><thead><tr><th>Misión</th><th>Meteo</th><th>Preocupaba</th><th>Qué pasó</th></tr></thead><tbody>${past}</tbody></table></div>`:'<p class="mut">Ninguno de los lanzamientos recientes tiene previsión en los datos.</p>'}
   <div class="mut" style="margin-top:6px">Datos de Launch Library 2 (probability y weather_concerns), actualizados ${fmt(I.gen)}: ${nP} de los últimos ${I.tot} lanzamientos de SpaceX tienen previsión publicada (${I.P.filter(l=>/FL/.test(l.loc||"")).length} de ellos en Florida). Es la última previsión que guarda la fuente, no la de días antes.</div></div>`}
+
+// ---------- Veteranía de los propulsores por lanzamiento ----------
+// Con el número de vuelo del propulsor principal (stages[].flight del núcleo) de cada lanzamiento en Launch Library 2:
+// veteranía en los últimos lanzamientos, media por mes, cuántos estrenaron propulsor y apuesta «¿más de 20 vuelos?».
+// La apuesta se guarda en sxp_vet ({cur,hist}) y se resuelve sola con el primer lanzamiento con número de vuelo conocido
+// que despegue al menos 2 h después de apostar.
+const VET_MIN=21,VET_GAP=2*H,VET_PTS={fav:5,contra:25,base:10,dudosa:20};
+const vetCore=l=>{const S=(l.stages||[]).filter(s=>s&&s.serial&&!/Unknown/i.test(s.serial));return S.find(s=>/Core/i.test(s.type||''))||S[0]||null};
+const vetMesN=k=>{const[y,m]=k.split('-');return new Date(+y,+m-1,15).toLocaleDateString('es-ES',{month:'long',year:'numeric'})};
+function vetInfo(){const d=rlD();if(!d||!Array.isArray(d.previous)||!d.previous.length)return null;const now=Date.now(),pid=new Set(d.previous.map(l=>l.id));
+  const P=d.previous.filter(l=>!isNaN(new Date(l.net))).map(l=>({l,t:new Date(l.net).getTime(),c:vetCore(l),nw:(l.stages||[]).filter(s=>s&&s.flight===1).length})).filter(o=>o.c&&o.c.flight).sort((a,b)=>b.t-a.t);
+  if(!P.length)return null;
+  const old=P.filter(o=>o.c.flight>=VET_MIN).length,nw=P.filter(o=>o.nw>0),avg=P.reduce((s,o)=>s+o.c.flight,0)/P.length;
+  const srt=P.map(o=>o.c.flight).sort((a,b)=>a-b),med=srt.length%2?srt[(srt.length-1)/2]:(srt[srt.length/2-1]+srt[srt.length/2])/2;
+  const top=P.slice().sort((a,b)=>b.c.flight-a.c.flight||b.t-a.t)[0];
+  const mk=t=>{const x=new Date(t);return x.getUTCFullYear()+'-'+String(x.getUTCMonth()+1).padStart(2,'0')};
+  const M={};for(const o of P){const k=mk(o.t),m=M[k]||(M[k]={k,n:0,sum:0,max:0,old:0,nw:0});m.n++;m.sum+=o.c.flight;m.max=Math.max(m.max,o.c.flight);if(o.c.flight>=VET_MIN)m.old++;if(o.nw)m.nw++}
+  const first=P[P.length-1].t,months=Object.values(M).sort((a,b)=>a.k<b.k?-1:1).map(m=>({...m,avg:m.sum/m.n,part:m.k===mk(first)&&new Date(first).getUTCDate()>1}));
+  const U=(d.upcoming||[]).filter(l=>!pid.has(l.id)&&precise(l)&&!/TBD/i.test(l.status||'')&&new Date(l.net).getTime()>now+VET_GAP).sort((a,b)=>new Date(a.net)-new Date(b.net));
+  const nxt=U[0]||null,nc=nxt&&vetCore(nxt),nf=nc&&nc.flight?nc.flight:null,base=old*2>=P.length;
+  const pts=pick=>nf!=null?((pick==='si')===(nf>=VET_MIN)?VET_PTS.fav:VET_PTS.contra):((pick==='si')===base?VET_PTS.base:VET_PTS.dudosa);
+  const asg=(d.upcoming||[]).filter(l=>!pid.has(l.id)&&new Date(l.net).getTime()>now-3*H).map(l=>({l,c:vetCore(l)})).filter(o=>o.c&&o.c.flight).sort((a,b)=>new Date(a.l.net)-new Date(b.l.net)).slice(0,5);
+  return{P,old,nw,avg,med,top,months,nxt,nc,nf,base,pts,asg,gen:d.generated}}
+function vetState(){const s=LS.get('vet',{cur:null,hist:[]});s.hist=s.hist||[];return s}
+function resolveVet(){const d=rlD();if(!d||!d.previous)return;const s=vetState(),b=s.cur;if(!b)return;
+  if(!(new Date(d.generated).getTime()>b.at))return;
+  const c=d.previous.filter(l=>new Date(l.net).getTime()>=b.at+VET_GAP).map(l=>({l,c:vetCore(l)})).filter(o=>o.c&&o.c.flight).sort((x,y)=>new Date(x.l.net)-new Date(y.l.net))[0];if(!c)return;
+  const vet=c.c.flight>=VET_MIN,ok=(b.pick==='si')===vet,won=ok?b.pts:0;
+  s.hist.unshift({...b,res:{m:mname(c.l),net:c.l.net,serial:c.c.serial,flight:c.c.flight},ok,won,resAt:Date.now()});s.hist=s.hist.slice(0,20);s.cur=null;LS.set('vet',s);
+  if(won)addPts('vet',won);aviso(`Apuesta de veteranía resuelta: ${mname(c.l)} voló con ${c.c.serial} en su vuelo nº ${c.c.flight}. ${ok?`+${won} puntos.`:'Esta vez no.'}`)}
+function vetBetHTML(I){const s=vetState(),b=s.cur,l=I.nxt;
+  let h=`<h3 id="vet-q">¿Volará el próximo lanzamiento con un propulsor de más de 20 vuelos?</h3><p class="mut">Cuenta el primer lanzamiento de SpaceX que despegue al menos 2 horas después de apostar y cuyo propulsor principal tenga número de vuelo en Launch Library 2 (en el Falcon Heavy, el núcleo central). «Más de 20» quiere decir del vuelo nº ${VET_MIN} en adelante. ${I.nf!=null?`El primero con hora fijada es ${esc(mname(l))}, con ${esc(I.nc.serial)} asignado a su vuelo nº ${I.nf}: acertar con esa asignación da ${VET_PTS.fav} puntos y apostar a que cambia (otro propulsor o un retraso que deje pasar a otro lanzamiento), ${VET_PTS.contra}.`:`${l?`El primero con hora fijada (${esc(mname(l))}) aún no tiene propulsor asignado en la fuente`:'Ahora no hay ninguno con hora fijada'}, así que lo más habitual en los datos (${I.base?'más de 20 vuelos':'20 vuelos o menos'}) da ${VET_PTS.base} puntos y lo contrario, ${VET_PTS.dudosa}.`}</p>`;
+  if(b)h+=`<p><span role="img" aria-label="Pendiente">⏳</span> Dijiste <b>${b.pick==='si'?'Sí, más de 20':'No, 20 o menos'}</b> (+${b.pts}) el ${fmt(b.at)} · se resuelve sola con el siguiente despegue.</p>`;
+  else h+=`<div class="opts" role="group" aria-labelledby="vet-q"><button type="button" data-vet="si">Sí, más de 20 (+${I.pts('si')})</button><button type="button" data-vet="no">No, 20 o menos (+${I.pts('no')})</button></div>`;
+  const past=s.hist.slice(0,4).map(x=>`<div class="mut">${ic(x.ok)} Dijiste ${x.pick==='si'?'más de 20':'20 o menos'} · ${esc(x.res.m)} voló con ${esc(x.res.serial)} en su vuelo nº ${x.res.flight} (${fmtD(x.res.net)}) · +${x.won} puntos</div>`).join('');
+  return h+(past?`<div style="margin-top:8px">${past}</div>`:'')}
+function renderVeterania(){const el=$('#veterania');if(!el||!D)return;const I=vetInfo();if(!I){el.innerHTML='';return}
+  const n=I.P.length,f1=x=>x.toFixed(1).replace('.',','),mx=Math.max(1,...I.months.map(m=>m.avg));
+  const months=I.months.map(m=>`<li>${esc(vetMesN(m.k))}${m.part?' <span class="mut">(parcial en los datos)</span>':''}: media <b>${f1(m.avg)}</b> vuelos <span class="mut">· ${m.n} ${m.n===1?'lanzamiento':'lanzamientos'}, máximo ${m.max}, ${m.old} con más de 20, ${m.nw} ${m.nw===1?'estreno':'estrenos'}</span><div class="empbar" aria-hidden="true"><span style="width:${Math.max(2,Math.round(m.avg/mx*100))}%"></span></div></li>`).join('');
+  const last=I.P.slice(0,6).map(o=>`<li>${esc(mname(o.l))} <span class="mut">· ${esc(o.l.rocket||'')}, ${fmtD(o.l.net)}</span><div class="mut">${esc(o.c.serial)} en su vuelo nº <b>${o.c.flight}</b>${o.c.flight===1?' (estreno)':''}${o.nw&&o.c.flight!==1?` · estrenó ${o.nw===1?'un propulsor lateral':o.nw+' propulsores laterales'}`:''}</div></li>`).join('');
+  const news=I.nw.slice(0,5).map(o=>`${esc(mname(o.l))} (${esc((o.l.stages||[]).filter(s=>s&&s.flight===1).map(s=>s.serial).join(', '))}, ${fmtD(o.l.net)})`).join('; ');
+  const asg=I.asg.map(o=>`<li>${esc(mname(o.l))} <span class="mut">· ${fmt(o.l.net)}</span><div class="mut">${esc(o.c.serial)} en su vuelo nº <b>${o.c.flight}</b>${o.c.flight>=VET_MIN?' · más de 20':''}</div></li>`).join('');
+  el.innerHTML=`<div class="card daily veter"><div class="kick">Veteranía de los propulsores</div>
+  <div class="stats"><div><b>${f1(I.avg)}</b>vuelos de media del propulsor principal (mediana ${String(I.med).replace('.',',')})</div><div><b>${Math.round(100*I.old/n)} %</b>con más de 20 vuelos (${I.old} de ${n})</div><div><b>${I.nw.length}</b>${I.nw.length===1?'estrenó':'estrenaron'} algún propulsor nuevo</div><div><b>${I.top.c.flight}</b>el más veterano: ${esc(I.top.c.serial)}</div></div>
+  <h4>Media por mes</h4><ul class="emp-top" aria-label="Número de vuelo medio del propulsor por mes">${months}</ul>
+  <h4>Últimos lanzamientos</h4><ul class="emp-top">${last}</ul>
+  ${news?`<p class="mut">Estrenos de propulsor en los datos: ${news}.</p>`:''}
+  ${asg?`<h4>Próximos con propulsor asignado</h4><ul class="emp-top">${asg}</ul>`:''}
+  ${vetBetHTML(I)}<div class="mut" style="margin-top:6px">Calculado con los ${n} últimos lanzamientos de SpaceX con número de vuelo del propulsor en Launch Library 2 (desde el ${fmtD(I.P[n-1].l.net)}), actualizados ${fmt(I.gen)}. El número de vuelo es el del propulsor principal en ese lanzamiento; meses en hora UTC.</div></div>`}
+function bindVeterania(){const el=$('#next');if(!el||el._vet)return;el._vet=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-vet]');if(!b)return;
+  const I=vetInfo(),s=vetState();if(!I||s.cur){renderVeterania();return}
+  const pick=b.dataset.vet==='si'?'si':'no',pts=I.pts(pick);
+  s.cur={pick,pts,at:Date.now(),ref:I.nf!=null?{m:mname(I.nxt),serial:I.nc.serial,flight:I.nf}:null};LS.set('vet',s);
+  aviso(`Apuesta guardada: el próximo volará con un propulsor de ${pick==='si'?'más de 20 vuelos':'20 vuelos o menos'} (+${pts} si aciertas).`);completeDaily('vet');renderVeterania();
+  const q=$('#vet-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}

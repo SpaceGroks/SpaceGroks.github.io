@@ -213,3 +213,5 @@ h3,.card h3{font-family:var(--sans);text-transform:uppercase;letter-spacing:.12e
 .mb-n{font-size:13px;font-weight:600;margin-bottom:3px}.mb-l{font-size:12px;opacity:.75;margin-top:4px;text-transform:capitalize}.mbars li.cur .mb-l{opacity:1;font-weight:600}.mbars li.part .mb-b{opacity:.45}
 .mb-leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;opacity:.85}.mb-k i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .coh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:8px}.coh h3{margin:0 0 6px;display:flex;align-items:center;gap:8px}.coh-dot{display:inline-block;width:12px;height:12px;border-radius:50%}.coh .stats{margin:6px 0}.coh p{margin:4px 0}
+
+.veter .emp-top{list-style:none;padding:0}.veter .emp-top li{margin:6px 0}

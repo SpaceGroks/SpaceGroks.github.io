@@ -52,7 +52,8 @@ def slim(r):
           "reused":s.get("reused"),"type":s.get("type"),"turnaround":s.get("turn_around_time"),
           "land_attempt":ld.get("attempt"),"land_success":ld.get("success"),
           "land_loc":loc.get("abbrev") or loc.get("name"),"land_loc_name":loc.get("name"),"land_type":(ld.get("type") or {}).get("abbrev"),
-          "booster_flights":L.get("flights"),"booster_landings":L.get("successful_landings")})
+          "booster_flights":L.get("flights"),"booster_landings":L.get("successful_landings"),
+          "first":L.get("first_launch_date"),"lastd":L.get("last_launch_date"),"bstatus":(L.get("status") or {}).get("name")})
     vids=r.get("vid_urls") or []
     return {"id":r["id"],"name":r.get("name"),"mission":m.get("name"),"mtype":m.get("type"),
       "desc":cut(m.get("description") or ""),"orbit":(m.get("orbit") or {}).get("abbrev"),

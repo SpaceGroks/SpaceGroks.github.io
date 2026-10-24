@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0)+(p.hora||0)+(p.tipo||0)+(p.vet||0)+(p.orb||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0)+(p.hora||0)+(p.tipo||0)+(p.vet||0)+(p.orb||0)+(p.vida||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
@@ -389,7 +389,7 @@ function renderFleet(){
   D.upcoming.forEach(l=>(l.stages||[]).forEach(s=>{const b=m[s.serial];if(b&&!b.next)b.next=l}));
   const rows=Object.values(m).sort((a,b)=>fleetSort==='flights'?b.flights-a.flights:new Date(b.last)-new Date(a.last));
   const max=Math.max(...rows.map(r=>r.flights),1);
-  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Las primeras etapas que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar y un propulsor para ver su ficha y apostar si volverá a volar.</div></div>${betsHTML()}${cmpHTML(rows)}${raceHTML()}
+  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Las primeras etapas que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar y un propulsor para ver su ficha y apostar si volverá a volar.</div></div>${betsHTML()}${cmpHTML(rows)}${raceHTML()}${vidaHTML()}
   <div class="tscroll"><table><caption class="sr">Flota de propulsores, ordenada por ${fleetSort==='flights'?'número de vuelos':'último vuelo'}</caption><tr><th scope="col">Propulsor</th><th scope="col" aria-sort="${fleetSort==='flights'?'descending':'none'}"><button type="button" class="lnk" data-s="flights">Vuelos</button></th><th scope="col" aria-sort="${fleetSort==='last'?'descending':'none'}"><button type="button" class="lnk" data-s="last">Último vuelo</button></th><th scope="col">Próximo</th></tr>
   ${rows.map(r=>`<tr class="clic" data-serial="${r.serial}"><td><button type="button" class="lnk" data-open="${r.serial}" aria-label="Abrir la ficha del propulsor ${r.serial}"><b>${r.serial}</b> <span class="mut" aria-hidden="true">ficha ›</span></button></td><td>${r.flights}<div class="bar"><i style="width:${100*r.flights/max}%"></i></div></td><td>${fmtD(r.last)}<div class="mut">${r.missions.at(-1)}</div></td><td>${r.next?`${mname(r.next)}<div class="mut">${fmtD(r.next.net)}</div>`:'—'}</td></tr>`).join('')}</table></div>`;
   $('#fleet').querySelectorAll('button[data-s]').forEach(t=>t.onclick=()=>{fleetSort=t.dataset.s;renderFleet();const f=$('#fleet').querySelector(`button[data-s="${t.dataset.s}"]`);f&&f.focus()});
@@ -979,7 +979,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>
@@ -1043,7 +1043,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -1674,3 +1674,66 @@ function renderRetrasos(){const el=$('#retrasos');if(!el||!D)return;const I=retI
   ${top?`<h4>Los que más se han movido</h4><ul class="emp-top">${top}</ul>`:'<p class="mut">Ningún próximo lanzamiento ha cambiado de fecha desde que lo vimos en la lista.</p>'}
   ${ev?`<h4>Últimos cambios detectados</h4><ul class="emp-top">${ev}</ul>`:''}
   ${pTxt}<div class="mut" style="margin-top:6px">Comparando la fecha prevista de Launch Library 2 entre cada actualización de los datos y la siguiente (cada hora), desde el ${fmtD(I.start)}; un cambio de precisión (por ejemplo, de «noviembre» a un día concreto) también cuenta. Actualizados ${fmt(I.gen)}.</div></div>`}
+
+// ---------- Vida de los propulsores y apuesta «¿cuál de dos propulsores volará antes?» ----------
+// Fechas del primer y del último vuelo de cada propulsor según Launch Library 2 (first/lastd en cada etapa de data.json).
+// La apuesta se guarda en sxp_vida y se resuelve sola con el primer lanzamiento del historial que lleve uno de los dos
+// propulsores y despegue al menos 2 horas después de apostar; los puntos van a la categoría vida.
+const VIDA_GAP=2*H,VIDA_MAX=120*DAY,MES=30.44*DAY;
+function vidaData(){const d=rlD();if(!d)return null;const B={};const okS=x=>x&&!/Unknown/i.test(x);
+  const add=(l,s,up)=>{if(!okS(s.serial))return;const b=B[s.serial]||(B[s.serial]={serial:s.serial,rocket:l.rocket||'',flights:0});
+    if(s.first&&(!b.first||new Date(s.first)<new Date(b.first)))b.first=s.first;
+    if(s.lastd&&(!b.lastd||new Date(s.lastd)>new Date(b.lastd)))b.lastd=s.lastd;
+    if(!up&&(!b.lastL||new Date(l.net)>new Date(b.lastL.net))){b.lastL=l;b.lost=s.land_attempt===false||s.land_success===false}
+    b.flights=Math.max(b.flights,s.booster_flights||0,up?0:(s.flight||0));if(s.bstatus)b.status=s.bstatus;
+    if(up&&(!b.next||new Date(l.net)<new Date(b.next.net)))b.next=l};
+  (d.previous||[]).forEach(l=>(l.stages||[]).forEach(s=>add(l,s,false)));
+  const pid=new Set((d.previous||[]).map(l=>l.id));
+  (d.upcoming||[]).filter(l=>!pid.has(l.id)&&new Date(l.net)>Date.now()-6*H).forEach(l=>(l.stages||[]).forEach(s=>add(l,s,true)));
+  const rows=Object.values(B).filter(b=>b.first&&b.lastd).map(b=>{const span=new Date(b.lastd)-new Date(b.first);
+    return{...b,span,days:Math.round(span/DAY),pm:span>=MES&&b.flights>1?(b.flights-1)/(span/MES):null}});
+  if(!rows.length)return null;
+  const act=rows.filter(b=>(b.status||'').toLowerCase()==='active'&&(!b.lost||b.next)&&b.lastL);
+  return{rows,act,gen:d.generated}}
+function vidaState(){const s=LS.get('vida',{cur:null,hist:[]});s.hist=s.hist||[];return s}
+function vidaPair(I){const c=I.act.slice().sort((a,b)=>a.serial<b.serial?-1:1);if(c.length<2)return null;
+  const k=dayKey().split('-').reduce((a,x)=>a*31+(+x),7),n=c.length,i=k%n,j=(i+1+(Math.floor(k/n)%(n-1)))%n;return[c[i],c[j]]}
+function vidaPts(p){const[a,b]=p,na=a.next?new Date(a.next.net):null,nb=b.next?new Date(b.next.net):null;
+  if(na&&(!nb||na<nb))return[5,25];if(nb&&(!na||nb<na))return[25,5];if(na&&nb)return[15,15];
+  const la=new Date(a.lastL.net),lb=new Date(b.lastL.net);// sin misión asignada: favorito el que lleva más tiempo en tierra
+  return la<lb?[10,20]:lb<la?[20,10]:[15,15]}
+function resolveVida(){const d=rlD();if(!d||!d.previous)return;const s=vidaState(),b=s.cur;if(!b)return;
+  const gen=new Date(d.generated).getTime();if(!(gen>b.at))return;
+  const c=d.previous.filter(l=>new Date(l.net).getTime()>=b.at+VIDA_GAP&&(l.stages||[]).some(x=>x.serial===b.a||x.serial===b.b)).sort((x,y)=>new Date(x.net)-new Date(y.net))[0];
+  if(!c){if(Date.now()-b.at>VIDA_MAX){s.hist.unshift({...b,res:null,ok:false,won:0,resAt:Date.now()});s.hist=s.hist.slice(0,20);s.cur=null;LS.set('vida',s);aviso(`Apuesta ${b.a} contra ${b.b} anulada: ninguno ha vuelto a volar en 120 días.`)}return}
+  const ss=(c.stages||[]).map(x=>x.serial),both=ss.includes(b.a)&&ss.includes(b.b),w=both?null:ss.includes(b.a)?b.a:b.b,ok=w===b.pick,won=ok?b.pts:0;
+  s.hist.unshift({...b,res:{m:mname(c),net:c.net,w,both},ok,won,resAt:Date.now()});s.hist=s.hist.slice(0,20);s.cur=null;LS.set('vida',s);
+  if(won)addPts('vida',won);aviso(both?`Empate: ${b.a} y ${b.b} volaron juntos en ${mname(c)}. Sin puntos.`:`Apuesta de propulsores resuelta: ${w} voló antes, en ${mname(c)}. ${ok?`+${won} puntos.`:'Esta vez no.'}`)}
+const pmTxt=x=>x==null?'—':x.toLocaleString('es-ES',{maximumFractionDigits:2});
+function vidaBetHTML(I){const s=vidaState(),b=s.cur;
+  let h=`<h3 id="vida-q">¿Cuál de estos dos propulsores volará antes?</h3><p class="mut">Cada día sale una pareja de propulsores en activo. Gana el primero que aparezca en un lanzamiento que despegue al menos 2 horas después de apostar; si vuelan juntos no hay puntos y si ninguno vuela en 120 días se anula. El que tiene misión asignada antes da menos puntos y, si ninguno la tiene, el que lleva más tiempo en tierra.</p>`;
+  if(b)h+=`<p><span role="img" aria-label="Pendiente">⏳</span> Apostaste por <b>${esc(b.pick)}</b> frente a ${esc(b.pick===b.a?b.b:b.a)} (+${b.pts}) el ${fmt(b.at)} · se resuelve sola con el historial.</p>`;
+  else{const p=vidaPair(I);if(p){const pt=vidaPts(p);
+    h+=`<div class="opts" role="group" aria-labelledby="vida-q">${p.map((x,i)=>`<button type="button" data-vida="${esc(x.serial)}" data-vo="${esc(p[1-i].serial)}" data-vp="${pt[i]}">${esc(x.serial)} (+${pt[i]})</button>`).join('')}</div>
+    ${p.map(x=>`<div class="mut">${esc(x.serial)}: último vuelo ${fmtD(x.lastL.net)} (${esc(mname(x.lastL))}) · ${x.next?`próxima misión ${esc(mname(x.next))}, ${fmtD(x.next.net)}`:'sin misión asignada'}</div>`).join('')}`}
+    else h+='<p class="mut">Ahora no hay dos propulsores en activo en los datos para apostar.</p>'}
+  const past=s.hist.slice(0,4).map(x=>x.res?`<div class="mut">${x.res.both?'Empate':ic(x.ok)} ${esc(x.a)} contra ${esc(x.b)}: dijiste ${esc(x.pick)} · ${x.res.both?'volaron juntos':`voló antes ${esc(x.res.w)}`} en ${esc(x.res.m)} (${fmtD(x.res.net)}) · +${x.won} puntos</div>`:`<div class="mut">${esc(x.a)} contra ${esc(x.b)}: anulada, ninguno voló en 120 días</div>`).join('');
+  return h+(past?`<div style="margin-top:8px">${past}</div>`:'')}
+function vidaHTML(){const I=vidaData();if(!I)return'';
+  const act=I.act.slice().sort((a,b)=>new Date(a.first)-new Date(b.first)),old=act[0];
+  const fast=I.act.filter(b=>b.pm!=null&&b.flights>=5).sort((a,b)=>b.pm-a.pm)[0];
+  const sp=I.act.map(b=>b.days).sort((a,b)=>a-b),med=sp.length?sp[Math.floor(sp.length/2)]:null;
+  const yr=x=>{const y=x/365.25;return y>=1?`${y.toLocaleString('es-ES',{maximumFractionDigits:1})} años`:`${x} días`};
+  const row=b=>`<tr><td><b>${esc(b.serial)}</b><div class="mut">${esc(b.rocket)}</div></td><td>${fmtD(b.first)}</td><td>${fmtD(b.lastd)}</td><td>${b.days}<div class="mut">${yr(b.days)}</div></td><td>${b.flights}</td><td>${pmTxt(b.pm)}</td><td>${b.next?`${esc(mname(b.next))}<div class="mut">${fmtD(b.next.net)}</div>`:'—'}</td></tr>`;
+  return `<div class="card" id="vida"><b>Vida de los propulsores</b>
+  <div class="stats"><div><b>${old?esc(old.serial):'—'}</b>el más antiguo en activo${old?`, desde el ${fmtD(old.first)}`:''}</div>${fast?`<div><b>${pmTxt(fast.pm)}</b>vuelos al mes de ${esc(fast.serial)}, el que más vuela</div>`:''}${med!=null?`<div><b>${yr(med)}</b>vida mediana de los ${I.act.length} en activo</div>`:''}</div>
+  <div class="mut">Días entre el primer y el último vuelo de cada propulsor en activo y cuántos vuelos hace al mes de media en ese tiempo (vuelos después del primero entre los meses transcurridos).</div>
+  <div class="tscroll"><table><caption class="sr">Vida de los propulsores en activo, del más antiguo al más nuevo</caption><tr><th scope="col">Propulsor</th><th scope="col">Primer vuelo</th><th scope="col">Último vuelo</th><th scope="col">Días en servicio</th><th scope="col">Vuelos</th><th scope="col">Vuelos al mes</th><th scope="col">Próxima misión</th></tr>
+  ${act.map(row).join('')}</table></div>
+  ${vidaBetHTML(I)}
+  <p class="mut">Fechas del primer y del último vuelo, vuelos y estado de cada propulsor según Launch Library 2, para los que aparecen en los últimos ${(rlD().previous||[]).length} lanzamientos o en los próximos. Actualizados ${fmt(I.gen)}.</p></div>`}
+function bindVida(){const el=$('#fleet');if(!el||el._vida)return;el._vida=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-vida]');if(!b)return;
+  const s=vidaState();if(s.cur){renderFleet();return}
+  const pick=b.dataset.vida,o=b.dataset.vo,pts=+b.dataset.vp||0;const[a2,b2]=[pick,o].sort();
+  s.cur={a:a2,b:b2,pick,pts,at:Date.now()};LS.set('vida',s);aviso(`Apuesta guardada: ${pick} volará antes que ${o} (+${pts} si aciertas).`);renderFleet();
+  const q=$('#vida-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}

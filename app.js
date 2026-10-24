@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -1043,7 +1043,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -1643,3 +1643,34 @@ function bindOrbitas(){const el=$('#next');if(!el||el._orb)return;el._orb=true;e
   s.cur={pick:g.k,pts,at:Date.now(),ref:I.nx?{m:mname(I.nx),o:orbCode(I.nx)}:null};LS.set('orb',s);
   aviso(`Apuesta guardada: el próximo no Starlink irá a ${g.t} (+${pts} si aciertas).`);completeDaily('orb');renderOrbitas();
   const q=$('#orb-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}
+
+// ---------- Retrasos de la lista ----------
+// Cuántas veces ha cambiado la fecha prevista (net) de cada lanzamiento entre una actualización de data.json y la
+// siguiente. build_data.py guarda el historial real en data.nethist ({id:[[visto, net, precisión], ...]}), reconstruido
+// desde el historial de data.json en el repositorio (desde el 18 oct) y ampliado en cada actualización horaria. Solo informativa.
+const durTxt=ms=>{const a=Math.abs(ms),th=Math.round(a/H),d=Math.floor(th/24),h=th%24;if(a<H)return `${Math.max(1,Math.round(a/6e4))} min`;
+  return d?`${d} ${d===1?'día':'días'}${h?` y ${h} h`:''}`:`${h} h`};
+const netTxt=(n,p)=>/^(SEC|MIN|HOUR)$/i.test(p||'')?fmt(n):/^DAY$/i.test(p||'')?fmtD(n):/^MONTH$/i.test(p||'')?new Date(n).toLocaleDateString('es-ES',{month:'long',year:'numeric',timeZone:'UTC'}):fmtD(n)+' (aprox.)';
+function retInfo(){const d=rlD();if(!d||!d.nethist||!Array.isArray(d.upcoming))return null;const NH=d.nethist,pid=new Set((d.previous||[]).map(l=>l.id));
+  const row=l=>{const h=(NH[l.id]||[]).filter(x=>x&&x[1]&&!isNaN(new Date(x[1])));if(!h.length)return null;
+    const f=h[0],c=h[h.length-1],sh=new Date(c[1])-new Date(f[1]);
+    const ev=h.slice(1).map((x,i)=>({l,at:x[0],from:h[i][1],fp:h[i][2],to:x[1],tp:x[2],sh:new Date(x[1])-new Date(h[i][1])})).filter(e=>new Date(e.at)<new Date(e.to));// sin las correcciones de la hora real tras el despegue
+    return{l,h,n:ev.length,first:f,sh,ev}};
+  const U=d.upcoming.filter(l=>!pid.has(l.id)).map(row).filter(Boolean);
+  const P=(d.previous||[]).map(row).filter(r=>r&&r.h.length&&new Date(r.first[0])<new Date(r.l.net));
+  const all=U.concat(P),start=all.reduce((m,r)=>Math.min(m,new Date(r.h[0][0]).getTime()),Infinity);
+  const mov=U.filter(r=>r.n).sort((a,b)=>b.n-a.n||Math.abs(b.sh)-Math.abs(a.sh));
+  const ev=all.flatMap(r=>r.ev).sort((a,b)=>new Date(b.at)-new Date(a.at));
+  const Pm=P.filter(r=>r.n),late=P.filter(r=>r.sh>H);
+  return{U,P,mov,ev,Pm,late,start,nch:U.reduce((s,r)=>s+r.n,0),gen:d.generated}}
+function renderRetrasos(){const el=$('#retrasos');if(!el||!D)return;const I=retInfo();if(!I||!I.U.length){el.innerHTML='';return}
+  const sg=ms=>ms>0?`${durTxt(ms)} más tarde`:ms<0?`${durTxt(ms)} antes`:'misma fecha';
+  const top=I.mov.slice(0,6).map(r=>`<li>${esc(mname(r.l))} <b>${r.n}</b> ${r.n===1?'cambio':'cambios'}<div class="mut">Primera fecha vista: ${esc(netTxt(r.first[1],r.first[2]))} · ahora: ${esc(netTxt(r.l.net,r.l.net_precision))} · ${sg(r.sh)}</div></li>`).join('');
+  const ev=I.ev.slice(0,6).map(e=>`<li>${esc(mname(e.l))} <span class="mut">· detectado ${fmt(e.at)}</span><div class="mut">de ${esc(netTxt(e.from,e.fp))} a ${esc(netTxt(e.to,e.tp))} (${sg(e.sh)})</div></li>`).join('');
+  const big=I.mov.slice().sort((a,b)=>b.sh-a.sh)[0];
+  const nP=I.P.length,pTxt=nP?`<h4>Los que ya despegaron</h4><p class="mut">De los ${nP} lanzamientos ya despegados que estaban en la lista desde antes de su despegue, ${nP-I.Pm.length} salieron en la primera fecha que vimos y ${I.Pm.length} la cambiaron antes de despegar${I.late.length?`; ${I.late.length} ${I.late.length===1?'despegó':'despegaron'} más de una hora después de la primera fecha vista`:''}${I.Pm.length?` (${I.Pm.slice(0,4).map(r=>`${esc(mname(r.l))}: ${r.n} ${r.n===1?'cambio':'cambios'}, ${sg(r.sh)}`).join('; ')})`:''}.</p>`:'';
+  el.innerHTML=`<div class="card daily retrasos"><div class="kick">Retrasos de la lista</div>
+  <div class="stats"><div><b>${I.mov.length}</b>de los ${I.U.length} próximos han cambiado de fecha</div><div><b>${I.nch}</b>${I.nch===1?'cambio de fecha':'cambios de fecha'} en total</div>${big&&big.sh>0?`<div><b>${esc(durTxt(big.sh))}</b>el que más se ha retrasado: ${esc(mname(big.l))}</div>`:''}</div>
+  ${top?`<h4>Los que más se han movido</h4><ul class="emp-top">${top}</ul>`:'<p class="mut">Ningún próximo lanzamiento ha cambiado de fecha desde que lo vimos en la lista.</p>'}
+  ${ev?`<h4>Últimos cambios detectados</h4><ul class="emp-top">${ev}</ul>`:''}
+  ${pTxt}<div class="mut" style="margin-top:6px">Comparando la fecha prevista de Launch Library 2 entre cada actualización de los datos y la siguiente (cada hora), desde el ${fmtD(I.start)}; un cambio de precisión (por ejemplo, de «noviembre» a un día concreto) también cuenta. Actualizados ${fmt(I.gen)}.</div></div>`}

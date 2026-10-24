@@ -109,6 +109,18 @@ out["lzones"]=LZ
 out["jobs"]=jobs()
 try: es=json.load(open("i18n/desc_es.json"))
 except Exception: es={}
+def nethist(o):
+    """Historial real de la fecha prevista (net) de cada lanzamiento: se añade una entrada cada vez que cambia
+    entre una actualización y la siguiente. Se guarda en data.json y solo se conservan los lanzamientos actuales."""
+    try: H=json.load(open("data.json")).get("nethist") or {}
+    except Exception: H={}
+    for l in o["upcoming"]+o["previous"]:
+        if not l.get("net"): continue
+        h=H.setdefault(l["id"],[])
+        if not h or h[-1][1]!=l["net"]: h.append([o["generated"],l["net"],l.get("net_precision")])
+    ids={l["id"] for l in o["upcoming"]+o["previous"]}
+    return {k:v[-30:] for k,v in H.items() if k in ids}
+out["nethist"]=nethist(out)
 out["missing_es"]=[l["id"] for l in out["upcoming"]+out["previous"] if l["desc"] and l["id"] not in es]
 json.dump(out,open("data.json","w"),ensure_ascii=False,separators=(",",":"))
 print("ok",len(out["upcoming"]),len(out["previous"]),out["generated"])

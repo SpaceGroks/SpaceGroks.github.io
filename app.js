@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();renderReloj();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();renderReloj();resolveTur();renderTierra();bindTierra();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0)+(p.hora||0)+(p.tipo||0)+(p.vet||0)+(p.orb||0)+(p.vida||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0)+(p.hora||0)+(p.tipo||0)+(p.vet||0)+(p.orb||0)+(p.vida||0)+(p.tur||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="reloj"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="reloj"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -538,6 +538,7 @@ function retosGlobo(){
   {const I=mesInfo();if(I&&I.Pv){const b=LS.get('mes',{})[I.cur],need=I.Pv.n-I.C.n+1,libre=!b&&need>0&&Date.now()<I.close;if(b||libre)R.push({t:'Lanzamientos por mes',m:`Este mes SpaceX lleva ${I.C.n} lanzamientos y el anterior hizo ${I.Pv.n}. ${libre?`¿Lo superará? Acertar «Sí» da ${mesSiPts(need)} puntos.`:'Tu apuesta sigue en juego: mira cómo va el mes.'}`,tab:'next',btn:libre?'Apostar por el mes':'Ver el gráfico',k:libre?'mes':null,sel:'#meses'})}}
   {const I=tipoInfo();if(I){const b=tipoState().cur;R.push({t:'Tipos de misión',m:`El ${Math.round(100*I.sl/I.P.length)} % de los últimos lanzamientos de SpaceX fueron Starlink. ${b?`Tu apuesta (${b.pick} de ${TIPO_N}) sigue en juego.`:`¿Cuántos de los próximos ${TIPO_N} serán Starlink?`}`,tab:'next',btn:b?'Ver los tipos de misión':'Apostar por Starlink',k:b?null:'tipo',sel:'#tipos'})}}
   {const I=vetInfo();if(I){const b=vetState().cur;R.push({t:'Veteranía de los propulsores',m:`El ${Math.round(100*I.old/I.P.length)} % de los últimos lanzamientos de SpaceX volaron con un propulsor de más de 20 vuelos. ${b?'Tu apuesta sigue en juego: mira con qué propulsor despega el siguiente.':`¿Volará el próximo con uno de más de 20?${I.nf!=null?` ${mname(I.nxt)} lleva asignado ${I.nc.serial} en su vuelo nº ${I.nf}.`:''}`}`,tab:'next',btn:b?'Ver la veteranía':'Apostar por la veteranía',k:b?null:'vet',sel:'#veterania'})}}
+  {const I=turInfo();if(I){const b=turState().cur;R.push({t:'Tiempo en tierra',m:`El ${Math.round(100*I.under/I.n)} % de los últimos propulsores de SpaceX volvieron a volar en menos de 30 días; el récord en los datos es de ${turF(I.fast.d)} días. ${b?'Tu apuesta sigue en juego: mira cuánto lleva en tierra el siguiente.':'¿Volverá a volar el próximo en menos de 30 días?'}`,tab:'next',btn:b?'Ver el tiempo en tierra':'Apostar por el tiempo en tierra',k:b?null:'tur',sel:'#tierra'})}}
   {const I=orbInfo();if(I&&I.K.length){const b=orbState().cur,top=I.rows[0];R.push({t:'Órbitas en juego',m:`El ${Math.round(100*top.n/I.K.length)} % de los últimos lanzamientos de SpaceX fueron a ${orbName(top.k)}. ${b?'Tu apuesta sigue en juego: mira adónde va el próximo que no sea Starlink.':'¿A qué órbita irá el próximo que no sea Starlink?'}`,tab:'next',btn:b?'Ver las órbitas':'Apostar por la órbita',k:b?null:'orb',sel:'#orbitas'})}}
   {const f=formate();if(f)R.push(f);}
   return R;
@@ -979,7 +980,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>
@@ -1772,3 +1773,61 @@ function renderReloj(){const el=$('#reloj');if(!el||!D)return;const I=relInfo();
   ${up?`<h4>Próximos con hora de aterrizaje publicada</h4><ul class="emp-top">${up}</ul>`:''}
   <h4>Últimos aterrizajes</h4><ul class="emp-top">${last}</ul>
   <div class="mut" style="margin-top:6px">Tiempos de la cronología de vuelo publicada por Launch Library 2 (pasos «aterrizaje de la primera etapa» y «encendido de aterrizaje») en ${I.P.length} de los últimos ${I.nPrev} lanzamientos de SpaceX; son los tiempos que publica la fuente para cada misión, no una medida propia. Actualizados ${fmt(I.gen)}.</div></div>`}
+
+// ---------- Tiempo en tierra por lanzamiento ----------
+// Días desde el vuelo anterior del propulsor principal (turn_around_time de Launch Library 2, guardado en stages[].turnaround)
+// en cada lanzamiento reciente, récord, media por mes y apuesta «¿volverá a volar el próximo en menos de 30 días?».
+// Se guarda en sxp_tur ({cur,hist}) y se resuelve sola con el primer lanzamiento con tiempo en tierra conocido
+// que despegue al menos 2 h después de apostar.
+const TUR_MAX=30,TUR_GAP=2*H,TUR_PTS={fav:5,contra:25,base:10,dudosa:20};
+function isoDays(s){const m=/^P(?:(\d+(?:\.\d+)?)Y)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)W)?(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/.exec(String(s||'').trim());
+  if(!m||m[1]||m[2])return null;const v=i=>+(m[i]||0),d=v(3)*7+v(4)+v(5)/24+v(6)/1440+v(7)/86400;return d>0?d:null}
+const turOf=l=>{const c=vetCore(l);if(!c||c.flight===1)return null;const d=isoDays(c.turnaround);return d==null?null:{c,d}};
+function turInfo(){const d=rlD();if(!d||!Array.isArray(d.previous)||!d.previous.length)return null;const now=Date.now(),pid=new Set(d.previous.map(l=>l.id));
+  const P=d.previous.filter(l=>!isNaN(new Date(l.net))).map(l=>{const x=turOf(l);return x&&{l,t:new Date(l.net).getTime(),...x}}).filter(Boolean).sort((a,b)=>b.t-a.t);
+  if(P.length<3)return null;
+  const ds=P.map(o=>o.d).sort((a,b)=>a-b),n=ds.length,med=n%2?ds[(n-1)/2]:(ds[n/2-1]+ds[n/2])/2,avg=ds.reduce((s,x)=>s+x,0)/n;
+  const fast=P.reduce((x,y)=>y.d<x.d?y:x),slow=P.reduce((x,y)=>y.d>x.d?y:x),under=P.filter(o=>o.d<TUR_MAX).length;
+  const mk=t=>{const x=new Date(t);return x.getUTCFullYear()+'-'+String(x.getUTCMonth()+1).padStart(2,'0')};
+  const M={};for(const o of P){const k=mk(o.t),m=M[k]||(M[k]={k,n:0,sum:0,min:Infinity,under:0});m.n++;m.sum+=o.d;m.min=Math.min(m.min,o.d);if(o.d<TUR_MAX)m.under++}
+  const first=P[P.length-1].t,months=Object.values(M).sort((a,b)=>a.k<b.k?-1:1).map(m=>({...m,avg:m.sum/m.n,part:m.k===mk(first)&&new Date(first).getUTCDate()>1}));
+  const fut=(d.upcoming||[]).filter(l=>!pid.has(l.id)&&new Date(l.net).getTime()>now-3*H).sort((a,b)=>new Date(a.net)-new Date(b.net));
+  const asg=fut.map(l=>{const x=turOf(l);return x&&{l,...x}}).filter(Boolean).slice(0,5);
+  const U=fut.filter(l=>precise(l)&&!/TBD/i.test(l.status||'')&&new Date(l.net).getTime()>now+TUR_GAP),nxt=U[0]||null,nt=nxt?turOf(nxt):null,base=under*2>=n;
+  const pts=pick=>nt?((pick==='si')===(nt.d<TUR_MAX)?TUR_PTS.fav:TUR_PTS.contra):((pick==='si')===base?TUR_PTS.base:TUR_PTS.dudosa);
+  return{P,n,med,avg,fast,slow,under,months,asg,nxt,nt,base,pts,gen:d.generated}}
+function turState(){const s=LS.get('tur',{cur:null,hist:[]});s.hist=s.hist||[];return s}
+function resolveTur(){const d=rlD();if(!d||!d.previous)return;const s=turState(),b=s.cur;if(!b)return;
+  if(!(new Date(d.generated).getTime()>b.at))return;
+  const c=d.previous.filter(l=>new Date(l.net).getTime()>=b.at+TUR_GAP).map(l=>{const x=turOf(l);return x&&{l,...x}}).filter(Boolean).sort((x,y)=>new Date(x.l.net)-new Date(y.l.net))[0];
+  if(!c){if(Date.now()>b.at+120*DAY){s.cur=null;LS.set('tur',s)}return}
+  const ok=(b.pick==='si')===(c.d<TUR_MAX),won=ok?b.pts:0,dd=Math.round(c.d*10)/10;
+  s.hist.unshift({...b,res:{m:mname(c.l),net:c.l.net,serial:c.c.serial,d:dd},ok,won,resAt:Date.now()});s.hist=s.hist.slice(0,20);s.cur=null;LS.set('tur',s);
+  if(won)addPts('tur',won);aviso(`Apuesta del tiempo en tierra resuelta: ${mname(c.l)} voló con ${c.c.serial} tras ${String(dd).replace('.',',')} días en tierra. ${ok?`+${won} puntos.`:'Esta vez no.'}`)}
+const turF=x=>(Math.round(x*10)/10).toFixed(1).replace('.',',');
+function turBetHTML(I){const s=turState(),b=s.cur,l=I.nxt;
+  let h=`<h3 id="tur-q">¿Volverá a volar el próximo propulsor en menos de ${TUR_MAX} días?</h3><p class="mut">Cuenta el primer lanzamiento de SpaceX que despegue al menos 2 horas después de apostar y cuyo propulsor principal tenga tiempo en tierra en Launch Library 2 (los estrenos no cuentan). ${I.nt?`El primero con hora fijada es ${esc(mname(l))}: ${esc(I.nt.c.serial)} llevaría ${turF(I.nt.d)} días en tierra. Acertar con eso da ${TUR_PTS.fav} puntos y apostar a que cambia (otro propulsor o un retraso), ${TUR_PTS.contra}.`:`${l?`El primero con hora fijada (${esc(mname(l))}) aún no tiene propulsor reutilizado asignado en la fuente`:'Ahora no hay ninguno con hora fijada'}, así que lo más habitual en los datos (${I.base?`menos de ${TUR_MAX} días`:`${TUR_MAX} días o más`}) da ${TUR_PTS.base} puntos y lo contrario, ${TUR_PTS.dudosa}.`}</p>`;
+  if(b)h+=`<p><span role="img" aria-label="Pendiente">⏳</span> Dijiste <b>${b.pick==='si'?`Sí, menos de ${TUR_MAX}`:`No, ${TUR_MAX} o más`}</b> (+${b.pts}) el ${fmt(b.at)} · se resuelve sola con el siguiente despegue.</p>`;
+  else h+=`<div class="opts" role="group" aria-labelledby="tur-q"><button type="button" data-tur="si">Sí, menos de ${TUR_MAX} (+${I.pts('si')})</button><button type="button" data-tur="no">No, ${TUR_MAX} o más (+${I.pts('no')})</button></div>`;
+  const past=s.hist.slice(0,4).map(x=>`<div class="mut">${ic(x.ok)} Dijiste ${x.pick==='si'?`menos de ${TUR_MAX}`:`${TUR_MAX} o más`} · ${esc(x.res.m)} voló con ${esc(x.res.serial)} tras ${turF(x.res.d)} días (${fmtD(x.res.net)}) · +${x.won} puntos</div>`).join('');
+  return h+(past?`<div style="margin-top:8px">${past}</div>`:'')}
+function renderTierra(){const el=$('#tierra');if(!el||!D)return;const I=turInfo();if(!I){el.innerHTML='';return}
+  const mx=Math.max(1,...I.months.map(m=>m.avg));
+  const months=I.months.map(m=>`<li>${esc(vetMesN(m.k))}${m.part?' <span class="mut">(parcial en los datos)</span>':''}: media <b>${turF(m.avg)}</b> días <span class="mut">· ${m.n} ${m.n===1?'lanzamiento':'lanzamientos'}, el más rápido ${turF(m.min)}, ${m.under} en menos de ${TUR_MAX}</span><div class="empbar" aria-hidden="true"><span style="width:${Math.max(2,Math.round(m.avg/mx*100))}%"></span></div></li>`).join('');
+  const top=I.P.slice().sort((a,b)=>a.d-b.d).slice(0,5).map(o=>`<li><b>${turF(o.d)} días</b> · ${esc(o.c.serial)} en ${esc(mname(o.l))} <span class="mut">(${fmtD(o.l.net)}, vuelo nº ${o.c.flight})</span></li>`).join('');
+  const last=I.P.slice(0,6).map(o=>`<li>${esc(mname(o.l))} <span class="mut">· ${esc(o.l.rocket||'')}, ${fmtD(o.l.net)}</span><div class="mut">${esc(o.c.serial)} volvió a volar tras <b>${turF(o.d)}</b> días en tierra${o.d<TUR_MAX?` · menos de ${TUR_MAX}`:''}</div></li>`).join('');
+  const asg=I.asg.map(o=>`<li>${esc(mname(o.l))} <span class="mut">· ${fmt(o.l.net)}</span><div class="mut">${esc(o.c.serial)} llevaría ${turF(o.d)} días en tierra${o.d<I.fast.d?' · ¡sería un récord en los datos!':''}</div></li>`).join('');
+  el.innerHTML=`<div class="card daily tierra"><div class="kick">Tiempo en tierra por lanzamiento</div>
+  <div class="stats"><div><b>${turF(I.med)}</b>días de mediana entre dos vuelos del mismo propulsor (media ${turF(I.avg)})</div><div><b>${turF(I.fast.d)}</b>récord de rapidez: ${esc(I.fast.c.serial)} en ${esc(mname(I.fast.l))}</div><div><b>${Math.round(100*I.under/I.n)} %</b>volvieron a volar en menos de ${TUR_MAX} días (${I.under} de ${I.n})</div><div><b>${turF(I.slow.d)}</b>el más largo: ${esc(I.slow.c.serial)} en ${esc(mname(I.slow.l))}</div></div>
+  <p class="mut">Es el tiempo que pasa el propulsor entre un vuelo y el siguiente: aterrizar, volver a puerto, revisarlo y prepararlo otra vez.</p>
+  <h4>Los más rápidos</h4><ul class="emp-top">${top}</ul>
+  <h4>Media por mes</h4><ul class="emp-top" aria-label="Días medios en tierra por mes">${months}</ul>
+  <h4>Últimos lanzamientos</h4><ul class="emp-top">${last}</ul>
+  ${asg?`<h4>Próximos con propulsor asignado</h4><ul class="emp-top">${asg}</ul>`:''}
+  ${turBetHTML(I)}<div class="mut" style="margin-top:6px">Calculado con los ${I.n} últimos lanzamientos de SpaceX con tiempo en tierra del propulsor principal en Launch Library 2 (dato turn_around_time; en el Falcon Heavy, el núcleo central), desde el ${fmtD(I.P[I.n-1].l.net)}, actualizados ${fmt(I.gen)}. En los próximos, el tiempo es el que da la fuente con la fecha prevista y puede cambiar. Meses en hora UTC.</div></div>`}
+function bindTierra(){const el=$('#next');if(!el||el._tur)return;el._tur=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-tur]');if(!b)return;
+  const I=turInfo(),s=turState();if(!I||s.cur){renderTierra();return}
+  const pick=b.dataset.tur==='si'?'si':'no',pts=I.pts(pick);
+  s.cur={pick,pts,at:Date.now(),ref:I.nt?{m:mname(I.nxt),serial:I.nt.c.serial,d:Math.round(I.nt.d*10)/10}:null};LS.set('tur',s);
+  aviso(`Apuesta guardada: el próximo propulsor volverá a volar ${pick==='si'?`en menos de ${TUR_MAX} días`:`tras ${TUR_MAX} días o más`} (+${pts} si aciertas).`);completeDaily('tur');renderTierra();
+  const q=$('#tur-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}

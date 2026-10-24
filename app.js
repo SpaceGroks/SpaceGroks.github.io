@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();renderReloj();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="reloj"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -1043,7 +1043,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos();renderReloj()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -1737,3 +1737,38 @@ function bindVida(){const el=$('#fleet');if(!el||el._vida)return;el._vida=true;e
   const pick=b.dataset.vida,o=b.dataset.vo,pts=+b.dataset.vp||0;const[a2,b2]=[pick,o].sort();
   s.cur={a:a2,b:b2,pick,pts,at:Date.now()};LS.set('vida',s);aviso(`Apuesta guardada: ${pick} volará antes que ${o} (+${pts} si aciertas).`);renderFleet();
   const q=$('#vida-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}
+
+// ---------- Reloj del aterrizaje ----------
+// Segundo T+ del paso «Stage 1 Landing» (19) y del encendido de aterrizaje (18) en la cronología publicada por Launch Library 2 (campo tl).
+const LAND_T={ASDS:'en barcaza',RTLS:'en tierra',Ocean:'en el mar'};
+function relInfo(){const d=rlD();if(!d||!d.previous)return null;
+  const med=a=>{const s=a.slice().sort((x,y)=>x-y),n=s.length;return n?(n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2):null};
+  const row=(l,up)=>{const tl=l.tl||[],g=id=>{const x=tl.find(t=>t[0]===id);return x?x[1]:null},t=g(19);if(t==null||t<=0)return null;
+    const st=(l.stages||[])[0]||{},b=g(18);return{l,up,t,burn:b!=null&&b<t?t-b:null,lt:st.land_type||'',loc:st.land_loc||'',locN:st.land_loc_name||'',ok:st.land_success,serial:st.serial||''}};
+  const P=(d.previous||[]).map(l=>row(l,false)).filter(Boolean);if(!P.length)return null;
+  const pid=new Set(d.previous.map(l=>l.id));
+  const U=(d.upcoming||[]).filter(l=>!pid.has(l.id)&&new Date(l.net)>Date.now()-H).map(l=>row(l,true)).filter(Boolean);
+  const grp=(arr,key)=>{const G={};arr.forEach(r=>{const k=key(r);(G[k]=G[k]||[]).push(r)});
+    return Object.entries(G).map(([k,a])=>{const ts=a.map(r=>r.t),bs=a.map(r=>r.burn).filter(x=>x!=null);
+      return{k,a,n:a.length,med:med(ts),min:Math.min(...ts),max:Math.max(...ts),burn:med(bs),fast:a.reduce((x,y)=>y.t<x.t?y:x)}}).sort((x,y)=>y.n-x.n)};
+  const byType=grp(P,r=>`${r.l.rocket}|${r.lt}`),byLoc=grp(P.filter(r=>r.loc),r=>r.loc);
+  const medOf=r=>{const g=byType.find(x=>x.k===`${r.l.rocket}|${r.lt}`);return g?g.med:null};
+  const F=P.filter(r=>/^Falcon/.test(r.l.rocket||'')),Q=F.length?F:P;
+  return{P,U,byType,byLoc,medOf,fast:Q.reduce((x,y)=>y.t<x.t?y:x),slow:Q.reduce((x,y)=>y.t>x.t?y:x),gen:d.generated,nPrev:d.previous.length}}
+function renderReloj(){const el=$('#reloj');if(!el||!D)return;const I=relInfo();if(!I){el.innerHTML='';return}
+  const mm=s=>s==null?'—':tFmt(Math.round(s)),sec=s=>s==null?'—':`${Math.round(s)} s`;
+  const tName=k=>{const[r,t]=k.split('|');return `${esc(r)} ${esc(LAND_T[t]||t||'')}`};
+  const diff=(t,m)=>{if(m==null)return'';const x=Math.round(t-m);return x===0?'justo en la mediana':`${Math.abs(x)} s ${x<0?'antes':'después'} de la mediana`};
+  const typ=I.byType.map(g=>`<tr><th scope="row">${tName(g.k)}</th><td>${g.n}</td><td><b>${mm(g.med)}</b></td><td>${mm(g.min)}<div class="mut">${esc(mname(g.fast.l))}</div></td><td>${mm(g.max)}</td><td>${sec(g.burn)}</td></tr>`).join('');
+  const loc=I.byLoc.slice(0,8).map(g=>`<li><b>${esc(g.k)}</b>${g.a[0].locN&&g.a[0].locN!==g.k?` <span class="mut">(${esc(g.a[0].locN)})</span>`:''}: mediana ${mm(g.med)} en ${g.n} ${g.n===1?'aterrizaje':'aterrizajes'} · de ${mm(g.min)} a ${mm(g.max)}</li>`).join('');
+  const ok=r=>r.ok===true?' · aterrizó':r.ok===false?' · no aterrizó':'';
+  const up=I.U.slice(0,5).map(r=>`<li>${esc(mname(r.l))} <span class="mut">· ${fmt(r.l.net)}</span><div class="mut">Aterrizaje previsto en ${mm(r.t)} ${esc(LAND_T[r.lt]||'')}${r.loc?` (${esc(r.loc)})`:''}, ${diff(r.t,I.medOf(r))}${r.burn!=null?` · encendido de aterrizaje de ${sec(r.burn)}`:''}</div></li>`).join('');
+  const last=I.P.slice(0,5).map(r=>`<li>${esc(mname(r.l))} <span class="mut">· ${fmtD(r.l.net)}${r.serial?` · ${esc(r.serial)}`:''}</span><div class="mut">${mm(r.t)} ${esc(LAND_T[r.lt]||'')}${r.loc?` (${esc(r.loc)})`:''}, ${diff(r.t,I.medOf(r))}${ok(r)}</div></li>`).join('');
+  el.innerHTML=`<div class="card daily reloj"><div class="kick">Reloj del aterrizaje</div>
+  <div class="stats"><div><b>${mm(I.byType[0].med)}</b>mediana del aterrizaje de ${tName(I.byType[0].k)}</div><div><b>${mm(I.fast.t)}</b>el más rápido: ${esc(mname(I.fast.l))}, ${esc(I.fast.l.rocket)}${I.fast.loc?` (${esc(I.fast.loc)})`:''}</div><div><b>${mm(I.slow.t)}</b>el más tardío: ${esc(mname(I.slow.l))}, ${esc(I.slow.l.rocket)}${I.slow.loc?` (${esc(I.slow.loc)})`:''}</div></div>
+  <p class="mut">Cuánto tarda el propulsor en tocar la barcaza o la zona de aterrizaje desde el despegue. Volver a tierra suele llevar menos tiempo porque el propulsor da la vuelta enseguida; en barcaza vuela más lejos antes de bajar.</p>
+  <div class="tscroll"><table><caption class="sr">Momento del aterrizaje por cohete y tipo de aterrizaje</caption><tr><th scope="col">Cohete y aterrizaje</th><th scope="col">Lanzamientos</th><th scope="col">Mediana</th><th scope="col">Más rápido</th><th scope="col">Más tardío</th><th scope="col">Encendido de aterrizaje (mediana)</th></tr>${typ}</table></div>
+  ${loc?`<h4>Por barcaza o zona</h4><ul class="emp-top">${loc}</ul>`:''}
+  ${up?`<h4>Próximos con hora de aterrizaje publicada</h4><ul class="emp-top">${up}</ul>`:''}
+  <h4>Últimos aterrizajes</h4><ul class="emp-top">${last}</ul>
+  <div class="mut" style="margin-top:6px">Tiempos de la cronología de vuelo publicada por Launch Library 2 (pasos «aterrizaje de la primera etapa» y «encendido de aterrizaje») en ${I.P.length} de los últimos ${I.nPrev} lanzamientos de SpaceX; son los tiempos que publica la fuente para cada misión, no una medida propia. Actualizados ${fmt(I.gen)}.</div></div>`}

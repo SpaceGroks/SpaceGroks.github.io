@@ -215,3 +215,4 @@ h3,.card h3{font-family:var(--sans);text-transform:uppercase;letter-spacing:.12e
 .coh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:8px}.coh h3{margin:0 0 6px;display:flex;align-items:center;gap:8px}.coh-dot{display:inline-block;width:12px;height:12px;border-radius:50%}.coh .stats{margin:6px 0}.coh p{margin:4px 0}
 
 .veter .emp-top{list-style:none;padding:0}.veter .emp-top li{margin:6px 0}
+.orbitas .emp-top{list-style:none;padding:0}.orbitas .emp-top li{margin:6px 0}

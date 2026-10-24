@@ -68,7 +68,8 @@ def slim(r):
       "pad":p.get("name"),"loc":(p.get("location") or {}).get("name"),
       "lat":float(p["latitude"]) if p.get("latitude") else None,"lon":float(p["longitude"]) if p.get("longitude") else None,
       "stages":st,**photo(r),"tl":timeline(r),
-      "video":vids[0]["url"] if vids else None,"updated":r.get("last_updated")}
+      "video":vids[0]["url"] if vids else None,"updated":r.get("last_updated"),
+      "n":r.get("agency_launch_attempt_count"),"ny":r.get("agency_launch_attempt_count_year"),"pn":r.get("pad_launch_attempt_count")}
 def jobs():
     """Ofertas de trabajo reales de SpaceX (tablón público de Greenhouse). Si falla, se conservan las últimas."""
     try:

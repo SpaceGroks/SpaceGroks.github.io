@@ -13,7 +13,7 @@ const ic=(ok,si='Acierto',no='Fallo')=>`<span role="img" aria-label="${ok?si:no}
 let D;
 const credit=l=>l&&l.img?`<div class="credit">Foto: ${esc(l.img_credit)} · <a href="${esc(l.img_lic_url)}" target="_blank" rel="noopener license">${esc(l.img_lic)}<span class="sr"> (licencia, se abre en otra pestaña)</span></a></div>`:'';
 const LANG=((navigator.languages&&navigator.languages[0])||navigator.language||'es').toLowerCase();
-let ES={};
+let ES={},FES={};
 const esc=t=>String(t||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 function tdesc(l){if(!l||!l.desc)return '';let t=l.desc;
   if(LANG.startsWith('es')&&ES[l.id])t=ES[l.id];
@@ -32,7 +32,7 @@ async function translateDescs(){try{
     if(!t){t=await tr.translate(l.desc);try{localStorage.setItem(k,t);localStorage.setItem('sxp_tr_'+LANG+'_'+id,t)}catch(e){}}
     el.textContent=t}
 }catch(e){}}
-Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_es.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,es])=>{D=d;ES=es||{};init();translateDescs()}).catch(e=>{$('main').innerHTML='<p class="ko">No se han podido cargar los datos.</p>'});
+Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_es.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('i18n/fail_es.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,es,fes])=>{D=d;ES=es||{};FES=fes||{};init();translateDescs()}).catch(e=>{$('main').innerHTML='<p class="ko">No se han podido cargar los datos.</p>'});
 
 function init(){
   initTabs();checkIn();
@@ -453,7 +453,7 @@ function padListHTML(){const S=padStats();if(!S.length)return '';
   return `<h3>Plataformas de lanzamiento</h3><p class="mut">Cada plataforma necesita días para reparar, limpiar y preparar el siguiente cohete. Aquí ves cada cuánto despega SpaceX desde cada una, con los últimos ${D.previous.length} lanzamientos de Launch Library 2.</p>`+S.map(padHTML).join('')}
 // ---------- Historial ----------
 function renderLog(){
-  $('#log').innerHTML=D.previous.map(l=>{const b=(l.stages||[])[0]||{};const ok=l.status==='Success';
+  $('#log').innerHTML=fallosHTML()+D.previous.map(l=>{const b=(l.stages||[])[0]||{};const ok=l.status==='Success';
     return `<div class="card row">${l.img?`<figure class="ph"><img loading="lazy" src="${esc(l.img)}" alt="">${credit(l)}</figure>`:''}<div><h3>${ic(ok,'Éxito','Fallo')} ${mname(l)}</h3>
     <div class="mut">${fmt(l.net)} · ${l.rocket} · ${l.loc||''}</div>
     <div>${l.orbit?`<span class="tag">${orb(l.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">${b.serial} · vuelo ${b.flight}</span>`:''}
@@ -1831,3 +1831,36 @@ function bindTierra(){const el=$('#next');if(!el||el._tur)return;el._tur=true;el
   s.cur={pick,pts,at:Date.now(),ref:I.nt?{m:mname(I.nxt),serial:I.nt.c.serial,d:Math.round(I.nt.d*10)/10}:null};LS.set('tur',s);
   aviso(`Apuesta guardada: el próximo propulsor volverá a volar ${pick==='si'?`en menos de ${TUR_MAX} días`:`tras ${TUR_MAX} días o más`} (+${pts} si aciertas).`);completeDaily('tur');renderTierra();
   const q=$('#tur-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}
+
+// ---------- Historial de fallos (lanzamientos fallidos de SpaceX en Launch Library 2, con el motivo publicado) ----------
+const fname=f=>{if(!f)return '';let t=/Starship/.test(f.rocket||f.name||'')?(f.name||'').replace(/\s*\|\s*/,' '):mname(f);return t.replace('(Failure before launch)','(fallo antes del lanzamiento)')};
+function falInfo(){const F=Array.isArray(D.fails)?D.fails.filter(f=>f&&f.net):[];if(!F.length)return null;const s=D.stats||{};
+  const asc=F.slice().sort((a,b)=>new Date(a.net)-new Date(b.net)),last=asc.at(-1),total=s.total_launch_count;
+  const cur=s.consecutive_successful_launches!=null?s.consecutive_successful_launches:(total!=null&&last.n!=null?total-last.n:null);
+  const okN=asc.every(f=>Number.isFinite(f.n));let streaks=[];
+  if(okN){for(let i=1;i<asc.length;i++)streaks.push({n:asc[i].n-asc[i-1].n-1,a:asc[i-1],b:asc[i]});
+    if(asc[0].n>1)streaks.push({n:asc[0].n-1,a:null,b:asc[0]});if(cur!=null)streaks.push({n:cur,a:last,b:null});
+    streaks.sort((x,y)=>y.n-x.n)}
+  const byR={};for(const f of F){const r=f.rocket||'Otro';byR[r]=byR[r]||{r,n:0,p:0};byR[r].n++;if(f.status==='Partial Failure')byR[r].p++}
+  const land=[];for(const l of D.previous||[])for(const st of l.stages||[])if(st.land_attempt&&st.land_success===false)land.push({l,st});
+  return {F:asc.slice().reverse(),last,cur,total,failed:s.failed_launches!=null?s.failed_launches:F.length,partial:F.filter(f=>f.status==='Partial Failure').length,
+    streaks,best:streaks[0]||null,rows:Object.values(byR).sort((a,b)=>b.n-a.n),land,s,days:Math.floor((Date.now()-new Date(last.net))/DAY)}}
+function falReason(f){if(!f.fail)return '<div class="mut">La fuente no publica el motivo.</div>';const t=FES[f.id];
+  if(t&&t.en===f.fail&&t.es)return `<div>${esc(t.es)}</div><details class="xp"><summary>Texto original de la fuente (inglés)</summary><div class="mut">${esc(f.fail)}</div></details>`;
+  return `<div>${esc(f.fail)}</div>`}
+function fallosHTML(){let I;try{I=falInfo()}catch(e){I=null}if(!I)return '';const s=I.s,pct=I.total?(100*I.failed/I.total).toLocaleString('es-ES',{maximumFractionDigits:1}):null;
+  const stName=f=>f.status==='Partial Failure'?'Fallo parcial':'Fallo';
+  const strTxt=x=>x.b?(x.a?`entre ${esc(fname(x.a))} (${fmtD(x.a.net)}) y ${esc(fname(x.b))} (${fmtD(x.b.net)})`:`antes del primer fallo, ${esc(fname(x.b))} (${fmtD(x.b.net)})`):`desde ${esc(fname(x.a))} (${fmtD(x.a.net)}) hasta hoy · es la racha actual`;
+  const lf=s.attempted_landings!=null&&s.successful_landings!=null?s.attempted_landings-s.successful_landings:null;
+  const list=I.F.map(f=>`<li><b>${esc(fname(f))}</b> <span class="tag ko">${stName(f)}</span> <span class="mut">· ${esc(f.rocket||'')}, ${fmtD(f.net)}${f.n?` · lanzamiento nº ${f.n} de SpaceX`:''}${f.loc?` · ${esc(f.loc)}`:''}</span>${falReason(f)}</li>`).join('');
+  const rows=I.rows.map(r=>`<li>${esc(r.r)}: <b>${r.n}</b> ${r.n===1?'fallo':'fallos'}${r.p?` (${r.p} ${r.p===1?'parcial':'parciales'})`:''}</li>`).join('');
+  const str=I.streaks.slice(0,5).map(x=>`<li><b>${x.n}</b> lanzamientos seguidos sin fallo <span class="mut">${strTxt(x)}</span></li>`).join('');
+  const land=I.land.map(o=>`<li>${esc(fname(o.l))} <span class="mut">· ${esc(o.l.rocket||'')}, ${fmtD(o.l.net)} · ${esc(o.st.serial||'propulsor')}${o.st.land_loc_name?` en ${esc(o.st.land_loc_name)}`:''}${o.l.status==='Success'?' · el lanzamiento sí fue un éxito':''}</span></li>`).join('');
+  return `<div class="card daily fallos" id="fallos"><div class="kick">Historial de fallos</div>
+  <div class="stats"><div><b>${I.failed}</b>lanzamientos fallidos${I.total?` de ${I.total} (${pct} %)`:''}${I.partial?`, ${I.partial} parciales`:''}</div>${I.cur!=null?`<div><b>${I.cur}</b>lanzamientos seguidos sin fallo ahora mismo</div>`:''}${I.best?`<div><b>${I.best.n}</b>la racha más larga sin fallos${I.best.b?'':' (es la actual)'}</div>`:''}<div><b>${I.days.toLocaleString('es-ES')}</b>días desde el último fallo (${esc(fname(I.last))}, ${fmtD(I.last.net)})</div>${lf!=null?`<div><b>${lf}</b>aterrizajes fallidos de ${s.attempted_landings} intentos; ahora lleva ${s.consecutive_successful_landings} seguidos bien</div>`:''}</div>
+  <p class="mut">Un fallo es un lanzamiento que no cumplió su misión; uno parcial solo cumplió una parte de lo previsto. Starship cuenta sus vuelos de prueba.</p>
+  <h4>Fallos por cohete</h4><ul class="emp-top">${rows}</ul>
+  ${str?`<h4>Rachas más largas sin fallos</h4><ul class="emp-top">${str}</ul>`:''}
+  <details class="xp"><summary>Todos los fallos con el motivo publicado (${I.F.length})</summary><ul class="emp-top">${list}</ul></details>
+  ${land?`<h4>Aterrizajes fallidos en los últimos ${(D.previous||[]).length} lanzamientos</h4><ul class="emp-top">${land}</ul>`:''}
+  <div class="mut" style="margin-top:6px">Lanzamientos de SpaceX con estado «fallo» o «fallo parcial» en Launch Library 2, con el motivo que publica la fuente (traducido al español; el texto original está debajo de cada uno). Las rachas se cuentan con el número de intento de lanzamiento de SpaceX de la fuente. Actualizado ${fmt(D.generated)}.</div></div>`}

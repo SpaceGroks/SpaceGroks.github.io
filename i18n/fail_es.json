@@ -1,0 +1,54 @@
+{
+ "a2b94add-d1e8-4b1d-9f25-afe7904580d3": {
+  "en": "Ship 34 lost 4 out of 6 Raptors at around T+8:00 and entered unrecoverable roll.",
+  "es": "La nave Ship 34 perdió 4 de sus 6 motores Raptor hacia T+8:00 y entró en un giro del que no pudo recuperarse."
+ },
+ "c5566f6e-606e-4250-b8f4-477c5d82c798": {
+  "en": "Ship 33 lost all 6 engines gradually late in ascent and was observed to have self-destructed.",
+  "es": "La nave Ship 33 fue perdiendo sus 6 motores al final del ascenso y se vio que se autodestruyó."
+ },
+ "9ddacbab-cb89-4fb1-85c8-56b4222af744": {
+  "en": "An oxygen leak caused a failure of the second stage engine during its second burn leading to the loss of all Starlink satellites.",
+  "es": "Una fuga de oxígeno hizo fallar el motor de la segunda etapa en su segundo encendido y se perdieron todos los satélites Starlink."
+ },
+ "04b91bb8-38a7-4868-b025-4bbe05d1fbfe": {
+  "en": "Flight termination system activated on Starship after T+8 minutes, seconds before planned SECO, due to a leak of liquid oxygen causing a combustion event and fires which led to a loss of communication. Booster was destroyed during the boost-back burn. most likely due to a filter blockage on a liquid oxygen line supplying the engines. Most planned primary objectives achieved.",
+  "es": "El sistema de terminación de vuelo se activó en la nave Starship pasados 8 minutos, segundos antes del apagado previsto del motor de la segunda etapa (SECO), por una fuga de oxígeno líquido que provocó una combustión e incendios y la pérdida de comunicación. El propulsor se destruyó durante el encendido de regreso, muy probablemente por un filtro obstruido en una línea de oxígeno líquido que alimentaba los motores. Se cumplieron la mayoría de los objetivos principales previstos."
+ },
+ "e32d375f-0d6e-4e54-b4f2-2b49db657fca": {
+  "en": "After liftoff, the vehicle sustained fires from leaking propellant in the aft end of the Super Heavy booster, severing connection with the vehicle’s primary flight computer. This led to a loss of communications to most of the booster engines and eventually control of the vehicle. After the second stage failed to separate from the first stage, the vehicle reached an apogee of ~39km before tumbling downwards until the flight termination system was activated.\r\n\r\nUnexpected severe damage was also imparted on the launch pad.",
+  "es": "Tras el despegue, fugas de propelente provocaron incendios en la parte trasera del propulsor Super Heavy que cortaron la conexión con el ordenador de vuelo principal. Eso hizo perder la comunicación con la mayoría de los motores del propulsor y, al final, el control del vehículo. Como la segunda etapa no llegó a separarse de la primera, el vehículo alcanzó unos 39 km de altura y cayó dando vueltas hasta que se activó el sistema de terminación de vuelo. La plataforma de lanzamiento también sufrió daños graves inesperados."
+ },
+ "44670393-85da-4504-99f3-e5b95d71cbb6": {
+  "en": "Destroyed on landing",
+  "es": "Se destruyó al aterrizar."
+ },
+ "fdfc71c4-37a7-4d36-a27c-90b132f0e4aa": {
+  "en": "Test completed set out objectives, but the vehicle failed to land successfully due to low pressure in the propellant header tanks cutting out the engines.",
+  "es": "La prueba cumplió los objetivos marcados, pero el vehículo no logró aterrizar porque la baja presión en los tanques de cabecera de propelente apagó los motores."
+ },
+ "3622669f-6e06-467a-86f3-47b56b1114c1": {
+  "en": "Rocket and payload lost during anomaly originating around the upper stage oxygen tank during propellant load few minutes before static fire on Sept 1, 1307UTC.",
+  "es": "El cohete y la carga se perdieron por una anomalía originada cerca del tanque de oxígeno de la etapa superior durante la carga de propelente, pocos minutos antes de un encendido estático en tierra, el 1 de septiembre a las 13:07 UTC."
+ },
+ "16aae09d-229e-4b9e-876c-6ac31ef5678f": {
+  "en": "Rapid Unscheduled Disassembly at T+ 2min19sec after a support strut failure in the second stage.",
+  "es": "El cohete se desintegró a T+2 min 19 s tras romperse un puntal de soporte en la segunda etapa."
+ },
+ "0f2d170a-6639-453a-bf2a-27b53954aeac": {
+  "en": "Dragon was placed into the correct orbit after a first stage engine failed during ascent. However, an Orbcomm secondary payload was placed into a lower than planned orbit and subsequently lost.",
+  "es": "La cápsula Dragon llegó a la órbita correcta aunque un motor de la primera etapa falló durante el ascenso. Pero un satélite secundario de Orbcomm quedó en una órbita más baja de lo previsto y se perdió."
+ },
+ "cdeb321f-0860-4064-ba76-4ad0f9022103": {
+  "en": "Residual stage 1 thrust led to collision between stage 1 and stage 2 during separation.",
+  "es": "El empuje residual de la primera etapa hizo que chocara con la segunda durante la separación."
+ },
+ "9a50023f-07fe-45ac-9ac6-7fb6b5ea970d": {
+  "en": "Premature engine shutdown at T+7:30",
+  "es": "El motor se apagó antes de tiempo a T+7:30."
+ },
+ "b8741d6a-bf47-44eb-b740-f091b5fd3c62": {
+  "en": "Engine failure at T+33 seconds",
+  "es": "Fallo del motor a los 33 segundos del despegue."
+ }
+}

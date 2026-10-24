@@ -121,6 +121,24 @@ def nethist(o):
         if not h or h[-1][1]!=l["net"]: h.append([o["generated"],l["net"],l.get("net_precision")])
     ids={l["id"] for l in o["upcoming"]+o["previous"]}
     return {k:v[-30:] for k,v in H.items() if k in ids}
+def fails():
+    """Historial completo de lanzamientos fallidos o parcialmente fallidos de SpaceX (Launch Library 2) con el motivo
+    publicado por la fuente y el número de intento de SpaceX. Si falla la descarga, se conserva el último."""
+    try:
+        if os.environ.get("USE_CACHE") and os.path.exists("fails.json"): F=json.load(open("fails.json"))
+        else:
+            req=urllib.request.Request("https://ll.thespacedevs.com/2.3.0/launches/previous/?lsp__name=SpaceX&status__ids=4,7&limit=50&mode=normal",headers={"User-Agent":"spacex-play"})
+            F=json.load(urllib.request.urlopen(req,timeout=300))
+        return [{"id":r["id"],"name":r.get("name"),"mission":(r.get("mission") or {}).get("name"),"net":r.get("net"),
+          "status":(r.get("status") or {}).get("abbrev"),"status_name":(r.get("status") or {}).get("name"),
+          "fail":(r.get("failreason") or "").strip(),"rocket":((r.get("rocket") or {}).get("configuration") or {}).get("name"),
+          "pad":(r.get("pad") or {}).get("name"),"loc":((r.get("pad") or {}).get("location") or {}).get("name"),
+          "n":r.get("agency_launch_attempt_count")} for r in F["results"]]
+    except Exception as e:
+        print("fallos no disponibles:",e,file=sys.stderr)
+        try: return json.load(open("data.json")).get("fails")
+        except Exception: return None
+out["fails"]=fails()
 out["nethist"]=nethist(out)
 out["missing_es"]=[l["id"] for l in out["upcoming"]+out["previous"] if l["desc"] and l["id"] not in es]
 json.dump(out,open("data.json","w"),ensure_ascii=False,separators=(",",":"))

@@ -46,4 +46,4 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Vida de los propulsores: para cada propulsor de los datos, días entre su primer y su último vuelo registrados y vuelos por mes, con apuesta «¿cuál de dos propulsores volará antes?» que se resuelve sola con el historial (hecho el 24 oct, 12:58)
 - [x] Reloj del aterrizaje: en qué segundo T+ toca tierra o la barcaza el propulsor según la cronología publicada de Launch Library 2, por cohete, tipo de aterrizaje y barcaza o zona, con los próximos comparados con la mediana (hecho el 24 oct, 14:54)
 - [x] Tiempo en tierra por lanzamiento: días desde el vuelo anterior del propulsor en cada lanzamiento reciente (dato turnaround de Launch Library 2), récord de rapidez, media por mes y apuesta «¿volverá a volar el próximo propulsor en menos de 30 días?»
-- [ ] Historial de fallos: lanzamientos y aterrizajes fallidos que hay en los datos, con el motivo publicado por la fuente, y la racha más larga sin fallos en los datos
+- [x] Historial de fallos: lanzamientos y aterrizajes fallidos que hay en los datos, con el motivo publicado por la fuente, y la racha más larga sin fallos en los datos

@@ -122,6 +122,16 @@ def nethist(o):
         if not h or h[-1][1]!=l["net"] or (len(h[-1])>2 and h[-1][2]!=l.get("net_precision")): h.append([o["generated"],l["net"],l.get("net_precision")])
     ids={l["id"] for l in o["upcoming"]+o["previous"]}
     return {k:v[-30:] for k,v in H.items() if k in ids}
+def vidseen(o):
+    """Primer momento real en que se vio cada lanzamiento en los datos y primer momento en que tuvo enlace al directo
+    (vidURLs de Launch Library 2): {id:[primera vez visto, primera vez con enlace o None]}. Se conserva en data.json."""
+    try: V=json.load(open("data.json")).get("vidseen") or {}
+    except Exception: V={}
+    for l in o["upcoming"]+o["previous"]:
+        v=V.setdefault(l["id"],[o["generated"],None])
+        if l.get("video") and not v[1]: v[1]=o["generated"]
+    ids={l["id"] for l in o["upcoming"]+o["previous"]}
+    return {k:v for k,v in V.items() if k in ids}
 def fails():
     """Historial completo de lanzamientos fallidos o parcialmente fallidos de SpaceX (Launch Library 2) con el motivo
     publicado por la fuente y el número de intento de SpaceX. Si falla la descarga, se conserva el último."""
@@ -141,6 +151,7 @@ def fails():
         except Exception: return None
 out["fails"]=fails()
 out["nethist"]=nethist(out)
+out["vidseen"]=vidseen(out)
 out["missing_es"]=[l["id"] for l in out["upcoming"]+out["previous"] if l["desc"] and l["id"] not in es]
 json.dump(out,open("data.json","w"),ensure_ascii=False,separators=(",",":"))
 print("ok",len(out["upcoming"]),len(out["previous"]),out["generated"])

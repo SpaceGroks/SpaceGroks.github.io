@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();bindPrecision();renderReloj();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();renderDirectos();bindPrecision();renderReloj();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="precision"></div><div id="reloj"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="precision"></div><div id="directos"></div><div id="reloj"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -1045,7 +1045,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos();resolvePrec();renderPrecision();renderReloj();resolveHito();renderHitos();renderPlataformas();resolveAnu();renderAnual()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos();resolvePrec();renderPrecision();renderDirectos();renderReloj();resolveHito();renderHitos();renderPlataformas();resolveAnu();renderAnual()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -2088,3 +2088,35 @@ function bindPrecision(){const el=$('#next');if(!el||el._prec)return;el._prec=tr
   s.cur={id:t.id,name:mname(t),d0:precDate(t),p0:t.net_precision||'',pick:b.dataset.prec,at:Date.now(),dl:I.dl};LS.set('prec',s);
   aviso(`Apuesta guardada: ${b.dataset.prec==='Sí'?'tendrá':'no tendrá'} hora exacta antes del domingo (${mname(t)}).`);completeDaily('prec');renderPrecision();
   const q=$('#prec-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}
+
+// ---------- Retransmisiones ----------
+// Qué lanzamientos recientes y próximos tienen enlace al directo en Launch Library 2 (vidURLs) y con cuánta antelación
+// apareció. build_data.py guarda en data.vidseen {id:[primera vez visto, primera vez con enlace]} (reconstruido con el
+// historial de data.json desde el 18 oct). Si el lanzamiento ya llegó con enlace la primera vez que se vio, la antelación
+// es «al menos» esa; si se vio antes sin enlace, es exacta (con la precisión de la actualización horaria).
+function vidHost(u){try{const h=new URL(u).hostname.replace(/^www\./,'');return /youtu/.test(h)?'YouTube':/^(x|twitter)\.com$/.test(h)?'X':h}catch(e){return null}}
+function dirInfo(){const d=rlD();if(!d||!Array.isArray(d.upcoming)||!Array.isArray(d.previous))return null;const V=d.vidseen||{},now=Date.now(),pid=new Set(d.previous.map(l=>l.id));
+  const mk=(l,up)=>{const t=new Date(l.net).getTime(),v=V[l.id]||null,seen=v&&v[1]?new Date(v[1]).getTime():null,first=v?new Date(v[0]).getTime():null;
+    const lead=seen!=null&&seen<t?t-seen:null,exact=lead!=null&&first!=null&&seen>first;return{l,t,up,host:l.video?vidHost(l.video):null,lead,exact}};
+  const U=d.upcoming.filter(l=>!pid.has(l.id)&&!isNaN(new Date(l.net))).map(l=>mk(l,true)).sort((a,b)=>a.t-b.t);
+  const P=d.previous.filter(l=>!isNaN(new Date(l.net))).map(l=>mk(l,false)).sort((a,b)=>b.t-a.t);if(!U.length&&!P.length)return null;
+  const hosts={};for(const x of P)if(x.host)hosts[x.host]=(hosts[x.host]||0)+1;
+  const hostsU={};for(const x of U)if(x.host)hostsU[x.host]=(hostsU[x.host]||0)+1;
+  const wU=U.filter(x=>x.l.video),noU=U.filter(x=>!x.l.video),nextNo=noU[0]||null,lastWith=wU[wU.length-1]||null;
+  const L=U.concat(P).filter(x=>x.lead!=null),ex=L.filter(x=>x.exact),lb=L.filter(x=>!x.exact&&x.up);
+  const maxLb=lb.sort((a,b)=>b.lead-a.lead)[0]||null;
+  return{U,P,hosts,hostsU,wU,noU,nextNo,lastWith,ex,maxLb,now,gen:d.generated,t0:Object.values(V).reduce((m,v)=>{const t=new Date(v[0]).getTime();return isNaN(t)?m:Math.min(m,t)},Infinity)}}
+function renderDirectos(){const el=$('#directos');if(!el||!D)return;let I;try{I=dirInfo()}catch(e){I=null}if(!I){el.innerHTML='';return}
+  const dd=ms=>{const x=ms/DAY;return x<10?x.toFixed(1).replace('.',','):String(Math.round(x))};
+  const lead=x=>x.lead==null?'<span class="mut">—</span>':`${x.exact?'':'al menos '}${dd(x.lead)} días antes`;
+  const link=x=>x.l.video&&/^https:\/\//.test(x.l.video)?`<a href="${esc(x.l.video)}" target="_blank" rel="noopener">${esc(x.host||'enlace')}</a>`:'<span class="mut">sin enlace</span>';
+  const row=x=>`<tr><th scope="row">${esc(mname(x.l))}<div class="mut">${x.up?(x.l.net_precision&&!/^(SEC|MIN|HOUR)$/i.test(x.l.net_precision)?'fecha aproximada: ':'')+fmt(x.l.net):fmtD(x.l.net)}</div></th><td>${link(x)}</td><td>${lead(x)}</td></tr>`;
+  const hs=Object.entries(I.hosts).sort((a,b)=>b[1]-a[1]).map(([h,n])=>`${n} en ${esc(h)}`).join(' y ');
+  const hsU=Object.entries(I.hostsU).sort((a,b)=>b[1]-a[1]).map(([h,n])=>`${n} en ${esc(h)}`).join(' y ');
+  const nWithP=I.P.filter(x=>x.l.video).length,nx=I.nextNo;
+  el.innerHTML=`<div class="card daily directos"><div class="kick">Retransmisiones</div>
+  <div class="stats"><div><b>${nWithP}</b>de los últimos ${I.P.length} lanzamientos tienen enlace al directo</div><div><b>${I.wU.length}</b>de los ${I.U.length} próximos ya tienen enlace</div>${I.maxLb?`<div><b>${dd(I.maxLb.lead)} días</b>de antelación como mínimo: ${esc(mname(I.maxLb.l))}</div>`:''}</div>
+  <p>${hs?`Los directos de los lanzamientos recientes están ${hs}${hsU?`, y los de los próximos que ya tienen enlace, ${hsU}`:''}. `:''}${I.lastWith?`El más lejano que ya tiene enlace es <b>${esc(mname(I.lastWith.l))}</b> (${fmt(I.lastWith.l.net)}).`:'Ningún próximo lanzamiento tiene todavía enlace al directo.'}${nx?` El siguiente sin enlace es <b>${esc(mname(nx.l))}</b>, ${nx.l.net_precision&&!/^(SEC|MIN|HOUR)$/i.test(nx.l.net_precision)?'con fecha aproximada ':''}${fmt(nx.l.net)}, dentro de ${dd(Math.max(0,nx.t-I.now))} días.`:''}</p>
+  ${I.ex.length?`<p class="mut">Visto aparecer el enlace en los datos: ${I.ex.slice(0,5).map(x=>`${esc(mname(x.l))}, ${dd(x.lead)} días antes`).join('; ')}.</p>`:'<p class="mut">Desde que se guardan los datos, todos los lanzamientos han entrado en la lista ya con su enlace o siguen sin él, así que de momento solo se sabe la antelación mínima. En cuanto a uno de la lista le aparezca el enlace en una actualización, aquí saldrá la antelación exacta.</p>'}
+  <details style="margin-top:8px"><summary>Ver próximos y recientes</summary><div class="tscroll"><table><caption class="sr">Enlace al directo de cada lanzamiento y con cuánta antelación apareció</caption><thead><tr><th scope="col">Misión</th><th scope="col">Directo</th><th scope="col">Enlace visto</th></tr></thead><tbody>${I.U.map(row).join('')}<tr><th scope="rowgroup" colspan="3" class="mut">Recientes</th></tr>${I.P.slice(0,15).map(row).join('')}</tbody></table></div></details>
+  <div class="mut" style="margin-top:6px">Enlace al directo (vidURLs) de cada lanzamiento según Launch Library 2. La antelación se mide entre la primera actualización de datos en que aparece el enlace ${isFinite(I.t0)?` (los datos guardados empiezan el ${fmtD(I.t0)})`:''} y la hora del lanzamiento; «al menos» significa que el lanzamiento ya llegó con enlace la primera vez que se vio. Actualizados ${fmt(I.gen)}.</div></div>`}

@@ -1109,6 +1109,20 @@ function cliInfo(){const d=rlD(),P=(d.previous||[]).filter(l=>!isNaN(new Date(l.
   const opts=[];for(const l of U)for(const c of (l.cust||[]))if(c!=='SpaceX'&&!opts.some(o=>o.c===c)&&opts.length<CLI_MAXO)opts.push({c,l});
   const fav=U.length&&(U[0].cust||[]).length?U[0].cust.find(c=>c!=='SpaceX')||null:null;
   return{P,rows,star,ext,noC,lastExt,U,opts,fav,gen:d.generated}}
+// Clientes recurrentes: clientes externos de la lista de próximos que ya han volado con SpaceX en los lanzamientos recientes de los datos,
+// con los días entre sus dos últimos lanzamientos y cuánto pasará hasta el siguiente si sale en la fecha prevista.
+function cliRep(I){const t=l=>new Date(l.net).getTime(),now=Date.now(),R={};
+  for(const l of I.U)for(const c of (l.cust||[])){if(c==='SpaceX')continue;const r=R[c]||(R[c]={c,U:[]});if(!r.U.includes(l))r.U.push(l)}
+  const rows=Object.values(R).map(r=>{const P=I.P.filter(l=>(l.cust||[]).includes(r.c)).sort((a,b)=>t(b)-t(a));const nx=r.U[0];
+    return{c:r.c,U:r.U,P,nx,gap:P.length>=2?(t(P[0])-t(P[1]))/DAY:null,since:P.length?(now-t(P[0]))/DAY:null,toNext:P.length&&nx?(t(nx)-t(P[0]))/DAY:null}});
+  const rep=rows.filter(r=>r.P.length).sort((a,b)=>t(a.nx)-t(b.nx)),neu=rows.filter(r=>!r.P.length).sort((a,b)=>t(a.nx)-t(b.nx));
+  const t0=I.P.length?t(I.P[I.P.length-1]):null;return{rep,neu,t0}}
+function cliRepHTML(I){const X=cliRep(I);if(!X.rep.length&&!X.neu.length)return'';
+  const dd=x=>x==null?'—':(Math.abs(x)<10?x.toFixed(1).replace('.',','):String(Math.round(x)));
+  const apx=l=>precise(l)||/^HOUR$/i.test(l.net_precision||'')?'':' (fecha aproximada)';
+  const row=r=>`<tr><th scope="row">${esc(cliN(r.c))}</th><td>${r.P.length}<div class="mut">${r.P.slice(0,2).map(l=>`${esc(mname(l))}, ${fmtD(l.net)}`).join('<br>')}</div></td><td>${r.gap!=null?`<b>${dd(r.gap)} días</b>`:'<span class="mut">solo uno en los datos</span>'}</td><td>hace ${dd(r.since)} días</td><td>${esc(mname(r.nx))}<div class="mut">${fmtD(r.nx.net)}${apx(r.nx)}${r.toNext!=null&&r.toNext>=0?` · ${dd(r.toNext)} días después del último`:''}${r.U.length>1?` · y ${r.U.length-1} más en la lista`:''}</div></td></tr>`;
+  return`<h4>Clientes que repiten</h4><p class="mut">${X.rep.length?`${X.rep.length} de los ${X.rep.length+X.neu.length} clientes externos de la lista de próximos ya han volado con SpaceX en los últimos ${I.P.length} lanzamientos de los datos${X.t0?` (desde el ${fmtD(X.t0)})`:''}.`:`Ninguno de los clientes externos de la lista de próximos aparece en los últimos ${I.P.length} lanzamientos de los datos.`}${X.neu.length?` Sin lanzamientos en ese periodo: ${X.neu.map(r=>esc(cliN(r.c))).join(', ')}.`:''}</p>
+  ${X.rep.length?`<div class="tblw"><table class="stt"><caption class="sr">Clientes de la lista de próximos que ya han volado con SpaceX</caption><thead><tr><th scope="col">Cliente</th><th scope="col">Lanzamientos recientes</th><th scope="col">Entre sus dos últimos</th><th scope="col">Último</th><th scope="col">Siguiente en la lista</th></tr></thead><tbody>${X.rep.map(row).join('')}</tbody></table></div>`:''}`}
 function cliState(){const s=LS.get('cli',{cur:null,hist:[]});s.hist=s.hist||[];return s}
 function resolveCli(){const d=rlD();if(!d||!d.previous||!d.previous.length)return;const s=cliState(),b=s.cur;if(!b)return;
   const gen=new Date(d.generated).getTime();if(!(gen>b.at))return;
@@ -1136,6 +1150,7 @@ function renderClientes(){const el=$('#clientes');if(!el||!D)return;const I=cliI
   <p class="mut">Quién figura como cliente en los últimos ${I.P.length} lanzamientos de SpaceX según Launch Library 2, cuántos ha contratado cada uno y a qué órbitas fueron.${I.noC?` ${I.noC===1?'1 lanzamiento no tiene':`${I.noC} lanzamientos no tienen`} cliente indicado en la fuente y no sale${I.noC===1?'':'n'} en la tabla.`:''}${I.lastExt?` Último lanzamiento con cliente externo: ${esc(mname(I.lastExt))} (${fmtD(I.lastExt.net)}).`:''}</p>
   <div class="tblw"><table class="stt"><thead><tr><th scope="col">Cliente</th><th scope="col">Lanzamientos</th><th scope="col">Órbitas</th><th scope="col">Último</th></tr></thead><tbody>${I.rows.map(row).join('')}</tbody></table></div>
   ${nx?`<h4>Próximos con cliente externo</h4><ul class="mut">${nx}</ul>`:''}
+  ${cliRepHTML(I)}
   ${cliBetHTML(I)}<div class="mut" style="margin-top:6px">Datos de Launch Library 2 actualizados ${fmt(I.gen)}.</div></div>`}
 function bindClientes(){const el=$('#next');if(!el||el._cli)return;el._cli=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-cli]');if(!b)return;
   const I=cliInfo(),s=cliState();if(!I||s.cur){renderClientes();return}

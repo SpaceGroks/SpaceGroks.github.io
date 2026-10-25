@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();renderReloj();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();bindPrecision();renderReloj();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -60,7 +60,7 @@ function initTabs(){
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
-function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0)+(p.hora||0)+(p.tipo||0)+(p.vet||0)+(p.orb||0)+(p.vida||0)+(p.tur||0)+(p.hito||0)+(p.anu||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
+function renderScore(){const p=points(),t=(p.pred||0)+(p.quiz||0)+(p.bet||0)+(p.expert||0)+(p.streak||0)+(p.flight||0)+(p.ach||0)+(p.rapid||0)+(p.hilo||0)+(p.racha||0)+(p.ritmo||0)+(p.adonde||0)+(p.cli||0)+(p.ven||0)+(p.zon||0)+(p.mes||0)+(p.hora||0)+(p.tipo||0)+(p.vet||0)+(p.orb||0)+(p.vida||0)+(p.tur||0)+(p.hito||0)+(p.anu||0)+(p.prec||0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="reloj"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="precision"></div><div id="reloj"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -981,7 +981,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>
@@ -1045,7 +1045,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos();renderReloj();resolveHito();renderHitos();renderPlataformas();resolveAnu();renderAnual()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos();resolvePrec();renderPrecision();renderReloj();resolveHito();renderHitos();renderPlataformas();resolveAnu();renderAnual()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -2026,3 +2026,65 @@ function renderStarlink(){const el=$('#starlink');if(!el||!D)return;let I;try{I=
   ${nx?`<p>El próximo Starlink es <b>${esc(mname(nx.l))}</b>, ${fmt(nx.l.net)}${apx(nx.l)}${nx.l.pad?`, desde ${esc(nx.l.pad)}`:''}.</p>`:'<p class="mut">Ahora mismo no hay ningún lanzamiento de Starlink en la lista de próximos.</p>'}
   <div class="tscroll"><table><caption class="sr">Lanzamientos de Starlink por grupo</caption><thead><tr><th scope="col">Grupo</th><th scope="col">Lanzamientos</th><th scope="col">Último</th><th scope="col">Entre lanzamientos (mediana)</th><th scope="col">Siguiente</th></tr></thead><tbody>${I.rows.map(row).join('')}</tbody></table></div>
   <div class="mut" style="margin-top:6px">Grupo y número tomados del nombre de cada misión en Launch Library 2 (por ejemplo, «Starlink Group 17-54» es el grupo 17), en los últimos ${I.nP} lanzamientos de SpaceX de los datos (desde el ${fmtD(I.t0)}) y en la lista de próximos. Entre paréntesis, los lanzamientos de cada grupo desde cada plataforma. Actualizados ${fmt(I.gen)}.</div></div>`}
+
+// ---------- Precisión de las fechas de la lista ----------
+// Precisión de la fecha prevista (net_precision) y estado (Go, TBC, TBD) de cada próximo lanzamiento según Launch Library 2,
+// con cuánto hace que la fuente actualizó cada uno (campo updated). Apuesta semanal «¿tendrá hora exacta antes del domingo
+// el siguiente sin fecha fija?»: se guarda en sxp_prec ({cur,hist}) y se resuelve sola con el historial real de la fecha
+// prevista (data.nethist, que guarda también los cambios de precisión) en cuanto los datos son de después del domingo.
+const PREC_PTS={si:25,no:10};
+const precExact=p=>/^(SEC|MIN)$/i.test(p||'');
+const precG=p=>{const c=String(p||'').toUpperCase();if(c==='SEC'||c==='MIN')return{k:'min',o:0,t:'Al minuto'};if(c==='HR'||c==='HOUR')return{k:'hora',o:1,t:'A la hora'};
+  if(c==='D'||c==='DAY')return{k:'dia',o:2,t:'Día'};if(c==='W'||c==='WEEK')return{k:'sem',o:3,t:'Semana'};if(c==='M'||c==='MONTH')return{k:'mes',o:4,t:'Mes'};
+  if(/^Q/.test(c))return{k:'tri',o:5,t:'Trimestre'};if(/^H\d/.test(c))return{k:'semes',o:6,t:'Semestre'};if(c==='Y'||c==='FY'||c==='YEAR')return{k:'anio',o:7,t:'Solo año'};
+  return{k:'otro',o:8,t:c||'Sin indicar'}};
+const PREC_MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function precDate(l){const t=new Date(l.net);if(isNaN(t))return '—';const c=String(l.net_precision||'').toUpperCase(),y=t.getUTCFullYear(),g=precG(c);
+  if(g.k==='min')return fmt(l.net);if(g.k==='hora')return fmt(l.net)+' (hora aprox.)';if(g.k==='dia')return t.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+  if(g.k==='sem')return 'semana del '+t.toLocaleDateString('es-ES',{day:'numeric',month:'short',timeZone:'UTC'});if(g.k==='mes')return PREC_MES[t.getUTCMonth()]+' de '+y;
+  if(g.k==='tri'){const q=/^Q([1-4])/.exec(c);return `${q?q[1]:Math.floor(t.getUTCMonth()/3)+1}.º trimestre de ${y}`}
+  if(g.k==='semes'){const h=/^H([12])/.exec(c);return `${h?h[1]:t.getUTCMonth()<6?1:2}.º semestre de ${y}`}if(g.k==='anio')return 'en '+y;return fmtD(l.net)+' (aprox.)'}
+const PREC_ST={Go:'Go: confirmado',TBC:'TBC: por confirmar',TBD:'TBD: por determinar'};
+function precDeadline(now){const d=new Date(now),day=d.getDay(),add=day===0?7:7-day;let e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+add+1).getTime()-1000;
+  if(e-now<2*DAY)e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+add+8).getTime()-1000;return e}
+function precInfo(){const d=rlD();if(!d||!Array.isArray(d.upcoming))return null;const now=Date.now(),pid=new Set((d.previous||[]).map(l=>l.id));
+  const U=d.upcoming.filter(l=>!pid.has(l.id)&&!isNaN(new Date(l.net))).map(l=>({l,g:precG(l.net_precision),upd:l.updated?now-new Date(l.updated).getTime():null}))
+    .sort((a,b)=>new Date(a.l.net)-new Date(b.l.net)||a.g.o-b.g.o);if(!U.length)return null;
+  const byG={},byS={};for(const x of U){(byG[x.g.k]=byG[x.g.k]||{t:x.g.t,o:x.g.o,n:0}).n++;const s=x.l.status||'—';byS[s]=(byS[s]||0)+1}
+  const groups=Object.values(byG).sort((a,b)=>a.o-b.o),exact=U.filter(x=>x.g.k==='min').length;
+  const target=U.find(x=>!precExact(x.l.net_precision))||null,stale=U.filter(x=>x.upd!=null).sort((a,b)=>b.upd-a.upd)[0]||null;
+  const fresh=U.filter(x=>x.upd!=null&&x.upd<DAY).length;
+  return{U,groups,byS,exact,target,stale,fresh,dl:precDeadline(now),gen:d.generated}}
+function precState(){const s=LS.get('prec',{cur:null,hist:[]});s.hist=s.hist||[];return s}
+function resolvePrec(){const d=rlD();if(!d||!d.nethist)return;const s=precState(),b=s.cur;if(!b)return;if(!(new Date(d.generated).getTime()>b.dl))return;
+  const h=d.nethist[b.id],prev=(d.previous||[]).find(l=>l.id===b.id),inUp=(d.upcoming||[]).some(l=>l.id===b.id);
+  let got=null;
+  if(h)for(const x of h){const t=new Date(x[0]).getTime();if(t>b.at-H&&t<=b.dl&&precExact(x[2])){got=x;break}}
+  if(!got&&prev&&new Date(prev.net).getTime()<=b.dl)got=[prev.net,prev.net,'SEC'];
+  if(!got&&!h&&!prev&&!inUp){s.hist.unshift({...b,res:null,ok:null,won:0,resAt:Date.now(),gone:true});s.hist=s.hist.slice(0,20);s.cur=null;LS.set('prec',s);
+    aviso(`Apuesta de precisión anulada: ${b.name} ya no aparece en la fuente.`);return}
+  const yes=!!got,ok=(b.pick==='Sí')===yes,won=ok?(b.pick==='Sí'?PREC_PTS.si:PREC_PTS.no):0;
+  s.hist.unshift({...b,res:yes,at2:got?got[0]:null,net2:got?got[1]:null,ok,won,resAt:Date.now()});s.hist=s.hist.slice(0,20);s.cur=null;LS.set('prec',s);
+  if(won)addPts('prec',won);aviso(`Apuesta de precisión resuelta: ${b.name} ${yes?'ya tiene hora exacta':'sigue sin hora exacta'}. ${won?`+${won} puntos.`:'Esta vez no.'}`)}
+function precBetHTML(I){const s=precState(),b=s.cur,t=I.target;
+  let h=`<h3 id="prec-q">¿Tendrá hora exacta antes del domingo ${fmtD(b?b.dl:I.dl)} el siguiente lanzamiento sin fecha fija?</h3>`;
+  if(b)h+=`<p><span role="img" aria-label="Pendiente">⏳</span> Dijiste <b>${b.pick}</b> para ${esc(b.name)} (entonces: ${esc(b.d0)}) · se resuelve sola con los datos de después del domingo ${fmtD(b.dl)} a las 23:59.</p>`;
+  else if(t)h+=`<p class="mut">Es <b>${esc(mname(t.l))}</b>, que la fuente da para ${esc(precDate(t.l))} (${esc(PREC_ST[t.l.status]||t.l.status_name||t.l.status||'')}). Cuenta si antes del domingo ${fmtD(I.dl)} a las 23:59 Launch Library 2 le pone hora al minuto o al segundo, o si despega antes. «Sí» da ${PREC_PTS.si} puntos y «No», ${PREC_PTS.no}.</p><div class="opts" role="group" aria-labelledby="prec-q"><button type="button" data-prec="Sí">Sí, tendrá hora (+${PREC_PTS.si})</button><button type="button" data-prec="No">No, seguirá sin hora (+${PREC_PTS.no})</button></div>`;
+  else h+='<p class="mut">Ahora todos los lanzamientos de la lista tienen hora exacta, así que no hay apuesta.</p>';
+  const past=s.hist.slice(0,4).map(x=>x.gone?`<div class="mut">${esc(x.name)}: anulada, la fuente lo quitó de la lista</div>`:`<div class="mut">${ic(x.ok)} ${esc(x.name)} (domingo ${fmtD(x.dl)}): dijiste ${x.pick} · ${x.res?`tuvo hora${x.net2?` (${fmt(x.net2)})`:''}`:'siguió sin hora'} · +${x.won} puntos</div>`).join('');
+  return h+(past?`<div style="margin-top:8px">${past}</div>`:'')}
+function renderPrecision(){const el=$('#precision');if(!el||!D)return;let I;try{I=precInfo()}catch(e){I=null}if(!I){el.innerHTML='';return}
+  const ago=ms=>{if(ms==null)return '—';if(ms<H)return `hace ${Math.max(1,Math.round(ms/6e4))} min`;if(ms<DAY)return `hace ${Math.round(ms/H)} h`;const n=Math.round(ms/DAY);return `hace ${n} ${n===1?'día':'días'}`};
+  const st=Object.entries(I.byS).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${n} ${esc(k)}`).join(', ');
+  const row=x=>`<tr><th scope="row">${esc(mname(x.l))}<div class="mut">${esc(x.l.rocket||'')}</div></th><td>${esc(precDate(x.l))}</td><td>${esc(x.g.t)}<div class="mut">${esc(x.l.net_precision||'')}</div></td><td>${esc(x.l.status||'—')}</td><td>${ago(x.upd)}</td></tr>`;
+  el.innerHTML=`<div class="card daily precision"><div class="kick">Precisión de las fechas</div>
+  <div class="stats"><div><b>${I.exact}</b>de ${I.U.length} próximos con hora al minuto</div>${I.groups.filter(g=>g.o>0).map(g=>`<div><b>${g.n}</b>${g.t==='Solo año'?'solo con el año':'con precisión de '+g.t.toLowerCase()}</div>`).join('')}<div><b>${I.fresh}</b>actualizados por la fuente en las últimas 24 h</div></div>
+  <p class="mut">Estados en la lista: ${st}. Go es confirmado, TBC por confirmar y TBD por determinar.${I.stale?` El que lleva más tiempo sin tocar es ${esc(mname(I.stale.l))} (${ago(I.stale.upd)}).`:''}</p>
+  ${precBetHTML(I)}
+  <details style="margin-top:8px"><summary>Ver los ${I.U.length} próximos lanzamientos</summary><div class="tscroll"><table><caption class="sr">Precisión de la fecha, estado y última actualización de cada próximo lanzamiento</caption><thead><tr><th scope="col">Misión</th><th scope="col">Fecha prevista</th><th scope="col">Precisión</th><th scope="col">Estado</th><th scope="col">Actualizado</th></tr></thead><tbody>${I.U.map(row).join('')}</tbody></table></div></details>
+  <div class="mut" style="margin-top:6px">Precisión de la fecha (net_precision), estado y fecha de la última actualización de cada lanzamiento según Launch Library 2. Actualizados ${fmt(I.gen)}.</div></div>`}
+function bindPrecision(){const el=$('#next');if(!el||el._prec)return;el._prec=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-prec]');if(!b)return;
+  const I=precInfo(),s=precState();if(!I||s.cur||!I.target){renderPrecision();return}const t=I.target.l;
+  s.cur={id:t.id,name:mname(t),d0:precDate(t),p0:t.net_precision||'',pick:b.dataset.prec,at:Date.now(),dl:I.dl};LS.set('prec',s);
+  aviso(`Apuesta guardada: ${b.dataset.prec==='Sí'?'tendrá':'no tendrá'} hora exacta antes del domingo (${mname(t)}).`);completeDaily('prec');renderPrecision();
+  const q=$('#prec-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}

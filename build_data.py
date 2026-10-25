@@ -119,7 +119,7 @@ def nethist(o):
     for l in o["upcoming"]+o["previous"]:
         if not l.get("net"): continue
         h=H.setdefault(l["id"],[])
-        if not h or h[-1][1]!=l["net"]: h.append([o["generated"],l["net"],l.get("net_precision")])
+        if not h or h[-1][1]!=l["net"] or (len(h[-1])>2 and h[-1][2]!=l.get("net_precision")): h.append([o["generated"],l["net"],l.get("net_precision")])
     ids={l["id"] for l in o["upcoming"]+o["previous"]}
     return {k:v[-30:] for k,v in H.items() if k in ids}
 def fails():

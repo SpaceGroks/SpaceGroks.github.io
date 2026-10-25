@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();renderReloj();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();renderReloj();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="reloj"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="reloj"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -1045,7 +1045,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos();renderReloj();resolveHito();renderHitos();renderPlataformas();resolveAnu();renderAnual()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos();renderReloj();resolveHito();renderHitos();renderPlataformas();resolveAnu();renderAnual()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -1998,3 +1998,31 @@ function renderPlataformas(){const el=$('#plataformas');if(!el||!D)return;let I;
   ${f?`<p><b>${esc(f.pad)}</b> llegará antes a un número redondo: su lanzamiento nº ${f.M} sería ${esc(mname(f.tgt))} (${fmt(f.tgt.net)}${apx(f.tgt)}), si se lanzan en el orden previsto.</p>`:'<p class="mut">Ninguna plataforma llega a su siguiente número redondo con los lanzamientos de la lista actual.</p>'}
   <div class="tscroll"><table><caption class="sr">Lanzamientos totales de cada plataforma y su próximo número redondo</caption><thead><tr><th scope="col">Plataforma</th><th scope="col">Lanzamientos</th><th scope="col">Faltan</th><th scope="col">Lo haría</th></tr></thead><tbody>${I.rows.map(row).join('')}</tbody></table></div>
   <div class="mut" style="margin-top:6px">Número de lanzamientos desde cada plataforma que publica Launch Library 2 (cuenta los de todas las empresas y también los fallidos), tomado del último lanzamiento de SpaceX desde ella en los últimos ${I.P} lanzamientos. En los próximos, el número es una cuenta propia siguiendo el orden de la lista de la fuente, que puede cambiar. Actualizados ${fmt(I.gen)}.</div></div>`}
+
+// ---------- Grupos de Starlink ----------
+function slkInfo(){const d=D;if(!d||!Array.isArray(d.previous))return null;const now=Date.now();
+  const pid=new Set(d.previous.map(l=>l.id)),re=/^Starlink Group (\d+)-(\d+)/i,G={};
+  const add=(l,fut)=>{const m=re.exec(mname(l)||'');if(!m)return;const t=new Date(l.net).getTime();if(isNaN(t))return;const g=m[1],k=+m[2];
+    const r=G[g]||(G[g]={g,P:[],U:[],pads:{},max:0});(fut?r.U:r.P).push({l,t,k});if(!fut){r.pads[l.pad||'¿?']=(r.pads[l.pad||'¿?']||0)+1;if(k>r.max)r.max=k}};
+  d.previous.forEach(l=>add(l,false));(d.upcoming||[]).filter(l=>!pid.has(l.id)&&new Date(l.net).getTime()>now-3*H).forEach(l=>add(l,true));
+  const rows=Object.values(G);if(!rows.length)return null;
+  const med=a=>{if(!a.length)return null;const s=a.slice().sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+  for(const r of rows){r.P.sort((a,b)=>a.t-b.t);r.U.sort((a,b)=>a.t-b.t);r.last=r.P[r.P.length-1]||null;r.first=r.P[0]||null;
+    const gaps=[];for(let i=1;i<r.P.length;i++)gaps.push(r.P[i].t-r.P[i-1].t);r.gap=r.P.length>=3?med(gaps):null;
+    r.n30=r.P.filter(x=>x.t>now-30*DAY).length;r.next=r.U[0]||null;r.since=r.last?now-r.last.t:null}
+  rows.sort((a,b)=>(b.next?1:0)-(a.next?1:0)||(b.last?b.last.t:0)-(a.last?a.last.t:0));
+  const nS=rows.reduce((s,r)=>s+r.P.length,0),nU=rows.reduce((s,r)=>s+r.U.length,0),uAll=(d.upcoming||[]).filter(l=>!pid.has(l.id)).length;
+  const t0=d.previous.reduce((m,l)=>{const t=new Date(l.net).getTime();return isNaN(t)?m:Math.min(m,t)},Infinity);
+  const top30=rows.filter(r=>r.n30).sort((a,b)=>b.n30-a.n30)[0]||null;
+  return{rows,nS,nP:d.previous.length,nU,uAll,t0,top30,gen:d.generated}}
+function renderStarlink(){const el=$('#starlink');if(!el||!D)return;let I;try{I=slkInfo()}catch(e){I=null}if(!I){el.innerHTML='';return}
+  const dd=ms=>{const x=ms/DAY;return x<10?x.toFixed(1).replace('.',','):String(Math.round(x))};
+  const apx=l=>/^(SEC|MIN|HOUR)$/i.test(l.net_precision||'')?'':' (fecha aproximada)';
+  const pads=r=>Object.entries(r.pads).sort((a,b)=>b[1]-a[1]).map(([p,n])=>`${esc(p)} (${n})`).join(', ');
+  const row=r=>`<tr><th scope="row">Grupo ${esc(r.g)}<div class="mut">${r.P.length?pads(r):'sin lanzamientos en los datos'}</div></th><td><b>${r.P.length}</b>${r.max?`<div class="mut">número más alto: ${esc(r.g)}-${r.max}</div>`:''}</td><td>${r.last?`${esc(mname(r.last.l))}<div class="mut">${fmtD(r.last.t)}, hace ${dd(r.since)} días</div>`:'<span class="mut">—</span>'}</td><td>${r.gap!=null?`${dd(r.gap)} días`:'<span class="mut">pocos datos</span>'}</td><td>${r.next?`${esc(mname(r.next.l))}<div class="mut">${fmt(r.next.l.net)}${apx(r.next.l)}${r.U.length>1?` · y ${r.U.length-1} más en la lista`:''}</div>`:'<span class="mut">ninguno en la lista</span>'}</td></tr>`;
+  const nx=I.rows.filter(r=>r.next).map(r=>r.next).sort((a,b)=>a.t-b.t)[0];
+  el.innerHTML=`<div class="card daily starlink"><div class="kick">Grupos de Starlink</div>
+  <div class="stats"><div><b>${I.nS}</b>de los últimos ${I.nP} lanzamientos fueron de Starlink</div><div><b>${I.nU}</b>de los ${I.uAll} próximos de la lista son de Starlink</div>${I.top30?`<div><b>Grupo ${esc(I.top30.g)}</b>el que más ha volado en 30 días (${I.top30.n30})</div>`:''}</div>
+  ${nx?`<p>El próximo Starlink es <b>${esc(mname(nx.l))}</b>, ${fmt(nx.l.net)}${apx(nx.l)}${nx.l.pad?`, desde ${esc(nx.l.pad)}`:''}.</p>`:'<p class="mut">Ahora mismo no hay ningún lanzamiento de Starlink en la lista de próximos.</p>'}
+  <div class="tscroll"><table><caption class="sr">Lanzamientos de Starlink por grupo</caption><thead><tr><th scope="col">Grupo</th><th scope="col">Lanzamientos</th><th scope="col">Último</th><th scope="col">Entre lanzamientos (mediana)</th><th scope="col">Siguiente</th></tr></thead><tbody>${I.rows.map(row).join('')}</tbody></table></div>
+  <div class="mut" style="margin-top:6px">Grupo y número tomados del nombre de cada misión en Launch Library 2 (por ejemplo, «Starlink Group 17-54» es el grupo 17), en los últimos ${I.nP} lanzamientos de SpaceX de los datos (desde el ${fmtD(I.t0)}) y en la lista de próximos. Entre paréntesis, los lanzamientos de cada grupo desde cada plataforma. Actualizados ${fmt(I.gen)}.</div></div>`}

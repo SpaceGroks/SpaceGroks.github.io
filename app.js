@@ -178,9 +178,9 @@ function quizQs(pool,all,r){
     for(let i=n0;i<Q.length;i++)Q[i].m=l.id;});
   return Q;
 }
-function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="aterr"></div><div id="hilo"></div><div id="adonde"></div><div id="qwk"></div>';return $('#qwk')}
+function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="aterr"></div><div id="hilo"></div><div id="adonde"></div><div id="quien"></div><div id="qwk"></div>';return $('#qwk')}
 function renderQuiz(){
-  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();if(!AD||!AD.run)renderAdonde();if(!ATS||!ATS.run)renderAterr();
+  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();if(!AD||!AD.run)renderAdonde();if(!ATS||!ATS.run)renderAterr();if(!QN||!QN.run)renderQuien();
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),answered=Object.keys(st.ans).length;
   const correct=Z.qs.filter((q,i)=>st.ans[i]===q.right).length;
   let h=`<div class="card"><b>Reto semanal</b><div class="mut">${Z.title}. Cada lunes sale un reto nuevo. 10 puntos por acierto.</div>
@@ -394,6 +394,55 @@ function adAnswer(btn){if(!AD||!AD.run||AD.lock)return;AD.lock=true;const R=AD.r
 function adEnd(){if(!AD||!AD.run)return;AD.run=false;AD.done=true;let ok=0;AD.rs.forEach((R,i)=>R.qs.forEach((q,j)=>{if((AD.ans[i]||[])[j]===q.right)ok++}));
   const pts=2*ok,s=adState(),gain=Math.max(0,pts-(s.today||0));s.today=Math.max(s.today||0,pts);s.best=Math.max(s.best||0,pts);s.plays=(s.plays||0)+1;LS.set('adonde',s);
   Object.assign(AD,{ok,pts,gain});if(gain)addPts('adonde',gain);renderAdonde();const g=$('#adonde').querySelector('.ad-go');if(g&&g.focus)g.focus({preventScroll:true})}
+// ---------- ¿De quién es? Adivina el cliente de misiones reales por su descripción ----------
+// Descripción y clientes (campo cust) de Launch Library 2 en data.json; se tapan el nombre de la misión y el del cliente.
+let QN=null;
+const QN_N=5,QN_PTS=3;// misiones por partida, puntos por acierto (hasta 15 al día, cuenta la mejor partida)
+const qnLbl=l=>(l.cust||[]).filter(Boolean).map(cliN).join(' + ');
+const QN_ALIAS={'United States Space Force':['Fuerza Espacial de Estados Unidos','Fuerza Espacial estadounidense','Space Force'],'National Reconnaissance Office':['Oficina Nacional de Reconocimiento'],'Space Development Agency':['Agencia de Desarrollo Espacial','Fuerza Espacial de Estados Unidos','United States Space Force'],'National Aeronautics and Space Administration':['Administración Nacional de Aeronáutica y del Espacio'],'Canadian Space Agency':['Agencia Espacial Canadiense','CSA'],'Russian Federal Space Agency (ROSCOSMOS)':['Roscosmos','Agencia Espacial Rusa']};// nombres del cliente que aparecen en las descripciones traducidas
+const qnRe=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+function qnTerms(l){const t=new Set();const add=x=>{x=String(x||'').trim();if(x.length>=3)t.add(x)};
+  const m=mname(l);add(m);add(m.replace(/\s*\(.*\)\s*$/,''));add((l.name||'').split('|').pop());const w=m.split(/\s+/);if(w.length>2&&/^[A-Z]{3,}$/.test(w[0]))add(w.slice(1).join(' '));
+  for(const c of (l.cust||[])){add(c);add(c.replace(/\s*\(.*\)\s*/g,''));const p=c.match(/\(([^)]+)\)/);if(p)add(p[1]);
+    const ac=c.replace(/\(.*\)/g,'').split(/\s+/).filter(w=>/^[A-Z]/.test(w)).map(w=>w[0]).join('');if(ac.length>=3)add(ac);
+    (QN_ALIAS[c]||[]).forEach(add);const es=CLI_ES[c];if(es){add(es);add(es.replace(/\s*\(.*\)\s*/g,''));const q=es.match(/\(([^)]+)\)/);if(q)add(q[1])}}
+  return[...t].sort((a,b)=>b.length-a.length)}
+function qnMask(l){let t=l.desc||'';if(LANG.startsWith('es')&&ES[l.id])t=ES[l.id];
+  for(const w of qnTerms(l))t=t.replace(new RegExp('(^|[^\\wÀ-ÿ])'+qnRe(w)+'(?=$|[^\\wÀ-ÿ])','gi'),'$1███');
+  return t.replace(/\s+/g,' ').trim()}
+function qnState(){const s=LS.get('quien',{best:0,plays:0});if(s.d!==dayKey()){s.d=dayKey();s.today=0}return s}
+function qnPool(){if(!D||!D.previous)return[];return D.previous.filter(l=>l.desc&&qnLbl(l)&&!(l.cust||[]).every(c=>c==='SpaceX')&&!/^Starlink/i.test(mname(l)))}
+function qnRounds(){const pool=qnPool(),all=[...new Set((D.previous||[]).concat(D.upcoming||[]).map(qnLbl).filter(Boolean))];if(all.length<4)return[];
+  const r=Math.random,out=[],seen={};
+  for(const l of shuffle(pool.slice(),r)){const k=qnLbl(l);if((seen[k]||0)>=1)continue;const d=qnMask(l);if(d.replace(/[█\s]/g,'').length<30)continue;seen[k]=1;out.push({l,d})}
+  if(out.length<QN_N){for(const l of shuffle(pool.slice(),r)){if(out.length>=QN_N)break;if(out.some(o=>o.l.id===l.id))continue;const d=qnMask(l);if(d.replace(/[█\s]/g,'').length<30)continue;out.push({l,d})}}
+  if(out.length<QN_N)return[];
+  return out.slice(0,QN_N).map(o=>{const right=qnLbl(o.l);return{...o,right,opts:shuffle([right,...shuffle(all.filter(x=>x!==right),r).slice(0,3)],r)}})}
+function renderQuien(){const el=$('#quien');if(!el||!D)return;const s=qnState(),ok=qnRounds().length===QN_N;
+  let h=`<div class="card rapid quien"><div class="kick">¿De quién es?</div>
+  <p class="mut">${QN_N} misiones reales recientes de SpaceX para otros clientes. Lee la descripción de cada una (con el nombre de la misión y del cliente tapados) y adivina para quién era. ${QN_PTS} puntos por acierto; cada día cuenta tu mejor partida (hasta ${QN_N*QN_PTS} puntos) y repetir solo suma si la mejoras. Descripciones y clientes de Launch Library 2.</p>
+  <div class="stats"><div><b>${s.today||0}</b>tu mejor hoy (de ${QN_N*QN_PTS})</div><div><b>${s.best||0}</b>récord</div><div><b>${s.plays||0}</b>partidas jugadas</div></div>`;
+  if(QN&&QN.done)h+=qnSummary();
+  h+=ok?`<div class="opts"><button type="button" class="qn-go">${QN&&QN.done?'Jugar otra vez':'Empezar'}</button></div>`:'<p class="mut">Ahora no hay suficientes misiones recientes con cliente y descripción.</p>';
+  el.innerHTML=h+'</div>';const b=el.querySelector('.qn-go');if(b)b.onclick=qnStart}
+function qnSummary(){const A=QN;return `<div class="rp-res" role="status"><h3>${A.ok} de ${QN_N} · +${A.pts} puntos${A.gain<A.pts?` <span class="mut">(suma ${A.gain}: ${A.gain?'mejoras tu partida de hoy':'no mejora tu mejor partida de hoy'})</span>`:''}</h3>
+  ${A.rs.map((R,i)=>{const a=A.ans[i];return `<div class="rp-q">${ic(a===R.right)} <b>${esc(mname(R.l))}</b> <span class="mut">${fmtD(R.l.net)}</span><br>Cliente: <b>${esc(R.right)}</b>${a===R.right?'':` <span class="mut">(dijiste ${esc(a||'nada')})</span>`}</div>`}).join('')}</div>`}
+function qnStart(){const rs=qnRounds();if(rs.length<QN_N)return;QN={rs,i:0,ans:{},run:true,lock:false};qnShow();completeDaily('quien')}
+function qnShow(){const R=QN.rs[QN.i],l=R.l;
+  $('#quien').innerHTML=`<div class="card rapid quien on"><div class="kick">¿De quién es? · misión ${QN.i+1} de ${QN_N}</div>
+  <div class="hl-b"><p class="qn-d">«${esc(R.d)}»</p><div class="mut">${esc(l.rocket||'')} · ${fmtD(l.net)}${l.mtype?' · '+esc(mtShort(l.mtype)):''}${l.orbit?' · Órbita: '+esc(orb(l.orbit)):''}</div></div>
+  <div id="qn-q" class="rp-qt">¿Para qué cliente era esta misión?</div><div class="sr" id="qn-live" role="status" aria-live="polite"></div>
+  <div class="opts" role="group" aria-labelledby="qn-q">${R.opts.map(v=>`<button type="button" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div><div id="qn-why"></div></div>`;
+  const o=$('#quien').querySelectorAll('.opts button');o.forEach(b=>b.onclick=()=>qnAnswer(b));if(o[0]&&o[0].focus)o[0].focus({preventScroll:true})}
+function qnAnswer(btn){if(!QN||!QN.run||QN.lock)return;QN.lock=true;const R=QN.rs[QN.i],v=btn.dataset.v,ok=v===R.right,l=R.l;QN.ans[QN.i]=v;
+  $('#quien').querySelectorAll('.opts button').forEach(x=>{x.disabled=true;if(x.dataset.v===R.right)x.classList.add('right');else if(x===btn)x.classList.add('wrong')});
+  const lv=$('#qn-live');if(lv)lv.textContent=ok?'Acierto':'Fallo. Era '+R.right;
+  const all=D.previous||[],n=all.filter(x=>qnLbl(x)===R.right).length,last=QN.i===QN_N-1;
+  $('#qn-why').innerHTML=`<p class="mut">${ic(ok)} Era <b>${esc(mname(l))}</b>, para ${esc(R.right)}. De los últimos ${all.length} lanzamientos de SpaceX, ${n} ${n===1?'fue':'fueron'} para este cliente.</p><div class="opts"><button type="button" class="qn-nx">${last?'Ver resultado':'Siguiente'}</button></div>`;
+  const nx=$('#quien').querySelector('.qn-nx');if(nx){nx.onclick=()=>{QN.lock=false;if(last)return qnEnd();QN.i++;qnShow()};if(nx.focus)nx.focus({preventScroll:true})}}
+function qnEnd(){if(!QN||!QN.run)return;QN.run=false;QN.done=true;const ok=QN.rs.filter((R,i)=>QN.ans[i]===R.right).length;
+  const pts=QN_PTS*ok,s=qnState(),gain=Math.max(0,pts-(s.today||0));s.today=Math.max(s.today||0,pts);s.best=Math.max(s.best||0,pts);s.plays=(s.plays||0)+1;LS.set('quien',s);
+  Object.assign(QN,{ok,pts,gain});if(gain)addPts('quien',gain);renderQuien();const g=$('#quien').querySelector('.qn-go');if(g&&g.focus)g.focus({preventScroll:true})}
 // ---------- Propulsores ----------
 let fleetSort='flights';
 // ---------- Comparar dos propulsores ----------
@@ -606,6 +655,7 @@ function retosGlobo(){
   if(rapidQs().length===3){const rs=rapidState();R.push({t:'Reto rápido',m:`Tres preguntas sobre misiones reales de SpaceX en 30 segundos. ${rs.best?`Tu récord es de ${rs.best} puntos. ¿Lo superas?`:'Hasta 30 puntos si las aciertas todas rápido.'}`,tab:'quiz',btn:'Jugar 30 segundos',k:'rapid'});}
   if(hiloPool().length){const hs=hiloState();R.push({t:'¿Más o menos?',m:`¿Qué propulsor de SpaceX ha volado más veces? Encadena aciertos con los vuelos reales de cada uno. ${hs.best?`Tu récord es de ${hs.best} seguidos. ¿Lo superas?`:'Hasta 20 puntos al día.'}`,tab:'quiz',btn:'Jugar a ¿Más o menos?',k:'hilo'});}
   if(adRounds().length===AD_N){const as=adState();R.push({t:'¿Adónde va?',m:`¿Sabrías decir a qué órbita fue cada misión real de SpaceX y desde qué plataforma despegó? ${as.best?`Tu récord es de ${as.best} puntos. ¿Lo superas?`:`Hasta ${AD_N*4} puntos al día.`}`,tab:'quiz',btn:'Jugar a ¿Adónde va?',k:'adonde'});}
+  if(qnRounds().length===QN_N){const qs=qnState();R.push({t:'¿De quién es?',m:`Lee la descripción real de una misión de SpaceX y adivina para qué cliente era. ${qs.best?`Tu récord es de ${qs.best} puntos. ¿Lo superas?`:`Hasta ${QN_N*QN_PTS} puntos al día.`}`,tab:'quiz',btn:'Jugar a ¿De quién es?',k:'quien'});}
   {const m=fdMissions()[0];if(m)R.push({t:'Modo director de vuelo',m:`Dirige la cuenta atrás real de ${mname(m)}: pulsa en el momento justo de cada paso, de la carga de combustible a la separación de etapas${fdSteps(m).some(s=>s.ids.includes(19))?' y el aterrizaje':''}. Hasta 50 puntos.`,tab:'flight',btn:'Dirigir la cuenta atrás',k:'flight'});}
   const fl=D.previous.flatMap(l=>(l.stages||[]).map(s=>({...s,l}))).filter(s=>s.flight).sort((a,b)=>b.flight-a.flight)[0];
   if(fl)R.push({t:'Récord de reutilización',m:`El propulsor ${fl.serial} ya lleva ${fl.flight} vuelos. Antes los cohetes se tiraban tras un solo uso. ¿Sabrías decir cuál es el siguiente en llegar a esa cifra?`,tab:'fleet',btn:'Ver la flota',k:'fleet'});
@@ -1063,7 +1113,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['aterr','Simulador de aterrizaje'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['dia','Apuesta del día de la semana'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['quien','¿De quién es?'],['flight','Director de vuelo'],['aterr','Simulador de aterrizaje'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['dia','Apuesta del día de la semana'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>

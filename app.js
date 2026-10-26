@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();resolveDia();renderDias();bindDias();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderEstados();bindDirectos();bindPrecision();renderReloj();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();resolveDia();renderDias();bindDias();renderDobles();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderEstados();bindDirectos();bindPrecision();renderReloj();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="dias"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="precision"></div><div id="directos"></div><div id="estados"></div><div id="reloj"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="dias"></div><div id="dobles"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="precision"></div><div id="directos"></div><div id="estados"></div><div id="reloj"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -1127,7 +1127,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();resolveDia();renderDias();renderBarcazas();resolveTipo();renderTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderEstados();renderReloj();resolveHito();renderHitos();renderPlataformas();resolveAnu();renderAnual()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();resolveDia();renderDias();renderDobles();renderBarcazas();resolveTipo();renderTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderEstados();renderReloj();resolveHito();renderHitos();renderPlataformas();resolveAnu();renderAnual()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -2323,3 +2323,26 @@ function bindDias(){const el=$('#next');if(!el||el._dia)return;el._dia=true;el.a
   s.cur={pick,pts,at:Date.now(),ref:I.first?{m:mname(I.first.l),net:I.first.l.net,w:I.first.w}:null};LS.set('dia',s);
   aviso(`Apuesta guardada: el próximo despegará en ${DIA_N[pick]} (+${pts} si aciertas).`);renderDias();
   const q=$('#dia-q');try{q&&(q.tabIndex=-1,q.focus())}catch(e){}})}
+
+// ---------- Lanzamientos dobles ----------
+// Parejas de despegues seguidos de SpaceX separados menos de 24 h, con la hora real de Launch Library 2 (solo hora exacta).
+const DOBLE_MAX=24*H;
+function dobleSep(ms){const m=Math.round(ms/6e4),h=Math.floor(m/60),r=m%60;return h?`${h} h${r?` ${r} min`:''}`:`${r} min`}
+function dobleSitio(l){return String(l.loc||'').split(',')[0].trim()||'—'}
+function dobleInfo(){const d=rlD();if(!d||!Array.isArray(d.previous))return null;const now=Date.now(),ids=new Set(d.previous.map(l=>l.id));
+  const P=d.previous.filter(l=>precise(l)).map(l=>({l,t:new Date(l.net).getTime()})).filter(o=>!isNaN(o.t)).sort((a,b)=>a.t-b.t);if(P.length<2)return null;
+  const pairs=[];for(let i=1;i<P.length;i++)pairs.push({a:P[i-1],b:P[i],g:P[i].t-P[i-1].t});
+  const dob=pairs.filter(p=>p.g<DOBLE_MAX),rec=pairs.reduce((m,p)=>p.g<m.g?p:m,pairs[0]);
+  const U=(d.upcoming||[]).filter(l=>precise(l)&&!/TBD/i.test(l.status||'')&&!ids.has(l.id)).map(l=>({l,t:new Date(l.net).getTime()})).filter(o=>!isNaN(o.t)&&o.t>now).sort((a,b)=>a.t-b.t);
+  const seq=[P[P.length-1],...U],fut=[];for(let i=1;i<seq.length;i++){const g=seq[i].t-seq[i-1].t;if(g<DOBLE_MAX)fut.push({a:seq[i-1],b:seq[i],g,bate:g<rec.g})}
+  const days=(P[P.length-1].t-P[0].t)/DAY;
+  return{P,pairs,dob,rec,U,fut,days,gen:d.generated}}
+function renderDobles(){const el=$('#dobles');if(!el||!D)return;let I;try{I=dobleInfo()}catch(e){I=null}if(!I){el.innerHTML='';return}
+  const n=I.P.length,r=I.rec,two=(p,x)=>`${esc(mname(p.a.l))} (${esc(dobleSitio(p.a.l))}) y ${esc(mname(p.b.l))} (${esc(dobleSitio(p.b.l))})${x?`, ${fmtD(p.b.t)}`:''}`;
+  const top=I.dob.slice().sort((a,b)=>a.g-b.g).slice(0,6).map(p=>`<li><b>${dobleSep(p.g)}</b> ${two(p,true)}</li>`).join('');
+  const fut=I.fut.length?`<p>${I.fut.some(p=>p.bate)?'<b>La lista prevé uno que batiría el récord:</b> ':'En la lista de próximos con hora fijada hay '+(I.fut.length===1?'un doble previsto':I.fut.length+' dobles previstos')+', ninguno por debajo del récord: '}${I.fut.map(p=>`${two(p)}, ${dobleSep(p.g)} entre uno y otro (${esc(fmt(p.b.t))} en tu hora)${p.bate?' <b>(nuevo récord)</b>':''}`).join('; ')}. Las horas previstas aún pueden cambiar.</p>`:`<p>Ahora la lista de próximos con hora fijada (${I.U.length}) no prevé dos despegues separados menos de 24 h${I.U.length>1?`; los dos más juntos están a ${dobleSep(Math.min(...I.U.slice(1).map((o,i)=>o.t-I.U[i].t)))}`:''}.</p>`;
+  el.innerHTML=`<div class="card daily dobles"><div class="kick">Lanzamientos dobles</div>
+  <div class="stats"><div><b>${I.dob.length}</b>${I.dob.length===1?'vez':'veces'} con dos despegues seguidos en menos de 24 h</div><div><b>${dobleSep(r.g)}</b>récord de menor separación</div><div><b>${Math.round(100*I.dob.length/I.pairs.length)} %</b>de los ${I.pairs.length} pares seguidos</div></div>
+  <p>El récord en estos datos: ${two(r,true)}, despegaron con ${dobleSep(r.g)} de diferencia.</p>
+  ${top?`<h4>Los dobles más ajustados</h4><ul class="emp-top">${top}</ul>`:''}${fut}
+  <div class="mut" style="margin-top:6px">Calculado con los ${n} últimos lanzamientos de SpaceX con hora exacta en Launch Library 2 (unos ${Math.round(I.days)} días), comparando cada despegue con el anterior, actualizados ${fmt(I.gen)}.</div></div>`}

@@ -1434,19 +1434,33 @@ function renderEmpleo(){const el=$('#empleo');if(!el||!D)return;const J=empInfo(
   const bar=c=>`<li><button type="button" class="linkish" data-emp="${esc(c.loc)}"${c.loc===sel.loc?' aria-current="true"':''}>${esc(empLoc(c.loc))}</button> <b>${c.n.toLocaleString('es-ES')}</b>${c.intern?` · ${c.intern} de prácticas`:''}<div class="empbar" aria-hidden="true"><span style="width:${Math.max(2,Math.round(c.n/max*100))}%"></span></div></li>`;
   const job=j=>`<li><a href="${esc(j.url)}" target="_blank" rel="noopener">${esc(j.t)}<span class="sr"> (se abre en otra pestaña)</span></a>${j.loc?` · ${esc(empLoc(j.loc))}`:''}${j.pub?` <span class="mut">· publicada el ${fmtD(j.pub+'T12:00:00Z')}</span>`:''}</li>`;
   const ints=(J.interns||[]).slice(0,12);
-  el.innerHTML=`<div class="card daily empleo"><div class="kick">Trabajar en SpaceX por ciudades</div>
+  el.innerHTML=`<div class="card daily empleo"><div class="kick">Trabajar en SpaceX por ciudades y áreas</div>
   <div class="stats"><div><b>${J.total.toLocaleString('es-ES')}</b>ofertas abiertas</div><div><b>${C.length}</b>ubicaciones</div><div><b>${J.intern||0}</b>de prácticas</div></div>
   <p class="mut">Todas las ofertas publicadas ahora mismo en el tablón de empleo de SpaceX (Greenhouse), agrupadas por la ubicación que indica cada una. Elige una ciudad para ver sus ofertas más recientes.</p>
   <label for="emp-sel">Ciudad</label> <select id="emp-sel">${C.map(c=>`<option value="${esc(c.loc)}"${c.loc===sel.loc?' selected':''}>${esc(empLoc(c.loc))} (${c.n})</option>`).join('')}</select>
   <h4 id="emp-city">${esc(empLoc(sel.loc))}: ${sel.n.toLocaleString('es-ES')} ${sel.n===1?'oferta':'ofertas'}${sel.intern?`, ${sel.intern} de prácticas`:''}</h4>
   <ul>${(sel.recent||[]).map(job).join('')}</ul>${sel.n>(sel.recent||[]).length?`<p class="mut">Estas son las ${(sel.recent||[]).length} más recientes; el resto está en la <a href="${esc(J.url||'https://www.spacex.com/careers/')}" target="_blank" rel="noopener">página de empleo de SpaceX</a>.</p>`:''}
   <h4>Dónde hay más ofertas</h4><ul class="emp-top">${top.map(bar).join('')}</ul>
+  ${empDeps(J,job)}
   ${ints.length?`<h4><span aria-hidden="true">⭐</span> Prácticas</h4><ul class="emp-int">${ints.map(job).join('')}</ul>`:'<p class="mut">Ahora mismo no hay ofertas de prácticas publicadas.</p>'}
   <div class="mut" style="margin-top:6px">Fuente: ${esc(J.source||'SpaceX en Greenhouse')}, actualizado ${fmt(J.at)}.</div></div>`}
+// Por departamento (data.json → jobs.deps, del endpoint de departamentos de Greenhouse). El crecimiento compara con la foto jobs.deps.base (se renueva cada 24 h).
+let EMP_DEP=null;
+function empDeps(J,job){const P=J&&J.deps;if(!P||!Array.isArray(P.top)||!P.top.length)return '';
+  const T=P.top,sel=T.find(d=>d.d===EMP_DEP)||T[0],max=T[0].n,G=Array.isArray(P.grow)?P.grow:[],since=P.base&&P.base.at;
+  const bar=d=>`<li><button type="button" class="linkish" data-empdep="${esc(d.d)}"${d.d===sel.d?' aria-current="true"':''}>${esc(d.d)}</button> <b>${d.n.toLocaleString('es-ES')}</b><div class="empbar" aria-hidden="true"><span style="width:${Math.max(2,Math.round(d.n/max*100))}%"></span></div></li>`;
+  return `<h4>Por departamento</h4><p class="mut">SpaceX reparte sus ofertas en ${P.count.toLocaleString('es-ES')} departamentos (con los nombres que publica en inglés). Estos son los ${T.length} con más ofertas; elige uno para ver las más recientes.</p>
+  <label for="emp-dep">Departamento</label> <select id="emp-dep">${T.map(d=>`<option value="${esc(d.d)}"${d.d===sel.d?' selected':''}>${esc(d.d)} (${d.n})</option>`).join('')}</select>
+  <h4 id="emp-dname">${esc(sel.d)}: ${sel.n.toLocaleString('es-ES')} ${sel.n===1?'oferta':'ofertas'}</h4>
+  <ul>${(sel.recent||[]).map(job).join('')}</ul>
+  <ul class="emp-top">${T.slice(0,8).map(bar).join('')}</ul>
+  <h4><span aria-hidden="true">📈</span> Los que más crecen</h4>${G.length?`<ul>${G.map(g=>`<li>${esc(g.d)}: <b>+${(g.n-g.was).toLocaleString('es-ES')}</b> <span class="mut">(de ${g.was} a ${g.n})</span></li>`).join('')}</ul>`:'<p class="mut">Ningún departamento ha sumado ofertas todavía desde la última foto.</p>'}
+  ${since?`<p class="mut">Crecimiento comparado con los recuentos del ${fmt(since)}; la foto se renueva cada 24 horas.</p>`:''}`}
 function bindEmpleo(){const el=$('#next');if(!el||el._emp)return;el._emp=true;
   const go=(v,f)=>{EMP_SEL=v;renderEmpleo();const q=$(f?'#emp-sel':'#emp-city');try{q&&(q.tabIndex=q.tabIndex<0?-1:q.tabIndex,q.focus())}catch(e){}};
-  el.addEventListener('change',e=>{if(e.target&&e.target.id==='emp-sel')go(e.target.value,true)});
-  el.addEventListener('click',e=>{const b=e.target.closest('button[data-emp]');if(b)go(b.dataset.emp,false)})}
+  const gd=(v,f)=>{EMP_DEP=v;renderEmpleo();const q=$(f?'#emp-dep':'#emp-dname');try{q&&(q.tabIndex=q.tabIndex<0?-1:q.tabIndex,q.focus())}catch(e){}};
+  el.addEventListener('change',e=>{if(e.target&&e.target.id==='emp-sel')go(e.target.value,true);else if(e.target&&e.target.id==='emp-dep')gd(e.target.value,true)});
+  el.addEventListener('click',e=>{const b=e.target.closest('button[data-emp]');if(b)go(b.dataset.emp,false);const c=e.target.closest('button[data-empdep]');if(c)gd(c.dataset.empdep,false)})}
 
 // ---------- Lanzamientos por mes y apuesta «¿superará este mes al anterior?» ----------
 // Barras por mes (hora local) y por cohete con los últimos lanzamientos de SpaceX de data.json (Launch Library 2).

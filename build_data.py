@@ -79,6 +79,35 @@ def slim(r):
       "stages":st,**photo(r),"tl":timeline(r),
       "video":vids[0]["url"] if vids else None,"updated":r.get("last_updated"),
       "n":r.get("agency_launch_attempt_count"),"ny":r.get("agency_launch_attempt_count_year"),"pn":r.get("pad_launch_attempt_count")}
+def depts(job):
+    """Ofertas por departamento (tablón público de Greenhouse). El crecimiento se mide contra una foto de los
+    recuentos que se renueva cada 24 h y se guarda en data.json. Si falla, se conservan los últimos datos."""
+    try: old=(json.load(open("data.json")).get("jobs") or {}).get("deps")
+    except Exception: old=None
+    try:
+        req=urllib.request.Request("https://boards-api.greenhouse.io/v1/boards/spacex/departments",headers={"User-Agent":"spacex-play"})
+        Dp=[d for d in fetch(req,180)["departments"] if d.get("jobs")]
+        if not Dp: raise ValueError("sin departamentos")
+        now=datetime.datetime.now(datetime.timezone.utc)
+        cnt={d["name"].strip():len(d["jobs"]) for d in Dp}
+        base=(old or {}).get("base")
+        try: age=(now-datetime.datetime.fromisoformat(base["at"])).total_seconds()
+        except Exception: age=None
+        if age is None or age>=24*3600: base={"at":now.isoformat(timespec="seconds"),"n":cnt}
+        grow=[]
+        if base["n"] is not cnt:
+            for n,c in cnt.items():
+                b=base["n"].get(n,0)
+                if c>b: grow.append({"d":n,"n":c,"was":b})
+            grow.sort(key=lambda g:(-(g["n"]-g["was"]),g["d"]))
+        lst=sorted(Dp,key=lambda d:(-len(d["jobs"]),d["name"]))
+        top=[{"d":d["name"].strip(),"n":len(d["jobs"]),
+              "recent":[job(j) for j in sorted([j for j in d["jobs"] if j.get("absolute_url")],key=lambda j:j.get("first_published") or "",reverse=True)[:3]]}
+             for d in lst[:20]]
+        return {"count":len(Dp),"total":sum(cnt.values()),"top":top,"grow":grow[:8],"base":base,"at":now.isoformat(timespec="seconds")}
+    except Exception as e:
+        print("departamentos no disponibles:",e,file=sys.stderr)
+        return old
 def jobs():
     """Ofertas de trabajo reales de SpaceX (tablón público de Greenhouse). Si falla, se conservan las últimas."""
     try:
@@ -99,7 +128,8 @@ def jobs():
         cities=[{"loc":n,"n":len(v),"intern":sum(1 for j in v if j in intern),
           "recent":[job(j) for j in sorted(v,key=lambda j:j.get("first_published") or "",reverse=True)[:3]]}
           for n,v in sorted(byc.items(),key=lambda x:(-len(x[1]),x[0]))]
-        return {"total":len(J),"intern":len(intern),"url":"https://www.spacex.com/careers/",
+        deps=depts(job)
+        return {"total":len(J),"intern":len(intern),"url":"https://www.spacex.com/careers/","deps":deps,
           "cities":cities,"interns":[{**job(j),"loc":((j.get("location") or {}).get("name") or "").strip()} for j in intern if j.get("absolute_url")],
           "locs":sorted(loc.items(),key=lambda x:-x[1])[:5],
           "recent":[{"t":j["title"],"loc":(j.get("location") or {}).get("name"),"url":j["absolute_url"],"pub":j["first_published"][:10]} for j in rec],

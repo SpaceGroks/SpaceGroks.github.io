@@ -1149,6 +1149,26 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   const bets=Object.values(LS.get('bets',{})).filter(b=>b.res);
   const Z=buildQuiz(),qs=LS.get('quiz_'+Z.key,{ans:{}}),qn=Object.keys(qs.ans).length,qok=Z.qs.filter((q,i)=>qs.ans[i]===q.right).length;
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
+// ---------- Tu historial de apuestas ----------
+// Junta las apuestas ya resueltas que guarda el navegador (claves sxp_*), solo lectura: no cambia nada guardado.
+// Las anuladas (void) o sin resolución posible (gone, ok null) no cuentan.
+const BH_N={bet:'¿Volverá a volar?',rbet:'Racha de la semana',ritmo:'Ritmo de lanzamientos',cli:'Clientes',ven:'Ventanas de lanzamiento',zon:'Aterrizaje',mes:'Lanzamientos por mes',hora:'Hora del despegue',dia:'Día de la semana',tipo:'Starlink',vet:'Veteranía',orb:'Órbita',vida:'Vida de los propulsores',tur:'Tiempo en tierra',hito:'Hitos',anu:'Ritmo del año',prec:'Precisión de fechas',dir:'Retransmisión'};
+function betHist(){const out=[],add=(k,b,ok)=>{if(!b||b.void||b.gone||ok==null)return;out.push({k,ok:!!ok,t:b.resAt||b.at||0,won:b.won||0})};
+  try{Object.values(LS.get('bets',{})).forEach(b=>b&&b.res&&add('bet',b,b.res.ok));
+  Object.values(LS.get('rbet',{})).forEach(w=>Object.values((w&&w.bets)||{}).forEach(b=>b&&b.res&&add('rbet',b,b.res.ok)));
+  Object.values(LS.get('ritmo',{})).forEach(b=>b&&b.res&&add('ritmo',b,b.res.ok));
+  Object.values(LS.get('mes',{})).forEach(b=>b&&b.res&&add('mes',b,b.ok));
+  for(const k of ['cli','ven','zon','hora','dia','tipo','vet','orb','vida','tur','hito','anu','prec','dir']){const h=(LS.get(k,{})||{}).hist;if(Array.isArray(h))h.forEach(b=>add(k,b,b&&b.ok))}}catch(e){}
+  return out.sort((a,b)=>a.t-b.t)}
+function betHistHTML(){const H=betHist();if(!H.length)return '<h4>Tu historial de apuestas</h4><p class="mut">Aún no tienes apuestas resueltas. Cuando se resuelvan con los datos reales, verás aquí tus aciertos por tipo.</p>';
+  const by={};H.forEach(x=>{const r=by[x.k]||(by[x.k]={k:x.k,n:0,ok:0,won:0});r.n++;if(x.ok)r.ok++;r.won+=x.won});
+  const rows=Object.values(by).sort((a,b)=>b.n-a.n||b.ok-a.ok),okT=H.filter(x=>x.ok).length;
+  const best=rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n||b.n-a.n)[0];
+  let worst=null,cur=0,st=null;H.forEach(x=>{if(!x.ok){if(!cur)st=x.t;cur++;if(!worst||cur>worst.n)worst={n:cur,from:st,to:x.t}}else cur=0});
+  let now=0;const last=H.at(-1).ok;for(let i=H.length-1;i>=0&&H[i].ok===last;i--)now++;
+  return `<h4>Tu historial de apuestas</h4><p>${okT} ganadas de ${H.length} apuestas resueltas (${pct(okT,H.length)}). Ahora llevas ${now} ${last?(now===1?'acierto':'aciertos'):(now===1?'fallo':'fallos')} seguido${now===1?'':'s'}.</p>
+  <div class="tblw"><table class="stt"><thead><tr><th scope="col">Apuesta</th><th scope="col">Ganadas</th><th scope="col">Puntos</th></tr></thead><tbody>${rows.map(r=>`<tr><th scope="row">${esc(BH_N[r.k]||r.k)}</th><td><b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span></td><td>${r.won}</td></tr>`).join('')}</tbody></table></div>
+  <p class="mut">${best?`Tu apuesta más fiable: ${esc(BH_N[best.k]||best.k)} (${best.ok} de ${best.n}).`:'Necesitas dos apuestas resueltas de un mismo tipo para saber cuál es la más fiable.'} ${worst?`Tu peor racha: ${worst.n} ${worst.n===1?'fallo':'fallos seguidos'}${worst.from?`, ${worst.n===1?'el':'del'} ${fmtD(worst.from)}${worst.n>1&&fmtD(worst.to)!==fmtD(worst.from)?` al ${fmtD(worst.to)}`:''}`:''}.`:'Todavía no has fallado ninguna.'}</p>`}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
   const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['quien','¿De quién es?'],['sats','¿Cuántos satélites?'],['flight','Director de vuelo'],['aterr','Simulador de aterrizaje'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['dia','Apuesta del día de la semana'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
@@ -1163,6 +1183,7 @@ function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)
   <li>Reto semanal: ${S.qn?`${S.qok} de ${S.qn} respondidas bien esta semana (${pct(S.qok,S.qn)})`:'<span class="mut">sin respuestas esta semana</span>'}</li>
   <li>Apuestas de propulsores: ${S.bets.length?`${S.bets.filter(b=>b.res.ok).length} ganadas de ${S.bets.length} (${pct(S.bets.filter(b=>b.res.ok).length,S.bets.length)})`:'<span class="mut">ninguna resuelta todavía</span>'}</li>
   <li>Reto rápido: récord ${(LS.get('rapid',{}).best)||0} puntos · ¿Más o menos?: mejor racha de ${(LS.get('hilo',{}).best)||0} aciertos</li></ul>
+  ${betHistHTML()}
   <h4>De dónde salen tus ${ptot} puntos</h4><ul class="stl">${cats.map(([k,t])=>`<li>${t}: <b>${P[k]||0}</b>${ptot?` <span class="mut">(${pct(P[k]||0,ptot)})</span>`:''}${ptot?`<div class="bar" aria-hidden="true"><i style="width:${100*(P[k]||0)/ptot}%"></i></div>`:''}</li>`).join('')}</ul></details>`}
 function bindStats(){const d=document.querySelector('#mystats details');if(d)d.ontoggle=()=>LS.set('stats_open',d.open)}
 // ---------- Racha en directo y apuesta semanal «¿seguirá la racha el domingo?» ----------

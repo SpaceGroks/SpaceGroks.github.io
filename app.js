@@ -178,9 +178,9 @@ function quizQs(pool,all,r){
     for(let i=n0;i<Q.length;i++)Q[i].m=l.id;});
   return Q;
 }
-function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="aterr"></div><div id="hilo"></div><div id="adonde"></div><div id="quien"></div><div id="qwk"></div>';return $('#qwk')}
+function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="aterr"></div><div id="hilo"></div><div id="adonde"></div><div id="quien"></div><div id="sats"></div><div id="qwk"></div>';return $('#qwk')}
 function renderQuiz(){
-  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();if(!AD||!AD.run)renderAdonde();if(!ATS||!ATS.run)renderAterr();if(!QN||!QN.run)renderQuien();
+  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();if(!AD||!AD.run)renderAdonde();if(!ATS||!ATS.run)renderAterr();if(!QN||!QN.run)renderQuien();if(!ST||!ST.run)renderSats();
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),answered=Object.keys(st.ans).length;
   const correct=Z.qs.filter((q,i)=>st.ans[i]===q.right).length;
   let h=`<div class="card"><b>Reto semanal</b><div class="mut">${Z.title}. Cada lunes sale un reto nuevo. 10 puntos por acierto.</div>
@@ -443,6 +443,43 @@ function qnAnswer(btn){if(!QN||!QN.run||QN.lock)return;QN.lock=true;const R=QN.r
 function qnEnd(){if(!QN||!QN.run)return;QN.run=false;QN.done=true;const ok=QN.rs.filter((R,i)=>QN.ans[i]===R.right).length;
   const pts=QN_PTS*ok,s=qnState(),gain=Math.max(0,pts-(s.today||0));s.today=Math.max(s.today||0,pts);s.best=Math.max(s.best||0,pts);s.plays=(s.plays||0)+1;LS.set('quien',s);
   Object.assign(QN,{ok,pts,gain});if(gain)addPts('quien',gain);renderQuien();const g=$('#quien').querySelector('.qn-go');if(g&&g.focus)g.focus({preventScroll:true})}
+// ---------- ¿Cuántos satélites?: cuántos Starlink llevaba cada lanzamiento real ----------
+let ST=null;const ST_N=5,ST_PTS=2;// lanzamientos por partida, puntos por acierto (hasta 10 al día, cuenta la mejor partida)
+function stCount(l){const m=/(\d+)\s+(?:Starlink\s+)?satellites/i.exec((l&&l.desc)||'');return m?+m[1]:null}
+function stState(){const s=LS.get('sats',{best:0,plays:0});if(s.d!==dayKey()){s.d=dayKey();s.today=0}return s}
+function stPool(){if(!D||!D.previous)return[];return D.previous.filter(l=>/^Starlink/i.test(mname(l))&&stCount(l))}
+function stVals(){return[...new Set((D.previous||[]).concat(D.upcoming||[]).filter(l=>/^Starlink/i.test(mname(l))).map(stCount).filter(Boolean))].sort((a,b)=>a-b)}
+function stRounds(){const pool=stPool(),V=stVals();if(pool.length<ST_N||V.length<3)return[];const r=Math.random;
+  return shuffle(pool,r).slice(0,ST_N).map(l=>{const right=stCount(l),o=V.filter(v=>v!==right).sort((a,b)=>Math.abs(a-right)-Math.abs(b-right)).slice(0,3);return{l,right,opts:[right,...o].sort((a,b)=>a-b)}})}
+function stSummaryData(){const p=stPool(),tot=p.reduce((a,l)=>a+stCount(l),0),G={};
+  p.forEach(l=>{const g=(/Group\s+(\d+)/i.exec(mname(l))||[])[1];if(!g)return;(G[g]=G[g]||[]).push(stCount(l))});
+  return{n:p.length,tot,groups:Object.keys(G).sort((a,b)=>a-b).map(g=>({g,n:G[g].length,min:Math.min(...G[g]),max:Math.max(...G[g])}))}}
+function renderSats(){const el=$('#sats');if(!el||!D)return;const s=stState(),ok=stRounds().length===ST_N,S=stSummaryData();
+  let h=`<div class="card rapid sats"><div class="kick">¿Cuántos satélites?</div>
+  <p class="mut">${ST_N} lanzamientos reales recientes de Starlink. Con el grupo, el cohete, la plataforma y la órbita, adivina cuántos satélites llevaba cada uno. ${ST_PTS} puntos por acierto; cada día cuenta tu mejor partida (hasta ${ST_N*ST_PTS} puntos). Cifras de la descripción publicada en Launch Library 2.</p>
+  <div class="stats"><div><b>${s.today||0}</b>tu mejor hoy (de ${ST_N*ST_PTS})</div><div><b>${s.best||0}</b>récord</div><div><b>${s.plays||0}</b>partidas jugadas</div></div>`;
+  if(ST&&ST.done)h+=stSummary();
+  if(S.n)h+=`<p class="mut">En los datos hay ${S.n} lanzamientos de Starlink con cifra publicada, que suman ${S.tot.toLocaleString('es-ES')} satélites.</p>`;
+  h+=ok?`<div class="opts"><button type="button" class="st-go">${ST&&ST.done?'Jugar otra vez':'Empezar'}</button></div>`:'<p class="mut">Ahora no hay suficientes lanzamientos de Starlink con la cifra de satélites publicada.</p>';
+  el.innerHTML=h+'</div>';const b=el.querySelector('.st-go');if(b)b.onclick=stStart}
+function stSummary(){const A=ST;return `<div class="rp-res" role="status"><h3>${A.ok} de ${ST_N} · +${A.pts} puntos${A.gain<A.pts?` <span class="mut">(suma ${A.gain}: ${A.gain?'mejoras tu partida de hoy':'no mejora tu mejor partida de hoy'})</span>`:''}</h3>
+  ${A.rs.map((R,i)=>{const a=A.ans[i];return `<div class="rp-q">${ic(a===R.right)} <b>${esc(mname(R.l))}</b> <span class="mut">${fmtD(R.l.net)}</span><br>Llevaba <b>${R.right}</b> satélites${a===R.right?'':` <span class="mut">(dijiste ${a==null?'nada':a})</span>`}</div>`}).join('')}</div>`}
+function stStart(){const rs=stRounds();if(rs.length<ST_N)return;ST={rs,i:0,ans:{},run:true,lock:false};stShow();completeDaily('sats')}
+function stShow(){const R=ST.rs[ST.i],l=R.l;
+  $('#sats').innerHTML=`<div class="card rapid sats on"><div class="kick">¿Cuántos satélites? · lanzamiento ${ST.i+1} de ${ST_N}</div>
+  <div class="hl-b"><div class="hl-s">${esc(mname(l))}</div><div class="mut">${esc(l.rocket||'')} · ${fmtD(l.net)}${l.pad?' · '+esc(l.pad):''}${l.loc?' ('+esc(l.loc)+')':''}${l.orbit?' · Órbita: '+esc(orb(l.orbit)):''}</div></div>
+  <div id="st-q" class="rp-qt">¿Cuántos satélites Starlink llevaba?</div><div class="sr" id="st-live" role="status" aria-live="polite"></div>
+  <div class="opts" role="group" aria-labelledby="st-q">${R.opts.map(v=>`<button type="button" data-v="${v}">${v}</button>`).join('')}</div><div id="st-why"></div></div>`;
+  const o=$('#sats').querySelectorAll('.opts button');o.forEach(b=>b.onclick=()=>stAnswer(b));if(o[0]&&o[0].focus)o[0].focus({preventScroll:true})}
+function stAnswer(btn){if(!ST||!ST.run||ST.lock)return;ST.lock=true;const R=ST.rs[ST.i],v=+btn.dataset.v,ok=v===R.right,l=R.l;ST.ans[ST.i]=v;
+  $('#sats').querySelectorAll('.opts button').forEach(x=>{x.disabled=true;if(+x.dataset.v===R.right)x.classList.add('right');else if(x===btn)x.classList.add('wrong')});
+  const lv=$('#st-live');if(lv)lv.textContent=ok?'Acierto':'Fallo. Eran '+R.right;
+  const g=(/Group\s+(\d+)/i.exec(mname(l))||[])[1],G=g&&stSummaryData().groups.find(x=>x.g===g),last=ST.i===ST_N-1;
+  $('#st-why').innerHTML=`<p class="mut">${ic(ok)} ${esc(mname(l))} llevaba <b>${R.right}</b> satélites.${G?` En los datos, los ${G.n} lanzamientos del grupo ${esc(g)} llevaron ${G.min===G.max?`siempre ${G.min}`:`entre ${G.min} y ${G.max}`}.`:''}</p><div class="opts"><button type="button" class="st-nx">${last?'Ver resultado':'Siguiente'}</button></div>`;
+  const nx=$('#sats').querySelector('.st-nx');if(nx){nx.onclick=()=>{ST.lock=false;if(last)return stEnd();ST.i++;stShow()};if(nx.focus)nx.focus({preventScroll:true})}}
+function stEnd(){if(!ST||!ST.run)return;ST.run=false;ST.done=true;const ok=ST.rs.filter((R,i)=>ST.ans[i]===R.right).length;
+  const pts=ST_PTS*ok,s=stState(),gain=Math.max(0,pts-(s.today||0));s.today=Math.max(s.today||0,pts);s.best=Math.max(s.best||0,pts);s.plays=(s.plays||0)+1;LS.set('sats',s);
+  Object.assign(ST,{ok,pts,gain});if(gain)addPts('sats',gain);renderSats();const b=$('#sats').querySelector('.st-go');if(b&&b.focus)b.focus({preventScroll:true})}
 // ---------- Propulsores ----------
 let fleetSort='flights';
 // ---------- Comparar dos propulsores ----------
@@ -656,6 +693,7 @@ function retosGlobo(){
   if(hiloPool().length){const hs=hiloState();R.push({t:'¿Más o menos?',m:`¿Qué propulsor de SpaceX ha volado más veces? Encadena aciertos con los vuelos reales de cada uno. ${hs.best?`Tu récord es de ${hs.best} seguidos. ¿Lo superas?`:'Hasta 20 puntos al día.'}`,tab:'quiz',btn:'Jugar a ¿Más o menos?',k:'hilo'});}
   if(adRounds().length===AD_N){const as=adState();R.push({t:'¿Adónde va?',m:`¿Sabrías decir a qué órbita fue cada misión real de SpaceX y desde qué plataforma despegó? ${as.best?`Tu récord es de ${as.best} puntos. ¿Lo superas?`:`Hasta ${AD_N*4} puntos al día.`}`,tab:'quiz',btn:'Jugar a ¿Adónde va?',k:'adonde'});}
   if(qnRounds().length===QN_N){const qs=qnState();R.push({t:'¿De quién es?',m:`Lee la descripción real de una misión de SpaceX y adivina para qué cliente era. ${qs.best?`Tu récord es de ${qs.best} puntos. ¿Lo superas?`:`Hasta ${QN_N*QN_PTS} puntos al día.`}`,tab:'quiz',btn:'Jugar a ¿De quién es?',k:'quien'});}
+  if(stRounds().length===ST_N){const ss=stState();R.push({t:'¿Cuántos satélites?',m:`¿Cuántos satélites Starlink llevaba cada lanzamiento real de SpaceX? ${ss.best?`Tu récord es de ${ss.best} puntos. ¿Lo superas?`:`Hasta ${ST_N*ST_PTS} puntos al día.`}`,tab:'quiz',btn:'Jugar a ¿Cuántos satélites?',k:'sats'});}
   {const m=fdMissions()[0];if(m)R.push({t:'Modo director de vuelo',m:`Dirige la cuenta atrás real de ${mname(m)}: pulsa en el momento justo de cada paso, de la carga de combustible a la separación de etapas${fdSteps(m).some(s=>s.ids.includes(19))?' y el aterrizaje':''}. Hasta 50 puntos.`,tab:'flight',btn:'Dirigir la cuenta atrás',k:'flight'});}
   const fl=D.previous.flatMap(l=>(l.stages||[]).map(s=>({...s,l}))).filter(s=>s.flight).sort((a,b)=>b.flight-a.flight)[0];
   if(fl)R.push({t:'Récord de reutilización',m:`El propulsor ${fl.serial} ya lleva ${fl.flight} vuelos. Antes los cohetes se tiraban tras un solo uso. ¿Sabrías decir cuál es el siguiente en llegar a esa cifra?`,tab:'fleet',btn:'Ver la flota',k:'fleet'});
@@ -1113,7 +1151,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['quien','¿De quién es?'],['flight','Director de vuelo'],['aterr','Simulador de aterrizaje'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['dia','Apuesta del día de la semana'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['quien','¿De quién es?'],['sats','¿Cuántos satélites?'],['flight','Director de vuelo'],['aterr','Simulador de aterrizaje'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['dia','Apuesta del día de la semana'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>

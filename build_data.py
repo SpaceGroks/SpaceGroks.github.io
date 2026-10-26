@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 """Descarga lanzamientos de SpaceX de Launch Library 2 y genera data.json reducido."""
-import json, sys, urllib.request, datetime, os, re
+import json, sys, urllib.request, urllib.error, datetime, os, re, time
+def fetch(req,timeout):
+    """Descarga JSON con reintentos ante errores puntuales del servidor (5xx, 429, cortes de red)."""
+    for i in range(4):
+        try: return json.load(urllib.request.urlopen(req,timeout=timeout))
+        except urllib.error.HTTPError as e:
+            if i==3 or (e.code<500 and e.code!=429): raise
+        except (urllib.error.URLError,TimeoutError,ConnectionError):
+            if i==3: raise
+        time.sleep(30*(i+1))
 BASE="https://ll.thespacedevs.com/2.3.0/launches/{}/?lsp__name=SpaceX&limit={}&mode=detailed"
 def get(kind, n, cache):
     if os.environ.get("USE_CACHE") and os.path.exists(cache):
         return json.load(open(cache))
     req=urllib.request.Request(BASE.format(kind,n),headers={"User-Agent":"spacex-play"})
-    d=json.load(urllib.request.urlopen(req,timeout=300))
+    d=fetch(req,300)
     json.dump(d,open(cache,"w")); return d
 def cut(t,n=400):
     return t if len(t)<=n else t[:n].rsplit(" ",1)[0].rstrip(",.;:")+"…"
@@ -74,7 +83,7 @@ def jobs():
     """Ofertas de trabajo reales de SpaceX (tablón público de Greenhouse). Si falla, se conservan las últimas."""
     try:
         req=urllib.request.Request("https://boards-api.greenhouse.io/v1/boards/spacex/jobs",headers={"User-Agent":"spacex-play"})
-        J=json.load(urllib.request.urlopen(req,timeout=120))["jobs"]
+        J=fetch(req,120)["jobs"]
         if not J: raise ValueError("sin ofertas")
         loc={}
         for j in J:
@@ -151,7 +160,7 @@ def fails():
         if os.environ.get("USE_CACHE") and os.path.exists("fails.json"): F=json.load(open("fails.json"))
         else:
             req=urllib.request.Request("https://ll.thespacedevs.com/2.3.0/launches/previous/?lsp__name=SpaceX&status__ids=4,7&limit=50&mode=normal",headers={"User-Agent":"spacex-play"})
-            F=json.load(urllib.request.urlopen(req,timeout=300))
+            F=fetch(req,300)
         return [{"id":r["id"],"name":r.get("name"),"mission":(r.get("mission") or {}).get("name"),"net":r.get("net"),
           "status":(r.get("status") or {}).get("abbrev"),"status_name":(r.get("status") or {}).get("name"),
           "fail":(r.get("failreason") or "").strip(),"rocket":((r.get("rocket") or {}).get("configuration") or {}).get("name"),

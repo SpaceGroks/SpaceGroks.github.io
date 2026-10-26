@@ -152,7 +152,9 @@ function buildQuiz(){
   let title=`Misiones de la semana del ${fmtD(from)} al ${fmtD(mon.getTime()-DAY)}`;
   if(pool.length<2){pool=D.previous.slice(0,6);title='Últimas misiones'}
   const key=mon.toISOString().slice(0,10),r=rng(key);
-  return{key,title,qs:shuffle(quizQs(pool,D.previous,r),r).slice(0,10)};
+  let qs=shuffle(quizQs(pool,D.previous,r),r).slice(0,10);
+  if(title.startsWith('Misiones')){const n=pool.length,c=[n-2,n-1,n+1,n+2,n+3].filter(x=>x>0);qs=qs.slice(0,9).concat({q:`¿Cuántos lanzamientos hizo SpaceX esa semana, del ${fmtD(from)} al ${fmtD(mon.getTime()-DAY)}?`,right:String(n),opts:shuffle([n,...shuffle(c,r).slice(0,3)].map(String),r)})}
+  return{key,title,qs};
 }
 // Preguntas con datos reales de los lanzamientos de pool (opciones sacadas de all). Cada una lleva la misión en .m
 function quizQs(pool,all,r){
@@ -171,13 +173,14 @@ function quizQs(pool,all,r){
     if(td!=null&&td>0){const c=[td-20,td-10,td-5,td+5,td+10,td+20].filter(x=>x>0);Q.push(mk(`¿Cuántos días pasaron entre el vuelo anterior del propulsor ${b.serial} y ${m}?`,`${td} días`,c.map(x=>`${x} días`)))}
     if(b.land_success&&(DRONE.test(b.land_loc_name||'')||LZ.test(b.land_loc_name||''))){const right=DRONE.test(b.land_loc_name)?'En un barco dron en el mar':'En una plataforma en tierra';Q.push({q:`¿Cómo se recuperó el propulsor de ${m}?`,right,opts:shuffle(['En un barco dron en el mar','En una plataforma en tierra','No se recuperó (se perdió en el mar)'],r)})}
     {const dd=new Date(l.net),right=dd.toLocaleDateString('es-ES',{weekday:'long'});Q.push(mk(`¿Qué día de la semana despegó ${m}? (hora de tu dispositivo)`,right,['lunes','martes','miércoles','jueves','viernes','sábado','domingo']))}
+    if(l.ny>3){const y=new Date(l.net).getUTCFullYear(),n=l.ny;Q.push(mk(`¿Qué número de lanzamiento de SpaceX en ${y} fue ${m}?`,`El ${n}.º`,[n-10,n-5,n-2,n+2,n+5,n+10].filter(x=>x>0).map(x=>`El ${x}.º`)))}
     if(l.orbit&&l.orbit!=='N/A'&&orbs.length>2)Q.push(mk(`¿A qué órbita iba ${m}?`,orb(l.orbit),orbs.map(orb)));
     for(let i=n0;i<Q.length;i++)Q[i].m=l.id;});
   return Q;
 }
-function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="hilo"></div><div id="adonde"></div><div id="qwk"></div>';return $('#qwk')}
+function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="aterr"></div><div id="hilo"></div><div id="adonde"></div><div id="qwk"></div>';return $('#qwk')}
 function renderQuiz(){
-  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();if(!AD||!AD.run)renderAdonde();
+  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();if(!AD||!AD.run)renderAdonde();if(!ATS||!ATS.run)renderAterr();
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),answered=Object.keys(st.ans).length;
   const correct=Z.qs.filter((q,i)=>st.ans[i]===q.right).length;
   let h=`<div class="card"><b>Reto semanal</b><div class="mut">${Z.title}. Cada lunes sale un reto nuevo. 10 puntos por acierto.</div>
@@ -189,6 +192,85 @@ function renderQuiz(){
     s.ans[i]=b.dataset.v;LS.set('quiz_'+Z.key,s);if(b.dataset.v===Z.qs[i].right)addPts('quiz',10);completeDaily('quiz');renderQuiz();
     const nx=QW.querySelector(`.opts button[data-i="${+i+1}"]`)||$('#qz-'+i);if(nx&&nx.focus)nx.focus({preventScroll:false})});
 }
+// ---------- Simulador de aterrizaje: el encendido de aterrizaje de un Falcon 9 ----------
+// Física vertical con cifras reales aproximadas: etapa de unas 25,6 t en seco más 4,4 t de propelente, un Merlin 1D
+// a nivel del mar (unos 854 kN, impulso específico 282 s) que solo regula entre el 40 % y el 100 % y no puede flotar:
+// al mínimo empuja más de lo que pesa, así que hay que llegar a velocidad cero justo al tocar la barcaza.
+const AT={dry:25600,prop:4400,thr:854e3,isp:282,min:.4,g:9.81,alt0:2500,v0:-230,vt:230,legT:2,ramp:.8};
+let ATS=null;
+function atState(){const s=LS.get('aterr',{best:0,plays:0,bestV:null});if(s.d!==dayKey()){s.d=dayKey();s.today=0}return s}
+function atTarget(){// el próximo lanzamiento con propulsor y zona de aterrizaje asignados
+  const l=(D.upcoming||[]).find(u=>(u.stages||[]).some(s=>s.serial&&!/Unknown/.test(s.serial)&&s.land_loc_name))||null;
+  const b=l?(l.stages||[]).find(s=>s.serial&&s.land_loc_name):null;
+  return l?{m:mname(l),b:b.serial,z:b.land_loc_name,ship:b.land_type==='ASDS'||DRONE.test(b.land_loc_name),net:l.net}:{m:null,b:'Falcon 9',z:'Of Course I Still Love You',ship:true}}
+function atStopDist(v0){let v=v0,h=0,p=AT.prop;const dt=.01;while(v<0&&p>0){const thr=AT.thr;p-=thr/(AT.isp*AT.g)*dt;v+=(thr/(AT.dry+p)-AT.g+AT.g*(v/AT.vt)**2)*dt;h-=v*dt}return Math.round(h/10)*10}
+const atPts=v=>v<=2?30:v<=4?15:v<=8?5:0;
+function renderAterr(){const el=$('#aterr');if(!el||!D)return;const s=atState(),T=atTarget();
+  let h=`<div class="card"><div class="kick">Simulador de aterrizaje</div>
+  <p class="mut">Aterriza tú el propulsor ${esc(T.b)} en ${esc(T.z)}${T.m?`, como en su próxima misión, ${esc(T.m)} (${fmtD(T.net)})`:''}. Cae a ${-AT.v0} m/s desde ${AT.alt0} m. Su motor Merlin solo se enciende una vez, regula entre el 40 % y el 100 % y no puede flotar: al mínimo ya empuja más de lo que pesa la etapa, así que si te paras en el aire vuelve a caer. Llega a cero justo al tocar, con las patas fuera. El guiado de la pantalla te dice si vas a frenar a tiempo.</p>
+  <p class="mut">Pulsa <b>Motor</b> (o la barra espaciadora) para encenderlo al 100 %. Mientras lo mantienes pulsado sube la potencia y al soltarlo baja poco a poco, hasta el 40 %. <b>Patas</b> (o la tecla P) las despliega en ${AT.legT} s. Puntos: 30 si tocas a 2 m/s o menos, 15 hasta 4 m/s, 5 hasta 8 m/s (lo que aguantan las patas). Cada día cuenta tu mejor aterrizaje.</p>
+  <div class="stats"><div><b>${s.today||0}</b>tu mejor hoy (de 30)</div><div><b>${s.bestV!=null?s.bestV.toFixed(1).replace('.',',')+' m/s':'—'}</b>tu toma más suave</div><div><b>${s.plays||0}</b>intentos</div></div>`;
+  if(ATS&&ATS.done)h+=`<div class="rp-res" role="status"><h3>${esc(ATS.msg)}</h3><p class="mut">${esc(ATS.tip||'')}</p></div>`;
+  h+=`<div class="opts"><button type="button" class="at-go">${ATS&&ATS.done?'Intentarlo otra vez':'Empezar el descenso'}</button></div></div>`;
+  el.innerHTML=h;el.querySelector('.at-go').onclick=atStart}
+function atStart(){if(ATS&&ATS.raf)cancelAnimationFrame(ATS.raf);const T=atTarget();
+  ATS={T,alt:AT.alt0,v:AT.v0,prop:AT.prop,on:false,full:false,ign:null,legs:null,t:0,run:true,done:false,last:null,minV:null};
+  $('#aterr').innerHTML=`<div class="card"><div class="kick">Simulador de aterrizaje · ${esc(T.b)}</div>
+  <canvas id="at-cv" width="600" height="380" style="width:100%;height:auto;display:block;background:#05070b;border:1px solid var(--line)" aria-label="Descenso del propulsor"></canvas>
+  <div class="sr" id="at-live" role="status" aria-live="polite"></div>
+  <div class="opts"><button type="button" id="at-eng" style="flex:2 1 160px">Motor</button><button type="button" id="at-leg">Patas</button></div></div>`;
+  const eb=$('#at-eng'),lb=$('#at-leg');
+  const dn=e=>{e.preventDefault();atEng(true)},up=e=>{e.preventDefault();atEng(false)};
+  eb.addEventListener('pointerdown',dn);eb.addEventListener('pointerup',up);eb.addEventListener('pointerleave',up);eb.addEventListener('pointercancel',up);
+  eb.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();if(!e.repeat)atEng(true)}});eb.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter')atEng(false)});
+  lb.onclick=atLegs;eb.focus({preventScroll:true});
+  ATS.key=e=>{if(!ATS||!ATS.run)return;if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;
+    if(e.key===' '&&e.target!==eb){e.preventDefault();if(e.type==='keydown'&&!e.repeat)atEng(true);if(e.type==='keyup')atEng(false)}
+    if(e.type==='keydown'&&(e.key==='p'||e.key==='P'))atLegs()};
+  document.addEventListener('keydown',ATS.key);document.addEventListener('keyup',ATS.key);
+  $('#at-live').textContent='Descenso en marcha. Altura '+AT.alt0+' metros.';ATS.raf=requestAnimationFrame(atLoop)}
+function atEng(d){if(!ATS||!ATS.run)return;if(d&&!ATS.on){ATS.on=true;ATS.ign={alt:ATS.alt,v:ATS.v};$('#at-live').textContent='Motor encendido a '+Math.round(ATS.alt)+' metros.'}ATS.full=d&&ATS.on}
+function atLegs(){if(!ATS||!ATS.run||ATS.legs!=null)return;ATS.legs=ATS.t;$('#at-live').textContent='Patas desplegándose a '+Math.round(ATS.alt)+' metros.'}
+function atLoop(ts){const S=ATS;if(!S||!S.run)return;const dt=S.last==null?0:Math.min(.05,(ts-S.last)/1e3);S.last=ts;
+  for(let k=0;k<4;k++)atStep(dt/4);atDraw();if(S.run)S.raf=requestAnimationFrame(atLoop)}
+function atStep(dt){const S=ATS;if(!S.run||dt<=0)return;S.t+=dt;const m=AT.dry+S.prop;
+  let thr=0;if(S.on&&!S.hover&&S.prop>0){S.th=Math.max(AT.min,Math.min(1,(S.th||1)+(S.full?1:-1)*AT.ramp*dt));thr=AT.thr*S.th;S.prop=Math.max(0,S.prop-thr/(AT.isp*AT.g)*dt);if(S.prop<=0)S.out=true}
+  const drag=S.v<0?AT.g*(S.v/AT.vt)**2:-AT.g*(S.v/AT.vt)**2;
+  S.v+=(thr/m-AT.g+drag)*dt;S.alt+=S.v*dt;
+  if(S.on&&S.v>=0&&S.alt>.3&&!S.hover){S.hover=true;S.stopAlt=S.alt;const l=$('#at-live');if(l)l.textContent='Se ha parado en el aire y el motor se apaga.'}
+  if(S.alt<=0){S.alt=0;atEnd()}}
+function atEnd(){const S=ATS;S.run=false;S.done=true;cancelAnimationFrame(S.raf);document.removeEventListener('keydown',S.key);document.removeEventListener('keyup',S.key);
+  const v=Math.abs(S.v),legsOk=S.legs!=null&&S.t-S.legs>=AT.legT,f=x=>x.toFixed(1).replace('.',',');
+  let pts=0;
+  if(!S.on)S.msg=`Impacto a ${Math.round(v)} m/s: el motor no llegó a encenderse.`;
+  else if(S.hover)S.msg=`Se paró a ${S.stopAlt<10?f(S.stopAlt):Math.round(S.stopAlt)} m del suelo y volvió a caer: tocó a ${f(v)} m/s.`;
+  else if(!legsOk)S.msg=`Tocaste a ${f(v)} m/s, pero ${S.legs==null?'sin las patas desplegadas':'las patas aún no habían terminado de abrirse'}: el propulsor vuelca.`;
+  else if(v>8)S.msg=`Tocaste a ${f(v)} m/s: demasiado rápido, el propulsor se destruye.`;
+  else{pts=atPts(v);S.msg=`${v<=2?'Aterrizaje perfecto':v<=4?'Buen aterrizaje':'Aterrizaje duro, pero aguanta'}: ${f(v)} m/s. +${pts} puntos.`}
+  if(S.hover)S.msg+=!legsOk?' Sin las patas desplegadas, el propulsor vuelca.':v<=8?` Las patas aguantan: +${(pts=atPts(v))} puntos.`:' Demasiado fuerte para las patas.';
+  const need=S.ign?atStopDist(S.ign.v):null;
+  S.tip=S.out?'Te quedaste sin propelente antes de tocar. ':'';
+  if(S.ign)S.tip+=`Encendiste a ${Math.round(S.ign.alt)} m bajando a ${Math.round(-S.ign.v)} m/s; a esa velocidad, con el motor al 100 % todo el rato habría frenado en unos ${need} m (contando el freno del aire). Te quedó un ${Math.round(100*S.prop/AT.prop)} % de propelente.`;
+  else S.tip=`Enciende el motor cuando quede la altura justa para frenar: a ${-AT.v0} m/s, con el motor al 100 % y el freno del aire, hacen falta unos ${atStopDist(AT.v0).toLocaleString('es-ES')} m.`;
+  const s=atState();s.plays=(s.plays||0)+1;const gain=Math.max(0,pts-(s.today||0));s.today=Math.max(s.today||0,pts);s.best=Math.max(s.best||0,pts);
+  if(pts>0&&(s.bestV==null||v<s.bestV))s.bestV=v;LS.set('aterr',s);if(gain)addPts('aterr',gain);if(pts&&!gain)S.msg+=' (No mejora tu mejor aterrizaje de hoy, así que no suma.)';else if(gain<pts)S.msg+=` (Suma ${gain}: mejoras tu mejor aterrizaje de hoy.)`;
+  renderAterr();const b=$('#aterr .at-go');if(b)b.focus({preventScroll:true})}
+function atDraw(){const S=ATS,c=$('#at-cv');if(!c)return;const x=c.getContext('2d'),W=c.width,Hh=c.height,G=Hh-40;
+  x.clearRect(0,0,W,Hh);x.fillStyle='#0b1a2a';x.fillRect(0,G+10,W,Hh-G-10);
+  x.fillStyle='#8a8f98';if(S.T.ship){x.fillRect(W/2-90,G,180,10);x.fillStyle='#e8e8e8';x.font='11px sans-serif';x.textAlign='center';x.fillText(S.T.z,W/2,G+26)}else{x.fillRect(0,G,W,10);x.fillStyle='#e8e8e8';x.font='11px sans-serif';x.textAlign='center';x.fillText(S.T.z,W/2,G+26)}
+  const y=G-(G-30)*Math.sqrt(Math.max(0,S.alt)/AT.alt0),bw=14,bh=70,bx=W/2-bw/2,by=y-bh;
+  if(S.on&&!S.hover&&S.prop>0){const fl=40*(S.th||1)*(0.85+Math.random()*.3);x.fillStyle='#ffb347';x.beginPath();x.moveTo(bx+2,y);x.lineTo(bx+bw-2,y);x.lineTo(W/2,y+fl);x.fill()}
+  x.fillStyle='#f2f2f2';x.fillRect(bx,by,bw,bh);x.fillStyle='#222';x.fillRect(bx,by,bw,6);
+  if(S.legs!=null){const p=Math.min(1,(S.t-S.legs)/AT.legT),a=p*1.0;x.strokeStyle='#bbb';x.lineWidth=3;x.beginPath();
+    x.moveTo(bx,y-14);x.lineTo(bx-Math.sin(a)*22,y-14+Math.cos(a)*22);x.moveTo(bx+bw,y-14);x.lineTo(bx+bw+Math.sin(a)*22,y-14+Math.cos(a)*22);x.stroke()}
+  const f=n=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  x.textAlign='left';x.font='13px sans-serif';x.fillStyle='#fff';
+  [[`Altura ${f(S.alt)} m`],[`Velocidad ${f(-S.v)} m/s ${S.v>0?'(subiendo)':''}`],[`Motor ${S.on?(S.hover?'apagado (se paró en el aire)':S.prop>0?Math.round(100*(S.th||1))+' %':'sin propelente'):'apagado'}`],[`Propelente ${Math.round(100*S.prop/AT.prop)} %`],[`Patas ${S.legs==null?'recogidas':S.t-S.legs>=AT.legT?'desplegadas':'abriéndose'}`]].forEach(([t],i)=>x.fillText(t,12,22+i*18));
+  {const m=AT.dry+S.prop,dr=AT.g*(Math.min(0,S.v)/AT.vt)**2,need=S.v<0?S.v*S.v/(2*Math.max(S.alt,.5)):0;let t,col;
+   if(S.hover||!S.run){t='';col='#fff'}else if(!S.on){const amax=AT.thr/m-AT.g+dr;[t,col]=need>amax*.8?['¡Enciende ya!','#ff6b6b']:['Espera para encender','#9aa']}
+   else{const a=AT.thr*(S.th||1)/m-AT.g+dr;[t,col]=need>a*1.05?['Guiado: más potencia','#ffb347']:need<a*.95?['Guiado: menos potencia','#4fb3ff']:['Guiado: en la trayectoria','#7bd88f']}
+   x.fillStyle=col;x.font='bold 14px sans-serif';x.fillText(t,12,22+5*18+6)}
+  x.fillStyle='#4fb3ff';x.fillRect(W-24,20,10,(Hh-80)*S.prop/AT.prop)}
 // ---------- Reto rápido: 3 preguntas en 30 segundos ----------
 const RAPID_S=30;
 let RP=null;
@@ -981,7 +1063,7 @@ function statsData(){const Q=[['Carga en órbita','¿Llegará la carga a su órb
   return{rows,real,nP:P.length,xs,xm,xc,med,xcal:xc.filter(x=>(x.conf>=50)===x.res.landed).length,bets,qn,qok,pts:points()}}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['flight','Director de vuelo'],['aterr','Simulador de aterrizaje'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>

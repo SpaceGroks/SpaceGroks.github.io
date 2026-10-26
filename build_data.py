@@ -132,6 +132,18 @@ def vidseen(o):
         if l.get("video") and not v[1]: v[1]=o["generated"]
     ids={l["id"] for l in o["upcoming"]+o["previous"]}
     return {k:v for k,v in V.items() if k in ids}
+def sthist(o):
+    """Historial real del estado (Go, TBC, TBD, Hold...) de cada lanzamiento: se añade [hora de los datos, estado] cada vez
+    que cambia entre una actualización y la siguiente. Reconstruido con el historial de data.json desde el 18 oct."""
+    try: S=json.load(open("data.json")).get("sthist") or {}
+    except Exception: S={}
+    for l in o["upcoming"]+o["previous"]:
+        st=l.get("status")
+        if not st: continue
+        h=S.setdefault(l["id"],[])
+        if not h or h[-1][1]!=st: h.append([o["generated"],st])
+    ids={l["id"] for l in o["upcoming"]+o["previous"]}
+    return {k:v[-20:] for k,v in S.items() if k in ids}
 def fails():
     """Historial completo de lanzamientos fallidos o parcialmente fallidos de SpaceX (Launch Library 2) con el motivo
     publicado por la fuente y el número de intento de SpaceX. Si falla la descarga, se conserva el último."""
@@ -152,6 +164,7 @@ def fails():
 out["fails"]=fails()
 out["nethist"]=nethist(out)
 out["vidseen"]=vidseen(out)
+out["sthist"]=sthist(out)
 out["missing_es"]=[l["id"] for l in out["upcoming"]+out["previous"] if l["desc"] and l["id"] not in es]
 json.dump(out,open("data.json","w"),ensure_ascii=False,separators=(",",":"))
 print("ok",len(out["upcoming"]),len(out["previous"]),out["generated"])

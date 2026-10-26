@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();bindDirectos();bindPrecision();renderReloj();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderEstados();bindDirectos();bindPrecision();renderReloj();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="precision"></div><div id="directos"></div><div id="reloj"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="rlive"></div><div id="ritmo"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="precision"></div><div id="directos"></div><div id="estados"></div><div id="reloj"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -1045,7 +1045,7 @@ function bindRacha(){const el=$('#next');if(!el||el._rb)return;el._rb=true;el.ad
   const v0=(rlD().stats||{})[RB_Q[k][1]];if(v0==null)return;w.end=W.end;w.bets[k]={pick:b.dataset.v,at:Date.now(),v0};LS.set('rbet',all);
   aviso(`Apuesta guardada: ${b.dataset.v==='Sí'?'la racha aguanta':'la racha se romperá'} (${RB_Q[k][0]}).`);completeDaily('racha');renderRacha();
   const f=document.querySelector(`#rlive [id="rb-${k}"]`);try{f&&f.focus()}catch(e){}})}
-async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderReloj();resolveHito();renderHitos();renderPlataformas();resolveAnu();renderAnual()}}catch(e){}}
+async function refreshRacha(){try{const d=await fetch('data.json?'+Date.now()).then(r=>r.json());if(d&&d.stats&&Array.isArray(d.previous)){RL=d;resolveRbet();resolveVida();renderRacha();resolveRitmo();renderRitmo();resolveCli();renderClientes();resolveVen();renderVentanas();resolveZon();renderZonas();resolveMes();renderMeses();renderCohetes();resolveHora();renderHora();renderBarcazas();resolveTipo();renderTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();resolveOrb();renderOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderEstados();renderReloj();resolveHito();renderHitos();renderPlataformas();resolveAnu();renderAnual()}}catch(e){}}
 // ---------- Ritmo de lanzamientos y apuesta «¿cuántos lanzamientos habrá esta semana?» ----------
 // Todo sale de los lanzamientos reales de SpaceX que hay en data.json (Launch Library 2). La apuesta se guarda en sxp_ritmo (por semana)
 // y se resuelve sola contando los lanzamientos de lunes a domingo; los puntos van a la categoría ritmo.
@@ -2166,3 +2166,39 @@ function bindDirectos(){const el=$('#next');if(!el||el._dir)return;el._dir=true;
   s.cur={id:t.l.id,name:mname(t.l),net0:t.l.net,pick:bt.dataset.dir,at:Date.now()};LS.set('dir',s);
   aviso(`Apuesta guardada: ${mname(t.l)} ${bt.dataset.dir==='Sí'?'tendrá':'no tendrá'} enlace al directo 3 días antes.`);completeDaily('dir');renderDirectos();
   const q=$('#dir-q');try{q&&(q.tabIndex=-1,q.focus())}catch(err){}})}
+
+// ---------- Cambios de estado ----------
+// Cuándo pasa cada lanzamiento de TBD (por determinar) a TBC (por confirmar) y a Go (confirmado) según Launch Library 2.
+// build_data.py guarda en data.sthist {id:[[hora de los datos, estado], ...]} cada vez que cambia el estado (reconstruido con
+// el historial de data.json desde el 18 oct). Un paso es «visto» si en la actualización anterior tenía el estado de antes;
+// si el lanzamiento ya llegó con ese estado la primera vez que se vio, solo se sabe que lo tenía «al menos» desde entonces.
+const EST_PRE={TBD:0,TBC:1},EST_TXT={Go:'Go (confirmado)',TBC:'TBC (por confirmar)',TBD:'TBD (por determinar)',Hold:'Hold (en espera)','In Flight':'en vuelo',Success:'éxito',Failure:'fallo','Partial Failure':'fallo parcial'};
+function estInfo(){const d=rlD();if(!d||!Array.isArray(d.upcoming)||!d.sthist)return null;const S=d.sthist,now=Date.now(),pid=new Set((d.previous||[]).map(l=>l.id));
+  const all=d.upcoming.filter(l=>!pid.has(l.id)).map(l=>({l,up:true})).concat((d.previous||[]).map(l=>({l,up:false})));
+  const steps=[],U=[];let t0=Infinity;
+  for(const {l,up} of all){const h=S[l.id];if(!Array.isArray(h)||!h.length)continue;const t=new Date(l.net).getTime();if(isNaN(t))continue;
+    const f=new Date(h[0][0]).getTime();if(!isNaN(f))t0=Math.min(t0,f);
+    for(let i=1;i<h.length;i++){const a=h[i-1][1],b=h[i][1],at=new Date(h[i][0]).getTime();if(isNaN(at))continue;
+      if((b==='Go'&&a in EST_PRE)||(b==='TBC'&&a==='TBD'))steps.push({l,up,from:a,to:b,at,lead:t-at})}
+    if(up){const last=h[h.length-1],since=new Date(last[0]).getTime();U.push({l,t,st:l.status||last[1],since,first:h.length===1,chain:h.map(x=>x[1])})}}
+  U.sort((a,b)=>a.t-b.t);steps.sort((a,b)=>b.at-a.at);if(!U.length&&!steps.length)return null;
+  const med=a=>{if(!a.length)return null;const s=a.slice().sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+  const pos=x=>x.lead>0,goL=steps.filter(x=>x.to==='Go'&&pos(x)).map(x=>x.lead),tbcL=steps.filter(x=>x.to==='TBC'&&pos(x)).map(x=>x.lead);
+  const byS={};for(const x of U)byS[x.st]=(byS[x.st]||0)+1;
+  const week=steps.filter(x=>now-x.at<7*DAY).length,nextNoGo=U.find(x=>x.st!=='Go')||null,lastGo=U.filter(x=>x.st==='Go').pop()||null;
+  return{U,steps,byS,goMed:med(goL),goN:goL.length,tbcMed:med(tbcL),tbcN:tbcL.length,week,nextNoGo,lastGo,now,t0,gen:d.generated}}
+function renderEstados(){const el=$('#estados');if(!el||!D)return;let I;try{I=estInfo()}catch(e){I=null}if(!I){el.innerHTML='';return}
+  const dd=ms=>{const x=Math.abs(ms)/DAY;return x<10?x.toFixed(1).replace('.',','):String(Math.round(x))};
+  const ld=x=>x.lead>0?`${dd(x.lead)} días antes del despegue`:'ya pasada la hora prevista';
+  const aprox=l=>l.net_precision&&!/^(SEC|MIN|HOUR)$/i.test(l.net_precision)?'fecha aproximada: ':'';
+  const st=['Go','TBC','TBD','Hold'].filter(k=>I.byS[k]).concat(Object.keys(I.byS).filter(k=>!['Go','TBC','TBD','Hold'].includes(k))).map(k=>`<div><b>${I.byS[k]}</b>${esc(EST_TXT[k]||k)}</div>`).join('');
+  const since=x=>x.first?`al menos desde el ${fmtD(x.since)}`:`desde el ${fmt(new Date(x.since).toISOString())}`;
+  const row=x=>`<tr><th scope="row">${esc(mname(x.l))}<div class="mut">${aprox(x.l)}${fmtD(x.l.net)}</div></th><td>${esc(x.st)}</td><td>${since(x)}</td><td>${esc(x.chain.join(' → '))}</td></tr>`;
+  const medTxt=(m,n,what)=>m==null?`Todavía no se ha visto a ningún lanzamiento pasar a ${what} antes del despegue.`:`Mediana para pasar a ${what}: <b>${dd(m)} días</b> antes del despegue (${n} ${n===1?'caso visto':'casos vistos'}).`;
+  const nx=I.nextNoGo;
+  el.innerHTML=`<div class="card daily estados"><div class="kick">Cambios de estado</div>
+  <div class="stats">${st}<div><b>${I.week}</b>${I.week===1?'cambio':'cambios'} a TBC o Go en los últimos 7 días</div></div>
+  <p>${medTxt(I.goMed,I.goN,'Go')} ${medTxt(I.tbcMed,I.tbcN,'TBC')}${nx?` El siguiente lanzamiento que aún no es Go es <b>${esc(mname(nx.l))}</b> (${esc(nx.st)}, ${aprox(nx.l)}${fmt(nx.l.net)}, dentro de ${dd(Math.max(0,nx.t-I.now))} días).`:' Todos los próximos lanzamientos de la lista ya son Go.'}${I.lastGo?` El más lejano que ya es Go es ${esc(mname(I.lastGo.l))} (${fmtD(I.lastGo.l.net)}).`:''}</p>
+  ${I.steps.length?`<p class="mut">Últimos cambios vistos: ${I.steps.slice(0,6).map(x=>`${esc(mname(x.l))}, de ${esc(x.from)} a ${esc(x.to)} el ${fmtD(x.at)} (${ld(x)})`).join('; ')}.</p>`:'<p class="mut">Desde que se guardan los datos, ningún lanzamiento ha cambiado de TBD a TBC o a Go: todos llegaron a la lista con el estado que tienen. En cuanto alguno cambie en una actualización, aquí saldrá cuándo y con cuántos días de antelación.</p>'}
+  ${I.U.length?`<details style="margin-top:8px"><summary>Ver los ${I.U.length} próximos lanzamientos</summary><div class="tscroll"><table><caption class="sr">Estado actual de cada próximo lanzamiento, desde cuándo lo tiene y estados por los que ha pasado</caption><thead><tr><th scope="col">Misión</th><th scope="col">Estado</th><th scope="col">Desde</th><th scope="col">Historial</th></tr></thead><tbody>${I.U.map(row).join('')}</tbody></table></div></details>`:''}
+  <div class="mut" style="margin-top:6px">Estado de cada lanzamiento según Launch Library 2, guardado en cada actualización horaria${isFinite(I.t0)?` desde el ${fmtD(I.t0)}`:''}. Los días antes del despegue se cuentan con la hora prevista que da ahora la fuente, que en los próximos todavía puede cambiar. «Al menos desde» significa que ya tenía ese estado la primera vez que se vio. Actualizados ${fmt(I.gen)}.</div></div>`}

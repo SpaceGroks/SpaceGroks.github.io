@@ -706,8 +706,26 @@ function drawMap(){if(mapDone)return;mapDone=true;
   $('#maplist').innerHTML=padListHTML()+
    (land.length?`<h3>Zonas de aterrizaje en tierra</h3><p class="mut">Los propulsores que vuelven a tierra aterrizan aquí, a pocos kilómetros de donde despegaron (en verde en el mapa).</p>`+land.map(card).join(''):'')+
    (sea.length?`<h3>Aterrizajes en el mar</h3><p class="mut">Las barcazas autónomas se colocan en cada misión a cientos de kilómetros de la costa, según la trayectoria, así que Launch Library 2 no les da una posición fija y no salen en el mapa.</p>`+sea.map(card).join(''):'')+
-   `<p class="mut">Usos recientes: de los últimos ${D.previous.length} lanzamientos; próximos: de los ${D.upcoming.length} siguientes. Historial total según Launch Library 2.</p>`;
+   `<p class="mut">Usos recientes: de los últimos ${D.previous.length} lanzamientos; próximos: de los ${D.upcoming.length} siguientes. Historial total según Launch Library 2.</p>`+lzHistHTML();
 }
+// ---------- Historial de las zonas de aterrizaje ----------
+// Solo los totales que publica Launch Library 2 para cada zona (lzones: ok = aterrizajes con éxito, att = intentos, active).
+// Las zonas de «sin recuperación» no cuentan como aterrizaje, así que no se les calcula tasa. Solo lectura: no toca puntuaciones.
+function lzHistRows(){const Z=D.lzones||{};
+  return Object.entries(Z).filter(([k,z])=>z&&typeof z==='object').map(([k,z])=>{const att=+z.att||0,ok=+z.ok||0,rec=z.type!=='EXP';
+    return{k,name:z.name||k,type:z.type,active:z.active,ok,att,rec,rate:rec&&att?ok/att:null}}).sort((a,b)=>(b.rec-a.rec)||b.att-a.att||a.k.localeCompare(b.k))}
+function lzHistHTML(){const R=lzHistRows();if(!R.length)return '';
+  const pct=r=>r==null?'—':(Math.round(r*1000)/10).toLocaleString('es-ES')+' %';
+  const best=R.filter(r=>r.rate!=null&&r.att>=10).sort((a,b)=>b.rate-a.rate||b.att-a.att)[0];
+  const rec=R.filter(r=>r.rec),tA=rec.reduce((s,r)=>s+r.att,0),tO=rec.reduce((s,r)=>s+r.ok,0);
+  const row=r=>`<tr><th scope="row">${esc(r.name)}${r.k!==r.name?` <span class="mut">(${esc(r.k)})</span>`:''}</th><td>${esc(lzLabel(r.type))}</td>`+
+    `<td>${r.rec?`${r.ok} de ${r.att}`:`${r.att} etapas`}</td><td>${r.rec?`${pct(r.rate)}${r.rate!=null?`<div class="bar" aria-hidden="true"><i style="width:${Math.round(r.rate*100)}%"></i></div>`:''}`:'No aplica'}</td>`+
+    `<td>${!r.rec?'—':r.active===false?'Retirada':r.active===true?'En servicio':'Sin dato'}</td></tr>`;
+  return `<h3>Historial de las zonas de aterrizaje</h3><p class="mut">Todos los aterrizajes de cada barcaza y zona según Launch Library 2, no solo los recientes.`+
+    (tA?` En total, ${tO} de ${tA} intentos de recuperación salieron bien (${pct(tO/tA)}).`:'')+
+    (best?` La más fiable con al menos 10 intentos es ${esc(best.name)}, con ${pct(best.rate)}.`:'')+`</p>`+
+    `<div class="tblw"><table class="stt"><caption class="sr">Historial de aterrizajes por zona, de más a menos intentos</caption><thead><tr><th scope="col">Zona</th><th scope="col">Tipo</th><th scope="col">Aterrizajes con éxito</th><th scope="col">Tasa de éxito</th><th scope="col">Estado</th></tr></thead><tbody>${R.map(row).join('')}</tbody></table></div>`+
+    `<p class="mut">En «sin recuperación» la etapa no intenta aterrizar, así que no tiene tasa; se muestra cuántas etapas acabaron así.</p>`}
 // ---------- Ritmo de cada plataforma ----------
 // Con los lanzamientos reales de data.json (Launch Library 2): días entre lanzamientos desde la misma plataforma, récord de rapidez
 // en los datos y si el siguiente previsto lo batiría si sale a su hora. Solo lectura: no toca puntuaciones.

@@ -218,3 +218,5 @@ h3,.card h3{font-family:var(--sans);text-transform:uppercase;letter-spacing:.12e
 .orbitas .emp-top{list-style:none;padding:0}.orbitas .emp-top li{margin:6px 0}
 .hito-m{border-left:3px solid var(--acc,#3fa9f5);padding-left:6px}
 .quien .hl-b,.sats .hl-b{margin-top:8px}.qn-d{margin:0 0 6px;font-style:italic;line-height:1.45}
+
+.orden .hl-b{margin-top:8px}.or-sel{margin:6px 0 8px;padding-left:22px;line-height:1.5}

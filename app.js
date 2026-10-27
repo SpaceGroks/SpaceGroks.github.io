@@ -178,9 +178,9 @@ function quizQs(pool,all,r){
     for(let i=n0;i<Q.length;i++)Q[i].m=l.id;});
   return Q;
 }
-function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="aterr"></div><div id="hilo"></div><div id="adonde"></div><div id="quien"></div><div id="sats"></div><div id="qwk"></div>';return $('#qwk')}
+function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="aterr"></div><div id="hilo"></div><div id="adonde"></div><div id="quien"></div><div id="sats"></div><div id="orden"></div><div id="qwk"></div>';return $('#qwk')}
 function renderQuiz(){
-  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();if(!AD||!AD.run)renderAdonde();if(!ATS||!ATS.run)renderAterr();if(!QN||!QN.run)renderQuien();if(!ST||!ST.run)renderSats();
+  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();if(!AD||!AD.run)renderAdonde();if(!ATS||!ATS.run)renderAterr();if(!QN||!QN.run)renderQuien();if(!ST||!ST.run)renderSats();if(!OR||!OR.run)renderOrden();
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),answered=Object.keys(st.ans).length;
   const correct=Z.qs.filter((q,i)=>st.ans[i]===q.right).length;
   let h=`<div class="card"><b>Reto semanal</b><div class="mut">${Z.title}. Cada lunes sale un reto nuevo. 10 puntos por acierto.</div>
@@ -480,6 +480,44 @@ function stAnswer(btn){if(!ST||!ST.run||ST.lock)return;ST.lock=true;const R=ST.r
 function stEnd(){if(!ST||!ST.run)return;ST.run=false;ST.done=true;const ok=ST.rs.filter((R,i)=>ST.ans[i]===R.right).length;
   const pts=ST_PTS*ok,s=stState(),gain=Math.max(0,pts-(s.today||0));s.today=Math.max(s.today||0,pts);s.best=Math.max(s.best||0,pts);s.plays=(s.plays||0)+1;LS.set('sats',s);
   Object.assign(ST,{ok,pts,gain});if(gain)addPts('sats',gain);renderSats();const b=$('#sats').querySelector('.st-go');if(b&&b.focus)b.focus({preventScroll:true})}
+// ---------- Ordena la cuenta atrás: pon en orden pasos reales de la cronología ----------
+let OR=null;const OR_N=3,OR_K=5;// lanzamientos por partida, pasos por lanzamiento (1 punto por paso bien colocado, hasta 15 al día)
+function orState(){const s=LS.get('orden',{best:0,plays:0});if(s.d!==dayKey()){s.d=dayKey();s.today=0}return s}
+function orSteps(l){const T={};(l.tl||[]).forEach(([id,t])=>{if(typeof t!=='number')return;(T[t]=T[t]||[]).push(id)});
+  return Object.keys(T).map(Number).filter(t=>T[t].length===1).sort((a,b)=>a-b).map(t=>({id:T[t][0],t}))}
+function orPool(){if(!D||!D.previous)return[];return D.previous.filter(l=>orSteps(l).length>=OR_K+2)}
+function orRounds(){const pool=orPool();if(pool.length<OR_N)return[];const r=Math.random;
+  return shuffle(pool,r).slice(0,OR_N).map(l=>{const S=orSteps(l),pick=shuffle(S,r).slice(0,OR_K).sort((a,b)=>a.t-b.t);return{l,right:pick,opts:shuffle(pick,r)}})}
+function renderOrden(){const el=$('#orden');if(!el||!D)return;const s=orState(),ok=orPool().length>=OR_N;
+  let h=`<div class="card rapid orden"><div class="kick">Ordena la cuenta atrás</div>
+  <p class="mut">${OR_N} lanzamientos reales recientes de SpaceX. De cada uno salen ${OR_K} pasos de su cronología publicada, desordenados: tócalos en el orden en que pasaron, del primero al último. 1 punto por cada paso en su sitio; cada día cuenta tu mejor partida (hasta ${OR_N*OR_K} puntos). Cronologías de Launch Library 2.</p>
+  <div class="stats"><div><b>${s.today||0}</b>tu mejor hoy (de ${OR_N*OR_K})</div><div><b>${s.best||0}</b>récord</div><div><b>${s.plays||0}</b>partidas jugadas</div></div>`;
+  if(OR&&OR.done)h+=orSummary();
+  h+=ok?`<div class="opts"><button type="button" class="or-go">${OR&&OR.done?'Jugar otra vez':'Empezar'}</button></div>`:'<p class="mut">Ahora no hay suficientes lanzamientos con la cronología publicada.</p>';
+  el.innerHTML=h+'</div>';const b=el.querySelector('.or-go');if(b)b.onclick=orStart}
+function orHits(R,a){return R.right.filter((x,i)=>a&&a[i]===x.id).length}
+function orSummary(){const A=OR;return `<div class="rp-res" role="status"><h3>${A.ok} de ${OR_N*OR_K} pasos en su sitio · +${A.pts} puntos${A.gain<A.pts?` <span class="mut">(suma ${A.gain}: ${A.gain?'mejoras tu partida de hoy':'no mejora tu mejor partida de hoy'})</span>`:''}</h3>
+  ${A.rs.map((R,i)=>`<div class="rp-q">${ic(orHits(R,A.ans[i])===OR_K)} <b>${esc(mname(R.l))}</b> <span class="mut">${fmtD(R.l.net)} · ${orHits(R,A.ans[i])} de ${OR_K}</span></div>`).join('')}</div>`}
+function orStart(){const rs=orRounds();if(rs.length<OR_N)return;OR={rs,i:0,ans:{},sel:[],run:true,lock:false};orShow();completeDaily('orden')}
+function orShow(){const R=OR.rs[OR.i],l=R.l,sel=OR.sel;
+  $('#orden').innerHTML=`<div class="card rapid orden on"><div class="kick">Ordena la cuenta atrás · lanzamiento ${OR.i+1} de ${OR_N}</div>
+  <div class="hl-b"><div class="hl-s">${esc(mname(l))}</div><div class="mut">${esc(l.rocket||'')} · ${fmtD(l.net)}${l.pad?' · '+esc(l.pad):''}</div></div>
+  <div id="or-q" class="rp-qt">Toca los pasos del primero al último</div>
+  <ol class="or-sel">${sel.map(id=>`<li>${esc(tlName(id))}</li>`).join('')||'<li class="mut" style="list-style:none">Aún no has elegido ninguno</li>'}</ol>
+  <div class="sr" id="or-live" role="status" aria-live="polite"></div>
+  <div class="opts" role="group" aria-labelledby="or-q">${R.opts.map(x=>`<button type="button" data-v="${x.id}"${sel.includes(x.id)?' disabled':''}>${esc(tlName(x.id))}</button>`).join('')}</div>
+  ${sel.length?'<div class="opts"><button type="button" class="or-undo">Deshacer el último</button></div>':''}<div id="or-why"></div></div>`;
+  const C=$('#orden');C.querySelectorAll('.opts[role=group] button').forEach(b=>b.onclick=()=>orPick(+b.dataset.v));
+  const u=C.querySelector('.or-undo');if(u)u.onclick=()=>{if(OR.lock)return;OR.sel.pop();orShow()};
+  const f=C.querySelector('.opts[role=group] button:not([disabled])');if(f&&f.focus)f.focus({preventScroll:true})}
+function orPick(id){if(!OR||!OR.run||OR.lock||OR.sel.includes(id))return;OR.sel.push(id);if(OR.sel.length<OR_K)return orShow();orCheck()}
+function orCheck(){OR.lock=true;const R=OR.rs[OR.i],a=OR.sel.slice(),n=orHits(R,a),last=OR.i===OR_N-1;OR.ans[OR.i]=a;orShow();
+  const C=$('#orden');C.querySelectorAll('button').forEach(b=>b.disabled=true);const lv=$('#or-live');if(lv)lv.textContent=`${n} de ${OR_K} en su sitio`;
+  $('#or-why').innerHTML=`<p class="mut">${ic(n===OR_K)} ${n} de ${OR_K} pasos en su sitio. El orden real fue:</p><ol class="or-sel">${R.right.map((x,i)=>`<li>${a[i]===x.id?'✅':'❌'} <b>${esc(tlName(x.id))}</b> <span class="mut">${tFmt(x.t)}</span></li>`).join('')}</ol><div class="opts"><button type="button" class="or-nx">${last?'Ver resultado':'Siguiente'}</button></div>`;
+  const nx=C.querySelector('.or-nx');if(nx){nx.onclick=()=>{OR.lock=false;OR.sel=[];if(last)return orEnd();OR.i++;orShow()};if(nx.focus)nx.focus({preventScroll:true})}}
+function orEnd(){if(!OR||!OR.run)return;OR.run=false;OR.done=true;const ok=OR.rs.reduce((s,R,i)=>s+orHits(R,OR.ans[i]),0);
+  const pts=ok,s=orState(),gain=Math.max(0,pts-(s.today||0));s.today=Math.max(s.today||0,pts);s.best=Math.max(s.best||0,pts);s.plays=(s.plays||0)+1;LS.set('orden',s);
+  Object.assign(OR,{ok,pts,gain});if(gain)addPts('orden',gain);renderOrden();const b=$('#orden').querySelector('.or-go');if(b&&b.focus)b.focus({preventScroll:true})}
 // ---------- Propulsores ----------
 let fleetSort='flights';
 // ---------- Comparar dos propulsores ----------
@@ -694,6 +732,7 @@ function retosGlobo(){
   if(adRounds().length===AD_N){const as=adState();R.push({t:'¿Adónde va?',m:`¿Sabrías decir a qué órbita fue cada misión real de SpaceX y desde qué plataforma despegó? ${as.best?`Tu récord es de ${as.best} puntos. ¿Lo superas?`:`Hasta ${AD_N*4} puntos al día.`}`,tab:'quiz',btn:'Jugar a ¿Adónde va?',k:'adonde'});}
   if(qnRounds().length===QN_N){const qs=qnState();R.push({t:'¿De quién es?',m:`Lee la descripción real de una misión de SpaceX y adivina para qué cliente era. ${qs.best?`Tu récord es de ${qs.best} puntos. ¿Lo superas?`:`Hasta ${QN_N*QN_PTS} puntos al día.`}`,tab:'quiz',btn:'Jugar a ¿De quién es?',k:'quien'});}
   if(stRounds().length===ST_N){const ss=stState();R.push({t:'¿Cuántos satélites?',m:`¿Cuántos satélites Starlink llevaba cada lanzamiento real de SpaceX? ${ss.best?`Tu récord es de ${ss.best} puntos. ¿Lo superas?`:`Hasta ${ST_N*ST_PTS} puntos al día.`}`,tab:'quiz',btn:'Jugar a ¿Cuántos satélites?',k:'sats'});}
+  if(orPool().length>=OR_N){const os=orState();R.push({t:'Ordena la cuenta atrás',m:`Pon en orden los pasos reales de la cuenta atrás y el vuelo de lanzamientos de SpaceX, de la carga de combustible al aterrizaje. ${os.best?`Tu récord es de ${os.best} puntos. ¿Lo superas?`:`Hasta ${OR_N*OR_K} puntos al día.`}`,tab:'quiz',btn:'Jugar a Ordena la cuenta atrás',k:'orden'});}
   {const m=fdMissions()[0];if(m)R.push({t:'Modo director de vuelo',m:`Dirige la cuenta atrás real de ${mname(m)}: pulsa en el momento justo de cada paso, de la carga de combustible a la separación de etapas${fdSteps(m).some(s=>s.ids.includes(19))?' y el aterrizaje':''}. Hasta 50 puntos.`,tab:'flight',btn:'Dirigir la cuenta atrás',k:'flight'});}
   const fl=D.previous.flatMap(l=>(l.stages||[]).map(s=>({...s,l}))).filter(s=>s.flight).sort((a,b)=>b.flight-a.flight)[0];
   if(fl)R.push({t:'Récord de reutilización',m:`El propulsor ${fl.serial} ya lleva ${fl.flight} vuelos. Antes los cohetes se tiraban tras un solo uso. ¿Sabrías decir cuál es el siguiente en llegar a esa cifra?`,tab:'fleet',btn:'Ver la flota',k:'fleet'});
@@ -1171,7 +1210,7 @@ function betHistHTML(){const H=betHist();if(!H.length)return '<h4>Tu historial d
   <p class="mut">${best?`Tu apuesta más fiable: ${esc(BH_N[best.k]||best.k)} (${best.ok} de ${best.n}).`:'Necesitas dos apuestas resueltas de un mismo tipo para saber cuál es la más fiable.'} ${worst?`Tu peor racha: ${worst.n} ${worst.n===1?'fallo':'fallos seguidos'}${worst.from?`, ${worst.n===1?'el':'del'} ${fmtD(worst.from)}${worst.n>1&&fmtD(worst.to)!==fmtD(worst.from)?` al ${fmtD(worst.to)}`:''}`:''}.`:'Todavía no has fallado ninguna.'}</p>`}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['quien','¿De quién es?'],['sats','¿Cuántos satélites?'],['flight','Director de vuelo'],['aterr','Simulador de aterrizaje'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['dia','Apuesta del día de la semana'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['quien','¿De quién es?'],['sats','¿Cuántos satélites?'],['orden','Ordena la cuenta atrás'],['flight','Director de vuelo'],['aterr','Simulador de aterrizaje'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['dia','Apuesta del día de la semana'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>

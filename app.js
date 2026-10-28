@@ -178,9 +178,9 @@ function quizQs(pool,all,r){
     for(let i=n0;i<Q.length;i++)Q[i].m=l.id;});
   return Q;
 }
-function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="aterr"></div><div id="hilo"></div><div id="adonde"></div><div id="quien"></div><div id="sats"></div><div id="orden"></div><div id="donde"></div><div id="vuelo"></div><div id="desde"></div><div id="dtierra"></div><div id="qwk"></div>';return $('#qwk')}
+function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk'))s.innerHTML='<div id="rapid"></div><div id="aterr"></div><div id="hilo"></div><div id="adonde"></div><div id="quien"></div><div id="sats"></div><div id="orden"></div><div id="donde"></div><div id="vuelo"></div><div id="desde"></div><div id="dtierra"></div><div id="antes"></div><div id="qwk"></div>';return $('#qwk')}
 function renderQuiz(){
-  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();if(!AD||!AD.run)renderAdonde();if(!ATS||!ATS.run)renderAterr();if(!QN||!QN.run)renderQuien();if(!ST||!ST.run)renderSats();if(!OR||!OR.run)renderOrden();if(!DN||!DN.run)renderDonde();if(!VU||!VU.run)renderVuelo();if(!DE||!DE.run)renderDesde();if(!TG||!TG.run)renderDTierra();
+  const QW=quizBoxes();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();if(!AD||!AD.run)renderAdonde();if(!ATS||!ATS.run)renderAterr();if(!QN||!QN.run)renderQuien();if(!ST||!ST.run)renderSats();if(!OR||!OR.run)renderOrden();if(!DN||!DN.run)renderDonde();if(!VU||!VU.run)renderVuelo();if(!DE||!DE.run)renderDesde();if(!TG||!TG.run)renderDTierra();if(!AN||!AN.run)renderAntes();
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),answered=Object.keys(st.ans).length;
   const correct=Z.qs.filter((q,i)=>st.ans[i]===q.right).length;
   let h=`<div class="card"><b>Reto semanal</b><div class="mut">${Z.title}. Cada lunes sale un reto nuevo. 10 puntos por acierto.</div>
@@ -667,6 +667,43 @@ function tgAnswer(btn){if(!TG||!TG.run||TG.lock)return;TG.lock=true;const R=TG.r
 function tgEnd(){if(!TG||!TG.run)return;TG.run=false;TG.done=true;const ok=TG.rs.filter((R,i)=>TG.ans[i]===R.right).length;
   const pts=TG_PTS*ok,s=tgState(),gain=Math.max(0,pts-(s.today||0));s.today=Math.max(s.today||0,pts);s.best=Math.max(s.best||0,pts);s.plays=(s.plays||0)+1;LS.set('dtierra',s);
   Object.assign(TG,{ok,pts,gain});if(gain)addPts('dtierra',gain);renderDTierra();const b=$('#dtierra').querySelector('.tg-go');if(b&&b.focus)b.focus({preventScroll:true})}
+// ---------- ¿Cuál despegó antes?: dos lanzamientos reales sin fecha, adivina cuál fue primero (net de Launch Library 2) ----------
+let AN=null;const AN_N=5,AN_PTS=2,AN_GAP=864e5;// parejas por partida, puntos por acierto (hasta 10 al día, cuenta la mejor partida); al menos 1 día entre los dos
+function anState(){const s=LS.get('antes',{best:0,plays:0});if(s.d!==dayKey()){s.d=dayKey();s.today=0}return s}
+function anPool(){if(!D||!D.previous)return[];return D.previous.filter(l=>l.net&&!isNaN(Date.parse(l.net))&&Date.parse(l.net)<=Date.now()&&/^Success|Failure|Partial/i.test(l.status||'Success'))}
+function anRounds(){const pool=shuffle(anPool(),Math.random),used=new Set(),rs=[];
+  for(let i=0;i<pool.length&&rs.length<AN_N;i++){const a=pool[i];if(used.has(a.id))continue;
+    const b=pool.find(x=>x!==a&&!used.has(x.id)&&mname(x)!==mname(a)&&Math.abs(Date.parse(x.net)-Date.parse(a.net))>=AN_GAP);if(!b)continue;
+    used.add(a.id);used.add(b.id);const right=Date.parse(a.net)<Date.parse(b.net)?a.id:b.id;rs.push({p:[a,b],right})}
+  return rs.length===AN_N?rs:[]}
+function anGap(R){const d=Math.round(Math.abs(Date.parse(R.p[0].net)-Date.parse(R.p[1].net))/864e5);return d===1?'1 día':d+' días'}
+function renderAntes(){const el=$('#antes');if(!el||!D)return;const s=anState(),P=anPool(),ok=anRounds().length===AN_N;
+  const ts=P.map(l=>Date.parse(l.net)).sort((a,b)=>a-b);
+  let h=`<div class="card rapid antes"><div class="kick">¿Cuál despegó antes?</div>
+  <p class="mut">${AN_N} parejas de lanzamientos reales recientes de SpaceX, sin la fecha. Con la misión, el cohete y la plataforma, adivina cuál despegó primero. ${AN_PTS} puntos por acierto; cada día cuenta tu mejor partida (hasta ${AN_N*AN_PTS} puntos). Fechas de Launch Library 2.</p>
+  <div class="stats"><div><b>${s.today||0}</b>tu mejor hoy (de ${AN_N*AN_PTS})</div><div><b>${s.best||0}</b>récord</div><div><b>${s.plays||0}</b>partidas jugadas</div></div>`;
+  if(AN&&AN.done)h+=anSummary();
+  if(ts.length>1)h+=`<p class="mut">Los ${P.length} lanzamientos del juego van del ${fmtD(new Date(ts[0]).toISOString())} al ${fmtD(new Date(ts[ts.length-1]).toISOString())}; en cada pareja hay al menos un día de diferencia.</p>`;
+  h+=ok?`<div class="opts"><button type="button" class="an-go">${AN&&AN.done?'Jugar otra vez':'Empezar'}</button></div>`:'<p class="mut">Ahora no hay suficientes lanzamientos recientes con fecha para formar las parejas.</p>';
+  el.innerHTML=h+'</div>';const b=el.querySelector('.an-go');if(b)b.onclick=anStart}
+function anSummary(){const A=AN;return `<div class="rp-res" role="status"><h3>${A.ok} de ${AN_N} · +${A.pts} puntos${A.gain<A.pts?` <span class="mut">(suma ${A.gain}: ${A.gain?'mejoras tu partida de hoy':'no mejora tu mejor partida de hoy'})</span>`:''}</h3>
+  ${A.rs.map((R,i)=>{const a=A.ans[i],f=R.p.find(l=>l.id===R.right),o=R.p.find(l=>l.id!==R.right);return `<div class="rp-q">${ic(a===R.right)} Primero <b>${esc(mname(f))}</b> <span class="mut">${fmtD(f.net)}</span>, luego ${esc(mname(o))} <span class="mut">${fmtD(o.net)}</span> · ${anGap(R)} de diferencia</div>`}).join('')}</div>`}
+function anStart(){const rs=anRounds();if(rs.length<AN_N)return;AN={rs,i:0,ans:{},run:true,lock:false};anShow();completeDaily('antes')}
+function anCard(l){return `${esc(mname(l))}<span class="mut" style="display:block;font-weight:normal">${esc(l.rocket||'')} · ${esc(deName(l.pad||''))}</span>`}
+function anShow(){const R=AN.rs[AN.i];
+  $('#antes').innerHTML=`<div class="card rapid antes on"><div class="kick">¿Cuál despegó antes? · pareja ${AN.i+1} de ${AN_N}</div>
+  <div id="an-q" class="rp-qt">¿Cuál de estos dos lanzamientos despegó primero?</div><div class="sr" id="an-live" role="status" aria-live="polite"></div>
+  <div class="opts" role="group" aria-labelledby="an-q">${R.p.map(l=>`<button type="button" data-v="${esc(l.id)}">${anCard(l)}</button>`).join('')}</div><div id="an-why"></div></div>`;
+  const o=$('#antes').querySelectorAll('.opts button');o.forEach(b=>b.onclick=()=>anAnswer(b));if(o[0]&&o[0].focus)o[0].focus({preventScroll:true})}
+function anAnswer(btn){if(!AN||!AN.run||AN.lock)return;AN.lock=true;const R=AN.rs[AN.i],v=btn.dataset.v,ok=v===R.right,f=R.p.find(l=>l.id===R.right),o=R.p.find(l=>l.id!==R.right);AN.ans[AN.i]=v;
+  $('#antes').querySelectorAll('.opts button').forEach(x=>{x.disabled=true;if(x.dataset.v===R.right)x.classList.add('right');else if(x===btn)x.classList.add('wrong')});
+  const lv=$('#an-live');if(lv)lv.textContent=ok?'Acierto':'Fallo. Antes fue '+mname(f);
+  const last=AN.i===AN_N-1;
+  $('#an-why').innerHTML=`<p class="mut">${ic(ok)} <b>${esc(mname(f))}</b> despegó el ${fmtD(f.net)} y ${esc(mname(o))} el ${fmtD(o.net)}: ${anGap(R)} después.</p><div class="opts"><button type="button" class="an-nx">${last?'Ver resultado':'Siguiente'}</button></div>`;
+  const nx=$('#antes').querySelector('.an-nx');if(nx){nx.onclick=()=>{AN.lock=false;if(last)return anEnd();AN.i++;anShow()};if(nx.focus)nx.focus({preventScroll:true})}}
+function anEnd(){if(!AN||!AN.run)return;AN.run=false;AN.done=true;const ok=AN.rs.filter((R,i)=>AN.ans[i]===R.right).length;
+  const pts=AN_PTS*ok,s=anState(),gain=Math.max(0,pts-(s.today||0));s.today=Math.max(s.today||0,pts);s.best=Math.max(s.best||0,pts);s.plays=(s.plays||0)+1;LS.set('antes',s);
+  Object.assign(AN,{ok,pts,gain});if(gain)addPts('antes',gain);renderAntes();const b=$('#antes').querySelector('.an-go');if(b&&b.focus)b.focus({preventScroll:true})}
 // ---------- Propulsores ----------
 let fleetSort='flights';
 // ---------- Comparar dos propulsores ----------
@@ -903,6 +940,7 @@ function retosGlobo(){
   if(vuRounds().length===VU_N){const vs=vuState();R.push({t:'¿Qué vuelo era?',m:`Con la misión y el número de serie del propulsor de lanzamientos reales de SpaceX, adivina cuántas veces había volado ya. ${vs.best?`Tu récord es de ${vs.best} puntos. ¿Lo superas?`:`Hasta ${VU_N*VU_PTS} puntos al día.`}`,tab:'quiz',btn:'Jugar a ¿Qué vuelo era?',k:'vuelo'});}
   if(deRounds().length===DE_N){const es=deState();R.push({t:'¿Desde dónde despegó?',m:`Con la misión, la órbita y el cliente de lanzamientos reales de SpaceX, adivina desde qué plataforma despegaron. ${es.best?`Tu récord es de ${es.best} puntos. ¿Lo superas?`:`Hasta ${DE_N*DE_PTS} puntos al día.`}`,tab:'quiz',btn:'Jugar a ¿Desde dónde despegó?',k:'desde'});}
   if(tgRounds().length===TG_N){const ts=tgState();R.push({t:'¿Cuántos días en tierra?',m:`Con el propulsor y su número de vuelo en lanzamientos reales de SpaceX, adivina cuántos días pasó en tierra desde su vuelo anterior. ${ts.best?`Tu récord es de ${ts.best} puntos. ¿Lo superas?`:`Hasta ${TG_N*TG_PTS} puntos al día.`}`,tab:'quiz',btn:'Jugar a ¿Cuántos días en tierra?',k:'dtierra'});}
+  if(anRounds().length===AN_N){const as=anState();R.push({t:'¿Cuál despegó antes?',m:`Dos lanzamientos reales de SpaceX sin fecha: con la misión, el cohete y la plataforma, adivina cuál despegó primero. ${as.best?`Tu récord es de ${as.best} puntos. ¿Lo superas?`:`Hasta ${AN_N*AN_PTS} puntos al día.`}`,tab:'quiz',btn:'Jugar a ¿Cuál despegó antes?',k:'antes'});}
   if(orPool().length>=OR_N){const os=orState();R.push({t:'Ordena la cuenta atrás',m:`Pon en orden los pasos reales de la cuenta atrás y el vuelo de lanzamientos de SpaceX, de la carga de combustible al aterrizaje. ${os.best?`Tu récord es de ${os.best} puntos. ¿Lo superas?`:`Hasta ${OR_N*OR_K} puntos al día.`}`,tab:'quiz',btn:'Jugar a Ordena la cuenta atrás',k:'orden'});}
   {const m=fdMissions()[0];if(m)R.push({t:'Modo director de vuelo',m:`Dirige la cuenta atrás real de ${mname(m)}: pulsa en el momento justo de cada paso, de la carga de combustible a la separación de etapas${fdSteps(m).some(s=>s.ids.includes(19))?' y el aterrizaje':''}. Hasta 50 puntos.`,tab:'flight',btn:'Dirigir la cuenta atrás',k:'flight'});}
   const fl=D.previous.flatMap(l=>(l.stages||[]).map(s=>({...s,l}))).filter(s=>s.flight).sort((a,b)=>b.flight-a.flight)[0];
@@ -1381,7 +1419,7 @@ function betHistHTML(){const H=betHist();if(!H.length)return '<h4>Tu historial d
   <p class="mut">${best?`Tu apuesta más fiable: ${esc(BH_N[best.k]||best.k)} (${best.ok} de ${best.n}).`:'Necesitas dos apuestas resueltas de un mismo tipo para saber cuál es la más fiable.'} ${worst?`Tu peor racha: ${worst.n} ${worst.n===1?'fallo':'fallos seguidos'}${worst.from?`, ${worst.n===1?'el':'del'} ${fmtD(worst.from)}${worst.n>1&&fmtD(worst.to)!==fmtD(worst.from)?` al ${fmtD(worst.to)}`:''}`:''}.`:'Todavía no has fallado ninguna.'}</p>`}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['quien','¿De quién es?'],['sats','¿Cuántos satélites?'],['orden','Ordena la cuenta atrás'],['donde','¿Dónde aterrizó?'],['vuelo','¿Qué vuelo era?'],['desde','¿Desde dónde despegó?'],['dtierra','¿Cuántos días en tierra?'],['flight','Director de vuelo'],['aterr','Simulador de aterrizaje'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['dia','Apuesta del día de la semana'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['quien','¿De quién es?'],['sats','¿Cuántos satélites?'],['orden','Ordena la cuenta atrás'],['donde','¿Dónde aterrizó?'],['vuelo','¿Qué vuelo era?'],['desde','¿Desde dónde despegó?'],['dtierra','¿Cuántos días en tierra?'],['antes','¿Cuál despegó antes?'],['flight','Director de vuelo'],['aterr','Simulador de aterrizaje'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['dia','Apuesta del día de la semana'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>

@@ -781,13 +781,45 @@ function renderFleet(){
   D.upcoming.forEach(l=>(l.stages||[]).forEach(s=>{const b=m[s.serial];if(b&&!b.next)b.next=l}));
   const rows=Object.values(m).sort((a,b)=>fleetSort==='flights'?b.flights-a.flights:new Date(b.last)-new Date(a.last));
   const max=Math.max(...rows.map(r=>r.flights),1);
-  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Las primeras etapas que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar y un propulsor para ver su ficha y apostar si volverá a volar.</div></div>${betsHTML()}${cmpHTML(rows)}${raceHTML()}${vidaHTML()}
+  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Las primeras etapas que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar y un propulsor para ver su ficha y apostar si volverá a volar.</div></div>${betsHTML()}${cmpHTML(rows)}${raceHTML()}${vrHTML()}${vidaHTML()}
   <div class="tscroll"><table><caption class="sr">Flota de propulsores, ordenada por ${fleetSort==='flights'?'número de vuelos':'último vuelo'}</caption><tr><th scope="col">Propulsor</th><th scope="col" aria-sort="${fleetSort==='flights'?'descending':'none'}"><button type="button" class="lnk" data-s="flights">Vuelos</button></th><th scope="col" aria-sort="${fleetSort==='last'?'descending':'none'}"><button type="button" class="lnk" data-s="last">Último vuelo</button></th><th scope="col">Próximo</th></tr>
   ${rows.map(r=>`<tr class="clic" data-serial="${r.serial}"><td><button type="button" class="lnk" data-open="${r.serial}" aria-label="Abrir la ficha del propulsor ${r.serial}"><b>${r.serial}</b> <span class="mut" aria-hidden="true">ficha ›</span></button></td><td>${r.flights}<div class="bar"><i style="width:${100*r.flights/max}%"></i></div></td><td>${fmtD(r.last)}<div class="mut">${r.missions.at(-1)}</div></td><td>${r.next?`${mname(r.next)}<div class="mut">${fmtD(r.next.net)}</div>`:'—'}</td></tr>`).join('')}</table></div>`;
   $('#fleet').querySelectorAll('button[data-s]').forEach(t=>t.onclick=()=>{fleetSort=t.dataset.s;renderFleet();const f=$('#fleet').querySelector(`button[data-s="${t.dataset.s}"]`);f&&f.focus()});
+  $('#fleet').querySelectorAll('button[data-vr]').forEach(t=>t.onclick=()=>{vrSort=t.dataset.vr;renderFleet();const f=$('#fleet').querySelector(`button[data-vr="${t.dataset.vr}"]`);f&&f.focus()});
   $('#fleet').querySelectorAll('select[data-cmp]').forEach(sel=>sel.onchange=()=>{CMP[+sel.dataset.cmp]=sel.value;renderFleet();const f=$('#fleet').querySelector(`select[data-cmp="${sel.dataset.cmp}"]`);f&&f.focus()});
   $('#fleet').querySelectorAll('tr[data-serial]').forEach(t=>t.onclick=e=>{if(e.target.closest('button[data-s]'))return;openBooster(t.dataset.serial)});
 }
+// ---------- Propulsores veteranos ----------
+// Ranking de los propulsores que salen en data.json (últimos lanzamientos y próximos) por vuelos o aterrizajes totales según Launch Library 2
+// (booster_flights, booster_landings, first, lastd, bstatus). Solo lectura: no toca puntuaciones.
+let vrSort='flights';
+const VR_ST={active:'En activo',retired:'Retirado',destroyed:'Destruido',expended:'Gastado',lost:'Perdido','under construction':'En construcción'};
+function vrData(){const d=rlD();if(!d)return null;const B={},okS=x=>x&&!/Unknown/i.test(x),pid=new Set((d.previous||[]).map(l=>l.id));
+  const add=(l,s,up)=>{if(!s||!okS(s.serial))return;const b=B[s.serial]||(B[s.serial]={serial:s.serial,rocket:l.rocket||'',flights:0,landings:null});
+    b.flights=Math.max(b.flights,Number.isInteger(s.booster_flights)?s.booster_flights:0,up?0:(s.flight||0));
+    if(Number.isInteger(s.booster_landings))b.landings=Math.max(b.landings??0,s.booster_landings);
+    if(s.first&&(!b.first||new Date(s.first)<new Date(b.first)))b.first=s.first;
+    if(s.lastd&&(!b.lastd||new Date(s.lastd)>new Date(b.lastd)))b.lastd=s.lastd;
+    if(s.bstatus&&!up)b.status=s.bstatus;else if(s.bstatus&&!b.status)b.status=s.bstatus};
+  (d.previous||[]).forEach(l=>(l.stages||[]).forEach(s=>add(l,s,false)));
+  (d.upcoming||[]).filter(l=>!pid.has(l.id)).forEach(l=>(l.stages||[]).forEach(s=>add(l,s,true)));
+  const now=Date.now(),rows=Object.values(B).filter(b=>b.flights>0).map(b=>{const act=/^active$/i.test(b.status||''),end=act?now:(b.lastd?new Date(b.lastd).getTime():null);
+    const days=b.first&&end!=null?Math.max(0,Math.floor((end-new Date(b.first).getTime())/864e5)):null;return{...b,act,days}});
+  return rows.length?{rows,gen:d.generated}:null}
+function vrHTML(){const I=vrData();if(!I)return'';
+  const key=vrSort==='landings'?'landings':'flights';
+  const R=I.rows.slice().sort((a,b)=>((b[key]??-1)-(a[key]??-1))||(b.flights-a.flights)||a.serial.localeCompare(b.serial)).slice(0,10);
+  const yr=x=>{const y=x/365.25;return y>=1?`${y.toLocaleString('es-ES',{maximumFractionDigits:1})} años`:`${x} días`};
+  const tF=I.rows.reduce((s,b)=>s+b.flights,0),wl=I.rows.filter(b=>b.landings!=null),tL=wl.reduce((s,b)=>s+b.landings,0),tFl=wl.reduce((s,b)=>s+b.flights,0);
+  const lo=I.rows.filter(b=>b.days!=null).sort((a,b)=>b.days-a.days)[0];
+  const st=b=>VR_ST[(b.status||'').toLowerCase()]||(b.status?esc(b.status):'Sin dato');
+  const row=(b,i)=>`<tr><td>${i+1}</td><td><b>${esc(b.serial)}</b><div class="mut">${esc(b.rocket)}</div></td><td>${b.flights}<div class="bar" aria-hidden="true"><i style="width:${Math.round(100*b.flights/Math.max(1,R[0].flights,...R.map(x=>x.flights)))}%"></i></div></td><td>${b.landings!=null?`${b.landings}<div class="mut">${b.flights?Math.round(100*Math.min(b.landings,b.flights)/b.flights):0} % de sus vuelos</div>`:'Sin dato'}</td><td>${b.first?fmtD(b.first):'Sin dato'}</td><td>${b.days!=null?`${b.days.toLocaleString('es-ES')}<div class="mut">${yr(b.days)}${b.act?'':' (hasta su último vuelo)'}</div>`:'—'}</td><td>${st(b)}</td></tr>`;
+  return `<div class="card" id="veteranos"><b>Propulsores veteranos</b>
+  <div class="stats"><div><b>${esc(R[0].serial)}</b>${key==='landings'?`el que más ha aterrizado (${R[0].landings})`:`el que más ha volado (${R[0].flights} vuelos)`}</div>${lo?`<div><b>${yr(lo.days)}</b>en servicio de ${esc(lo.serial)}, el que más tiempo lleva</div>`:''}<div><b>${tF.toLocaleString('es-ES')}</b>vuelos entre los ${I.rows.length} propulsores de los datos${tFl?` (${tL.toLocaleString('es-ES')} aterrizajes)`:''}</div></div>
+  <div class="opts" role="group" aria-label="Ordenar el ranking"><button type="button" data-vr="flights" aria-pressed="${key==='flights'}">Por vuelos</button><button type="button" data-vr="landings" aria-pressed="${key==='landings'}">Por aterrizajes</button></div>
+  <div class="tscroll"><table><caption class="sr">Los 10 propulsores con más ${key==='landings'?'aterrizajes':'vuelos'}</caption><tr><th scope="col">Puesto</th><th scope="col">Propulsor</th><th scope="col">Vuelos</th><th scope="col">Aterrizajes</th><th scope="col">Primer vuelo</th><th scope="col">Días en servicio</th><th scope="col">Estado</th></tr>
+  ${R.map(row).join('')}</table></div>
+  <p class="mut">Vuelos y aterrizajes totales de toda su vida, primer vuelo y estado según Launch Library 2, para los propulsores que aparecen en los últimos ${(rlD().previous||[]).length} lanzamientos o en los próximos. Los días en servicio cuentan desde su primer vuelo hasta hoy (o hasta su último vuelo si ya no está en activo). Actualizados ${fmt(I.gen)}.</p></div>`}
 // ---------- Mapa ----------
 let mapDone=false,mapObj=null;
 const LZ_T={ASDS:'Barcaza autónoma en el mar',RTLS:'Vuelta a tierra, junto a la plataforma',Ocean:'Amerizaje controlado en el mar',EXP:'Sin recuperación: la etapa se pierde en el mar'};

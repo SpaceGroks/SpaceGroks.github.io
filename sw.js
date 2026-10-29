@@ -1,6 +1,6 @@
 // SpaceX Play: service worker para instalar la web como app y abrirla sin conexión.
 // La web y los datos van primero a la red (siempre lo último) y, si no hay conexión, salen de la copia guardada.
-const V='sxp-v37',SHELL=['./','index.html','app.js','style.css','data.json','i18n/desc_es.json','i18n/fail_es.json','manifest.webmanifest','og.png','icons/icon-192.png','icons/icon-512.png','icons/favicon-32.png'];
+const V='sxp-v38',SHELL=['./','index.html','app.js','style.css','data.json','i18n/desc_es.json','i18n/fail_es.json','manifest.webmanifest','og.png','icons/icon-192.png','icons/icon-512.png','icons/favicon-32.png'];
 const CDN=/^https:\/\/(unpkg\.com|fonts\.googleapis\.com|fonts\.gstatic\.com)\//;
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>Promise.all(SHELL.map(u=>c.add(new Request(u,{cache:'reload'})).catch(()=>{})))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith('sxp-')&&k!==V).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});

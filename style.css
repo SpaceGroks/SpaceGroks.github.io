@@ -217,7 +217,7 @@ h3,.card h3{font-family:var(--sans);text-transform:uppercase;letter-spacing:.12e
 .veter .emp-top{list-style:none;padding:0}.veter .emp-top li{margin:6px 0}
 .orbitas .emp-top{list-style:none;padding:0}.orbitas .emp-top li{margin:6px 0}
 .hito-m{border-left:3px solid var(--acc,#3fa9f5);padding-left:6px}
-.quien .hl-b,.sats .hl-b,.donde .hl-b,.vuelo .hl-b,.desde .hl-b,.wxj .hl-b,.wxpre .hl-b,.vabre .hl-b,.vdur .hl-b,.mtip .hl-b,.nyear .hl-b,.padn .hl-b,.tlpas .hl-b,.tland .hl-b,.teb .hl-b,.mxq .hl-b{margin-top:8px}.qn-d{margin:0 0 6px;font-style:italic;line-height:1.45}
+.quien .hl-b,.sats .hl-b,.donde .hl-b,.vuelo .hl-b,.desde .hl-b,.wxj .hl-b,.wxpre .hl-b,.vabre .hl-b,.vdur .hl-b,.mtip .hl-b,.nyear .hl-b,.padn .hl-b,.tlpas .hl-b,.tland .hl-b,.teb .hl-b,.mxq .hl-b,.cofia .hl-b{margin-top:8px}.qn-d{margin:0 0 6px;font-style:italic;line-height:1.45}
 
 .orden .hl-b{margin-top:8px}.or-sel{margin:6px 0 8px;padding-left:22px;line-height:1.5}
 .semana .semd{border-top:1px solid var(--line);padding-top:6px;margin-top:8px}.semana .semd h3{margin:4px 0;font-size:15px;text-transform:capitalize}.semana ul{margin:4px 0;padding-left:18px}.semana li{margin:4px 0}

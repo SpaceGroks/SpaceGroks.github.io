@@ -250,3 +250,15 @@ table.cal .cal-n{font-size:12px;display:block}table.cal .cal-d{font-size:13px;di
 .cmpmis{margin-top:10px}.cmpmis summary{cursor:pointer;font-weight:600;min-height:32px;padding:6px 0}
 .cmpgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.cmpl{margin:6px 0 0;padding-left:22px}.cmpl li{margin:0 0 8px}
 @media(max-width:560px){.cmpgrid{grid-template-columns:1fr}}
+/* v64: más aire entre líneas y logo negro/morado */
+body{line-height:1.6}
+p,li,dd,td,th{line-height:1.6}
+p{margin:0 0 .8em}
+ul,ol{margin:.4em 0 1em}li{margin:.35em 0}
+h1,h2,h3,h4{line-height:1.3;margin-top:.6em;margin-bottom:.5em}
+td,th{padding:8px 10px}
+.card p,.card li{line-height:1.6}
+.globo p,.rp-q,.qn-d,details.learn dd,.credit{line-height:1.6}
+.logo{color:#0a0a0c!important;-webkit-text-stroke:1.5px #a855f7;text-shadow:0 0 8px rgba(168,85,247,.85),0 0 2px #c084fc!important}
+@media(max-width:600px){body,p,li,dd,td{line-height:1.65}p{margin-bottom:.9em}td,th{padding:7px 8px}}
+main p,main li,main dd,main td{line-height:1.6!important}

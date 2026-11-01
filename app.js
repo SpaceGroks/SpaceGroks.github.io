@@ -38,7 +38,7 @@ function init(){
   initTabs();checkIn();
   resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderSemana();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCalendario();bindCalendario();renderCohetes();resolveHora();renderHora();bindHora();resolveDia();renderDias();bindDias();renderDobles();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderEstados();bindDirectos();bindPrecision();renderReloj();renderCrono();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
-  renderInstall();offlineNote();
+  renderInstall();offlineNote();try{misInit()}catch(e){console.error(e)}
 }
 // ---------- Pestañas (accesibles con teclado y enlazables con #) ----------
 const TABS=()=>[...document.querySelectorAll('nav [role=tab]')];
@@ -3996,3 +3996,40 @@ function renderCalendario(){const el=$('#calendario');if(!el||!D)return;const I=
   <div class="mut" style="margin-top:6px">Datos de Launch Library 2 (lanzamientos recientes y los ${(D.upcoming||[]).length} próximos de la lista), en tu hora local, actualizados ${fmt(D.generated)}.${I.loose?` Hay ${I.loose} próximo${I.loose>1?'s':''} más previsto${I.loose>1?'s':''} solo para un trimestre, semestre o año, que no se colocan en el calendario.`:''}</div></div>`}
 function bindCalendario(){const el=$('#next');if(!el||el._cal)return;el._cal=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-cal]');if(!b)return;
   const v=+b.dataset.cal;calOff=v===0?0:calOff+v;renderCalendario();const n=$('#calendario .cal-mes');try{n&&(n.tabIndex=-1,n.focus({preventScroll:true}))}catch(e){}})}
+// ---------- Modo descubrir: misterio inicial con pistas reales y textos detrás de hipótesis ----------
+const MIS_TABS={log:'Historial',fleet:'Propulsores',map:'Mapa'};
+function misData(){if(!D||!D.previous)return null;
+  const land=l=>(l.stages||[]).filter(s=>s&&s.land_attempt);
+  const sea=l=>land(l).some(s=>s.land_type==='ASDS'),gnd=l=>land(l).some(s=>s.land_type==='RTLS');
+  const L=D.previous.find(l=>/^Starlink/i.test(mname(l))&&sea(l)&&stCount(l)&&/Falcon 9/.test(l.rocket));if(!L)return null;
+  const st=land(L).find(s=>s.land_type==='ASDS'),f9=D.previous.filter(l=>/Falcon 9/.test(l.rocket)&&land(l).length);
+  const sl=f9.filter(l=>/^Starlink/i.test(mname(l))),slSea=sl.filter(sea).length,g=f9.filter(gnd);
+  return{L,st,slN:sl.length,slSea,g,gN:g.length,zn:dnName(st.land_loc)}}
+function misState(){const s=LS.get('misterio',null);return s&&typeof s==='object'?s:{clues:{},solved:false,tries:0}}
+function misClue(tab){const M=misData();if(!M)return'';const L=M.L,st=M.st;
+  if(tab==='log')return `${esc(mname(L))} (${fmtD(L.net)}) llevaba <b>${stCount(L)} satélites</b> a ${esc(orb(L.orbit))}.`;
+  if(tab==='fleet')return `${esc(st.serial)} se posó en <b>${esc(M.zn)}</b>, una barcaza en el mar. De ${M.slN} Starlink recientes con aterrizaje, <b>${M.slSea} acabaron en el mar</b>.`;
+  if(tab==='map')return `Volvieron a tierra ${M.gN} Falcon 9: <b>${M.g.slice(0,5).map(l=>esc(mname(l))).join(', ')}</b>. ${M.g.some(l=>/^Starlink/i.test(mname(l)))?'':'Ningún Starlink entre ellos.'}`;return''}
+function misGet(tab){const s=misState();if(!s.clues[tab]){s.clues[tab]=Date.now();LS.set('misterio',s);renderMis()}}
+function misBanner(tab){const sec=document.getElementById(tab);if(!sec||!MIS_TABS[tab]||!misData())return;let b=sec.querySelector('.mis-pista');
+  if(!b){b=document.createElement('div');b.className='card mis-pista';sec.prepend(b)}
+  b.innerHTML=`<h3>🔎 Pista</h3><p>${misClue(tab)}</p><a href="#next" class="btn">Volver al misterio</a>`;misGet(tab)}
+const MIS_OPTS=[['peso','Llevaba tanta carga que no le quedaba combustible para volver'],['meteo','Hacía mal tiempo en tierra'],['viejo','El propulsor era demasiado viejo'],['prisa','Así se lanza antes']];
+function renderMis(){const sec=$('#next');const M=misData();if(!sec||!M)return;let c=sec.querySelector('#misterio');
+  if(!c){c=document.createElement('div');c.id='misterio';c.className='card mis';sec.prepend(c)}
+  const s=misState(),n=Object.keys(MIS_TABS).filter(t=>s.clues[t]).length,L=M.L;
+  c.innerHTML=`<h2 class="mis-q">¿Por qué el ${esc(M.st.serial)} aterrizó en el mar y no en tierra?</h2>
+<p class="mut">${esc(mname(L))} · ${fmtD(L.net)}</p>
+<div class="mis-cl">${Object.entries(MIS_TABS).map(([t,nm])=>s.clues[t]?`<div class="mis-ok">✔ ${misClue(t)}</div>`:`<a class="btn mis-go" href="#${t}">Busca en ${nm}</a>`).join('')}</div>
+<p class="mut">Pistas: ${n} de 3</p>
+${s.solved?`<div class="mis-win" role="status"><h3>🔓 Desbloqueado: rango Investigador</h3><p>Un Falcon 9 que vuelve a tierra gasta combustible en darse la vuelta y deshacer el camino. Con una carga muy pesada, como un lote de Starlink, no le sobra: por eso se posa en una barcaza en el mar, más o menos en la trayectoria. Los vuelos que vuelven a tierra suelen llevar cargas más ligeras.</p></div>`
+:n<2?`<p>Reúne al menos 2 pistas para proponer tu hipótesis.</p>`
+:`<div class="opts mis-opts" role="group" aria-label="Tu hipótesis">${MIS_OPTS.map(([k,t])=>`<button type="button" data-mis="${k}">${t}</button>`).join('')}</div>${s.last&&s.last!=='peso'?'<p role="status">Las pistas no lo apoyan. Prueba otra.</p>':''}`}`;
+  c.querySelectorAll('[data-mis]').forEach(b=>b.onclick=()=>{const s=misState();s.tries=(s.tries||0)+1;s.last=b.dataset.mis;if(s.last==='peso'){s.solved=Date.now();addPts('misterio',20)}LS.set('misterio',s);renderMis()})}
+function discoverify(root){(root||document).querySelectorAll('main .tab p, main .tab .desc').forEach(p=>{
+  if(p.closest('.mis,.mis-pista,details.hyp,button,label,.rp-res,[role=status]')||p.querySelector('button,input,select,textarea,a.btn'))return;
+  const t=p.textContent.trim();if(t.length<140)return;
+  const d=document.createElement('details');d.className='hyp';d.innerHTML='<summary>¿Tu hipótesis? Revela la pista</summary>';p.replaceWith(d);d.appendChild(p)})}
+function misInit(){renderMis();const o=showTab;showTab=function(id,f){o(id,f);if(MIS_TABS[id])misBanner(id);discoverify(document.getElementById(id))};
+  const h=(location.hash||'').slice(1);if(MIS_TABS[h])misBanner(h);discoverify();
+  let tm;new MutationObserver(()=>{clearTimeout(tm);tm=setTimeout(()=>discoverify(),300)}).observe($('#main'),{childList:true,subtree:true})}

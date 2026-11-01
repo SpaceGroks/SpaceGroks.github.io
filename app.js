@@ -36,7 +36,7 @@ Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_e
 
 function init(){
   initTabs();checkIn();
-  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderSemana();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCohetes();resolveHora();renderHora();bindHora();resolveDia();renderDias();bindDias();renderDobles();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderEstados();bindDirectos();bindPrecision();renderReloj();renderCrono();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
+  resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderSemana();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCalendario();bindCalendario();renderCohetes();resolveHora();renderHora();bindHora();resolveDia();renderDias();bindDias();renderDobles();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderEstados();bindDirectos();bindPrecision();renderReloj();renderCrono();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();
 }
@@ -83,7 +83,7 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="semana"></div><div id="rlive"></div><div id="ritmo"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="dias"></div><div id="dobles"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="precision"></div><div id="directos"></div><div id="estados"></div><div id="reloj"></div><div id="crono"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div><div id="daily"></div><div id="semana"></div><div id="rlive"></div><div id="ritmo"></div><div id="calendario"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="dias"></div><div id="dobles"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="precision"></div><div id="directos"></div><div id="estados"></div><div id="reloj"></div><div id="crono"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
@@ -3836,7 +3836,7 @@ function renderSemana(){const el=$('#semana');if(!el||!D)return;let I;try{I=semI
   const dl=t=>new Date(t).toLocaleDateString('es-ES',{timeZone:'Europe/Madrid',weekday:'long',day:'numeric',month:'short'});
   const hr=t=>new Date(t).toLocaleTimeString('es-ES',{timeZone:'Europe/Madrid',hour:'2-digit',minute:'2-digit'});
   const tag=l=>{const s=l.status||'';const c=s==='Go'||s==='Success'?'ok':s==='TBC'||s==='In Flight'||s==='Hold'?'warn':s==='TBD'?'':'ko';return `<span class="tag ${c}">${esc(EST_TXT[s]||l.status_name||s)}</span>`};
-  const row=l=>`<li><b>${esc(hr(l.net))}</b> · ${esc(mname(l))} ${tag(l)}<div class="mut">${esc(l.rocket||'')} · ${esc(l.pad||'')}${l.loc?`, ${esc(l.loc)}`:''}${l.video?` · <a href="${esc(l.video)}" target="_blank" rel="noopener">directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}</div></li>`;
+  const row=l=>`<li><b>${esc(hr(l.net))}</b> · ${esc(mname(l))} ${tag(l)}<div class="mut">${esc(l.rocket||'')} · ${esc(calPad(l.pad))}${l.loc?`, ${esc(l.loc)}`:''}${l.video?` · <a href="${esc(l.video)}" target="_blank" rel="noopener">directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}</div></li>`;
   const day=(x,i)=>`<div class="semd"><h3>${i===0?'Hoy, ':i===1?'Mañana, ':''}${esc(dl(x.t))}</h3>${x.ls.length?`<ul>${x.ls.map(row).join('')}</ul>`:'<p class="mut">Sin lanzamientos con hora fijada.</p>'}</div>`;
   el.innerHTML=`<div class="card daily semana"><div class="kick">Calendario de la semana</div>
   <p>${I.n?`<b>${I.n}</b> ${I.n===1?'lanzamiento de SpaceX con hora fijada':'lanzamientos de SpaceX con hora fijada'} entre hoy y dentro de 6 días${I.busy.ls.length>1?`; el día con más es el ${esc(dl(I.busy.t))} (${I.busy.ls.length})`:''}.`:'No hay lanzamientos de SpaceX con hora fijada en los próximos 7 días según la fuente.'}${I.aprox.length?` Además, ${I.aprox.length===1?'1 lanzamiento tiene':I.aprox.length+' lanzamientos tienen'} solo una fecha aproximada que cae en estos días y no se muestra${I.aprox.length===1?'':'n'} aquí.`:''}</p>
@@ -3909,3 +3909,50 @@ function rcAnswer(btn){if(!RC||!RC.run||RC.lock)return;RC.lock=true;const q=RC.q
 function rcEnd(){if(!RC||!RC.run)return;RC.run=false;RC.done=true;const s=rcState(),pts=Math.min(RC_MAX,RC.n),gain=Math.max(0,pts-Math.min(RC_MAX,s.today||0));
   RC.newBest=RC.n>(s.best||0)&&RC.n>0;s.today=Math.max(s.today||0,RC.n);s.best=Math.max(s.best||0,RC.n);s.plays=(s.plays||0)+1;if(RC.newBest)s.bestAt=Date.now();LS.set('racha',s);
   RC.gain=gain;if(gain)addPts('encadena',gain);try{checkAch()}catch(e){}renderRachaJ();const b=$('#racha').querySelector('.rc-go');if(b&&b.focus)b.focus({preventScroll:true})}
+
+// ---------- Calendario de lanzamientos (vista mensual con datos de Launch Library 2) ----------
+// Los lanzamientos con día conocido (precisión SEC, MIN, HR/HOUR o DAY) se colocan en su día, en tu hora local.
+// Los que solo tienen mes (precisión M) se listan aparte en ese mes; los de trimestre, semestre o año no se colocan.
+const calPad=p=>!p||/^Unknown Pad$/i.test(p)?'plataforma por confirmar':p;
+const CAL_DAY=/^(SEC|MIN|HR|HOUR|DAY)$/,CAL_WD=['lun','mar','mié','jue','vie','sáb','dom'];
+let calOff=0;
+function calKey(y,m){return y*12+m}
+function calInfo(){if(!D)return null;const seen=new Set(),all=[];
+  for(const l of [...(D.previous||[]),...(D.upcoming||[])]){if(!l||!l.id||!l.net||seen.has(l.id))continue;seen.add(l.id);all.push(l)}
+  const now=new Date(),k0=calKey(now.getFullYear(),now.getMonth()),byDay={},byMonth={};let loose=0,kMax=k0;
+  const upIds=new Set((D.upcoming||[]).map(l=>l.id));
+  for(const l of all){const p=String(l.net_precision||'').toUpperCase(),d=new Date(l.net);if(isNaN(d))continue;
+    const past=!upIds.has(l.id)||/^(Success|Failure|Partial Failure)$/i.test(l.status||'');
+    if(CAL_DAY.test(p)||past){const k=calKey(d.getFullYear(),d.getMonth()),dk=`${k}-${d.getDate()}`;(byDay[dk]=byDay[dk]||[]).push(l);if(!past&&k>kMax)kMax=k}
+    else if(p==='M'){const k=calKey(d.getUTCFullYear(),d.getUTCMonth());(byMonth[k]=byMonth[k]||[]).push(l);if(k>kMax)kMax=k}
+    else loose++}
+  for(const k in byDay)byDay[k].sort((a,b)=>new Date(a.net)-new Date(b.net));
+  const kMin=Math.min(k0,...(D.previous||[]).map(l=>{const d=new Date(l.net);return isNaN(d)?k0:calKey(d.getFullYear(),d.getMonth())}));
+  return{byDay,byMonth,loose,k0,kMin:Math.max(kMin,k0-2),kMax,upIds}}
+function calItem(l,I){const past=!I.upIds.has(l.id)||/^(Success|Failure|Partial Failure)$/i.test(l.status||''),d=new Date(l.net);
+  const st=past?(/^Success$/i.test(l.status||'')?' <span class="tag ok">Éxito</span>':/Failure/i.test(l.status||'')?' <span class="tag warn">Fallo</span>':''):(l.status==='Go'?' <span class="tag ok">Go</span>':'');
+  const hr=/^DAY$/i.test(l.net_precision||'')?'sin hora fijada':d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  return `<li><b>${d.toLocaleDateString('es-ES',{weekday:'short',day:'numeric'})}, ${esc(hr)}</b>: ${esc(mname(l))} · ${esc(l.rocket||'')} · ${esc(calPad(l.pad))}${l.loc?` (${esc(l.loc)})`:''}${st} ${misBtn(l,past?'p':'u')}</li>`}
+function renderCalendario(){const el=$('#calendario');if(!el||!D)return;const I=calInfo();if(!I){el.innerHTML='';return}
+  const k=Math.min(I.kMax,Math.max(I.kMin,I.k0+calOff));calOff=k-I.k0;const y=Math.floor(k/12),m=k%12;
+  const first=new Date(y,m,1),nd=new Date(y,m+1,0).getDate(),lead=(first.getDay()+6)%7,today=new Date(),isCur=k===I.k0;
+  const mesN0=first.toLocaleDateString('es-ES',{month:'long',year:'numeric'}),mesN=mesN0.charAt(0).toUpperCase()+mesN0.slice(1);
+  let cells='',row='',total=0;const weeks=[];let wk=null;
+  for(let i=0;i<lead;i++)row+='<td class="cal-x"></td>';
+  for(let d=1;d<=nd;d++){const L=I.byDay[`${k}-${d}`]||[],col=(lead+d-1)%7;total+=L.length;
+    if(!wk||col===0){wk={a:d,b:d,L:[]};weeks.push(wk)}wk.b=d;wk.L.push(...L);
+    const td=isCur&&d===today.getDate(),pastDay=isCur&&d<today.getDate()||k<I.k0;
+    const lab=L.length?`${d}: ${L.length} lanzamiento${L.length>1?'s':''} (${L.map(l=>mname(l)).join(', ')})`:'';
+    row+=`<td class="${td?'cal-hoy ':''}${L.length?'cal-on ':''}${pastDay?'cal-pas':''}"${lab?` title="${esc(lab)}"`:''}><span class="cal-n">${d}</span>${L.length?`<span class="cal-d" aria-hidden="true">${L.slice(0,3).map(l=>/Starship/i.test(l.rocket||'')?'⭐':'🚀').join('')}${L.length>3?'+':''}</span><span class="sr">${esc(lab)}</span>`:''}</td>`;
+    if(col===6){cells+=`<tr>${row}</tr>`;row=''}}
+  if(row){const rest=7-((lead+nd)%7);for(let i=0;i<rest&&rest<7;i++)row+='<td class="cal-x"></td>';cells+=`<tr>${row}</tr>`}
+  const M=I.byMonth[k]||[];
+  const wl=weeks.map(w=>`<div class="cal-w"><h4>${w.a===w.b?`El ${w.a}`:`Del ${w.a} al ${w.b}`}: ${w.L.length?`${w.L.length} lanzamiento${w.L.length>1?'s':''}`:'ninguno con fecha'}</h4>${w.L.length?`<ul class="emp-top">${w.L.map(l=>calItem(l,I)).join('')}</ul>`:''}</div>`).join('');
+  el.innerHTML=`<div class="card calendario"><h3>Calendario de lanzamientos</h3>
+  <div class="opts cal-nav"><button type="button" data-cal="-1" ${k<=I.kMin?'disabled':''} aria-label="Mes anterior">‹</button><b class="cal-mes" aria-live="polite">${esc(mesN)}</b><button type="button" data-cal="1" ${k>=I.kMax?'disabled':''} aria-label="Mes siguiente">›</button>${isCur?'':'<button type="button" data-cal="0">Hoy</button>'}</div>
+  <p class="mut">${total?`${total} lanzamiento${total>1?'s':''} con día conocido`:'Ningún lanzamiento con día conocido'}${M.length?` y ${M.length} más previsto${M.length>1?'s':''} este mes sin día fijado`:''}. 🚀 Falcon · ⭐ Starship.</p>
+  <div class="tscroll"><table class="cal"><caption class="sr">Lanzamientos de SpaceX en ${esc(mesN0)}, por día</caption><tr>${CAL_WD.map(w=>`<th scope="col">${w}</th>`).join('')}</tr>${cells}</table></div>
+  ${wl}${M.length?`<h4>Este mes, sin día fijado</h4><ul class="emp-top">${M.map(l=>`<li>${esc(mname(l))} · ${esc(l.rocket||'')} · ${esc(calPad(l.pad))} ${misBtn(l,'u')}</li>`).join('')}</ul>`:''}
+  <div class="mut" style="margin-top:6px">Datos de Launch Library 2 (lanzamientos recientes y los ${(D.upcoming||[]).length} próximos de la lista), en tu hora local, actualizados ${fmt(D.generated)}.${I.loose?` Hay ${I.loose} próximo${I.loose>1?'s':''} más previsto${I.loose>1?'s':''} solo para un trimestre, semestre o año, que no se colocan en el calendario.`:''}</div></div>`}
+function bindCalendario(){const el=$('#next');if(!el||el._cal)return;el._cal=true;el.addEventListener('click',e=>{const b=e.target.closest('button[data-cal]');if(!b)return;
+  const v=+b.dataset.cal;calOff=v===0?0:calOff+v;renderCalendario();const n=$('#calendario .cal-mes');try{n&&(n.tabIndex=-1,n.focus({preventScroll:true}))}catch(e){}})}

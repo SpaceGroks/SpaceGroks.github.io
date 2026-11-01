@@ -273,3 +273,19 @@ main p,main li,main dd,main td{line-height:1.6!important}
 details.hyp{margin:0 0 .8em}
 details.hyp>summary{cursor:pointer;color:#c4a1ff;min-height:44px;display:flex;align-items:center}
 .mis a.btn,.mis-pista a.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid rgba(168,85,247,.6);color:#e9d5ff;text-decoration:none;background:rgba(0,0,0,.4)}
+
+/* Recorrido vertical */
+#feed{max-width:760px;margin:0 auto;padding:0 16px}
+.fd{min-height:88vh;min-height:88svh;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:40px 0;line-height:1.7;opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+.fd.in{opacity:1;transform:none}
+.fd h2{font-size:clamp(26px,6vw,44px);line-height:1.25;margin:0}
+.fd-k{text-transform:uppercase;letter-spacing:.16em;font-size:12px;color:#c4b5fd;margin:0}
+.fd-big{margin:0;display:flex;flex-direction:column}.fd-big b{font-size:clamp(56px,16vw,110px);line-height:1.05;background:linear-gradient(90deg,#fff,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent}
+.fd-big span{color:var(--mut);font-size:17px}
+.fd-down{color:#c4b5fd;animation:fdb 1.8s ease-in-out infinite}@keyframes fdb{50%{transform:translateY(8px)}}
+.fd-row{display:flex;flex-direction:column;padding:12px 0;border-bottom:1px solid var(--line)}
+.fd .btn{align-self:flex-start;display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:12px;border:1px solid rgba(168,85,247,.6);color:#e9d5ff;text-decoration:none;background:rgba(0,0,0,.4)}
+#fd-hyp .mis{margin:0}
+.fd-h{text-align:center;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin:40px 0 0;scroll-margin-top:0}
+.fd-menu{position:fixed;right:14px;bottom:14px;z-index:1000;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#000;border:1px solid rgba(168,85,247,.7);color:#e9d5ff;text-decoration:none;font-size:20px}
+@media (prefers-reduced-motion: reduce){.fd{opacity:1;transform:none;transition:none}.fd-down{animation:none}}

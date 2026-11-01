@@ -38,7 +38,7 @@ function init(){
   initTabs();checkIn();
   resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderSemana();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCalendario();bindCalendario();renderCohetes();resolveHora();renderHora();bindHora();resolveDia();renderDias();bindDias();renderDobles();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderEstados();bindDirectos();bindPrecision();renderReloj();renderCrono();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
-  renderInstall();offlineNote();try{misInit()}catch(e){console.error(e)}
+  renderInstall();offlineNote();try{renderFeed()}catch(e){console.error(e)}try{misInit()}catch(e){console.error(e)}
 }
 // ---------- Pestañas (accesibles con teclado y enlazables con #) ----------
 const TABS=()=>[...document.querySelectorAll('nav [role=tab]')];
@@ -4016,7 +4016,7 @@ function misBanner(tab){const sec=document.getElementById(tab);if(!sec||!MIS_TAB
   b.innerHTML=`<h3>🔎 Pista</h3><p>${misClue(tab)}</p><a href="#next" class="btn">Volver al misterio</a>`;misGet(tab)}
 const MIS_OPTS=[['peso','Llevaba tanta carga que no le quedaba combustible para volver'],['meteo','Hacía mal tiempo en tierra'],['viejo','El propulsor era demasiado viejo'],['prisa','Así se lanza antes']];
 function renderMis(){const sec=$('#next');const M=misData();if(!sec||!M)return;let c=sec.querySelector('#misterio');
-  if(!c){c=document.createElement('div');c.id='misterio';c.className='card mis';sec.prepend(c)}
+  if(!c){c=document.createElement('div');c.id='misterio';c.className='card mis';const fh=document.getElementById('fd-hyp');if(fh)fh.appendChild(c);else sec.prepend(c)}
   const s=misState(),n=Object.keys(MIS_TABS).filter(t=>s.clues[t]).length,L=M.L;
   c.innerHTML=`<h2 class="mis-q">¿Por qué el ${esc(M.st.serial)} aterrizó en el mar y no en tierra?</h2>
 <p class="mut">${esc(mname(L))} · ${fmtD(L.net)}</p>
@@ -4033,3 +4033,23 @@ function discoverify(root){(root||document).querySelectorAll('main .tab p, main 
 function misInit(){renderMis();const o=showTab;showTab=function(id,f){o(id,f);if(MIS_TABS[id])misBanner(id);discoverify(document.getElementById(id))};
   const h=(location.hash||'').slice(1);if(MIS_TABS[h])misBanner(h);discoverify();
   let tm;new MutationObserver(()=>{clearTimeout(tm);tm=setTimeout(()=>discoverify(),300)}).observe($('#main'),{childList:true,subtree:true})}
+
+// ---------- Recorrido vertical (scrollytelling): misterio → pistas → hipótesis → próximos → retos ----------
+const RM=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function fdCount(el){const to=+el.dataset.n;if(!isFinite(to))return;if(RM()){el.textContent=to.toLocaleString('es-ES');return}
+  const t0=performance.now(),d=900;const f=t=>{const k=Math.min(1,(t-t0)/d);el.textContent=Math.round(to*(1-Math.pow(1-k,3))).toLocaleString('es-ES');if(k<1)requestAnimationFrame(f)};requestAnimationFrame(f)}
+function renderFeed(){const F=$('#feed'),M=misData();if(!F||!D)return;const S=D.stats||{},n=v=>`<b class="fd-n" data-n="${v}">${v}</b>`;
+  const up=(D.upcoming||[]).slice(0,3),st=LS.get('streak',{n:0,best:0});let h='';
+  if(M){const L=M.L;
+    h+=`<section class="fd fd-hero"><p class="fd-k">Misterio</p><h2>¿Por qué el ${esc(M.st.serial)} aterrizó en el mar y no en tierra?</h2><p class="mut">${esc(mname(L))} · ${fmtD(L.net)}</p><p class="fd-down" aria-hidden="true">↓ Baja para investigar</p></section>`;
+    h+=`<section class="fd fd-clue" data-clue="log"><p class="fd-k">Pista 1 · Historial</p><p class="fd-big">${n(stCount(L))}<span>satélites a bordo</span></p><p>${misClue('log')}</p></section>`;
+    h+=`<section class="fd fd-clue" data-clue="fleet"><p class="fd-k">Pista 2 · Propulsores</p><p class="fd-big">${n(M.slSea)}<span>de ${M.slN} Starlink acabaron en el mar</span></p><p>${misClue('fleet')}</p></section>`;
+    h+=`<section class="fd fd-clue" data-clue="map"><p class="fd-k">Pista 3 · Mapa</p><p class="fd-big">${n(M.gN)}<span>Falcon 9 volvieron a tierra</span></p><p>${misClue('map')}</p></section>`;
+    h+=`<section class="fd" id="fd-hyp"><p class="fd-k">Tu hipótesis</p></section>`}
+  if(up.length)h+=`<section class="fd fd-list"><p class="fd-k">Próximos lanzamientos</p>${up.map(l=>`<div class="fd-row"><b>${esc(mname(l))}</b><span class="mut">${fmt(l.net)} · ${esc(l.rocket||'')} · ${esc(l.loc||'')}</span></div>`).join('')}<a class="btn" href="#next" data-go="next">Ver todos</a></section>`;
+  h+=`<section class="fd fd-list"><p class="fd-k">Retos y racha</p><p class="fd-big">${n(streakNow())}<span>días de racha · récord ${esc(st.best||0)}</span></p><p class="fd-big">${n(S.consecutive_successful_landings??0)}<span>aterrizajes seguidos de SpaceX</span></p><a class="btn" href="#quiz" data-go="quiz">Jugar retos</a></section>`;
+  F.innerHTML=h;
+  F.querySelectorAll('[data-go]').forEach(a=>a.onclick=e=>{e.preventDefault();showTab(a.dataset.go);$('#herramientas').scrollIntoView({behavior:RM()?'auto':'smooth'})});
+  const seen=el=>{if(el.classList.contains('in'))return;el.classList.add('in');el.querySelectorAll('.fd-n').forEach(fdCount);if(el.dataset.clue)misGet(el.dataset.clue)};
+  const secs=[...F.querySelectorAll('.fd')];
+  if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){seen(e.target);io.unobserve(e.target)}}),{threshold:.45});secs.forEach(x=>io.observe(x))}else secs.forEach(seen)}

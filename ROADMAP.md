@@ -103,5 +103,5 @@ En cada ejecución, además: traducir al español (castellano, nombres propios i
 - [x] Mapa de la trayectoria: en la ficha de misión, dibujar en el mapa la plataforma de despegue y la zona o barcaza de aterrizaje de cada lanzamiento cuando Launch Library 2 da sus coordenadas, con la distancia en línea recta entre ambas
 - [x] Tu racha frente a la de SpaceX: en el modo Racha, comparar tu mejor racha con los aterrizajes seguidos reales de SpaceX (dato de Launch Library 2) y un logro al superar 10, 25 y 50 aciertos seguidos (hecho el 1 nov, 14:58)
 - [x] Calendario de lanzamientos: en Próximo, una vista mensual con los próximos lanzamientos reales de Launch Library 2 por día (cohete, misión y plataforma), para ver de un vistazo cuántos hay cada semana (hecho el 1 nov, 16:52)
-- [ ] Buscador de misiones: un campo de búsqueda en el historial para encontrar cualquier lanzamiento real por nombre de misión, cliente, propulsor o plataforma
+- [x] Buscador de misiones: un campo de búsqueda en el historial para encontrar cualquier lanzamiento real por nombre de misión, cliente, propulsor o plataforma
 - [ ] Comparador de propulsores: elegir dos propulsores reales y ver lado a lado sus vuelos, misiones, zonas de aterrizaje y días entre vuelos con los datos de Launch Library 2

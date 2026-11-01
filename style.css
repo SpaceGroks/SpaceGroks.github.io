@@ -245,3 +245,4 @@ table.cal td.cal-x{border:none;background:none}table.cal td.cal-pas{opacity:.55}
 table.cal td.cal-on{background:rgba(46,155,255,.14)}table.cal td.cal-hoy{outline:2px solid var(--acc);outline-offset:-2px;opacity:1}
 table.cal .cal-n{font-size:12px;display:block}table.cal .cal-d{font-size:13px;display:block;white-space:nowrap;overflow:hidden}
 .calendario .cal-w h4{margin:10px 0 4px}.calendario .emp-top{list-style:none;padding:0}.calendario .emp-top li{margin:6px 0}
+#log-buscar .log-row{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}#log-buscar .log-row .opts{flex:0 0 auto}#log-q{flex:1 1 220px;min-width:0;min-height:44px;padding:9px 12px;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:12px;font:15px Inter,sans-serif}#log-q:focus{outline:2px solid var(--acc);outline-offset:1px}

@@ -1896,14 +1896,37 @@ function padHTML(p){const d=ms=>rtHrs(ms),n=p.past.length;
 function padListHTML(){const S=padStats();if(!S.length)return '';
   return `<h3>Plataformas de lanzamiento</h3><p class="mut">Cada plataforma necesita días para reparar, limpiar y preparar el siguiente cohete. Aquí ves cada cuánto despega SpaceX desde cada una, con los últimos ${D.previous.length} lanzamientos de Launch Library 2.</p>`+S.map(padHTML).join('')}
 // ---------- Historial ----------
-function renderLog(){
-  $('#log').innerHTML=fallosHTML()+D.previous.map(l=>{const b=(l.stages||[])[0]||{};const ok=l.status==='Success';
+// Buscador: filtra los lanzamientos reales de data.previous por misión, cliente, propulsor, cohete, plataforma, zona de aterrizaje u órbita
+// (sin distinguir mayúsculas ni tildes; varias palabras deben aparecer todas). No guarda nada en localStorage.
+const nrm=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+function logHay(l){const st=l.stages||[];return nrm([l.name,l.mission,mname(l),(l.cust||[]).join(' '),l.rocket,l.pad,l.loc,l.orbit,l.orbit_name,l.orbit?orb(l.orbit):'',l.mtype,
+  ...st.map(b=>[b.serial,b.land_loc,b.land_loc_name].join(' '))].join(' ')).replace(/national aeronautics and space administration/g,'$& nasa').replace(/cape canaveral/g,'$& cabo canaveral')
+  .replace(/united states space force/g,'$& fuerza espacial').replace(/kennedy space center/g,'$& centro espacial kennedy').replace(/, fl,/g,' florida').replace(/, ca,/g,' california').replace(/, tx,/g,' texas')}
+function logCard(l){const b=(l.stages||[])[0]||{};const ok=l.status==='Success';
     return `<div class="card row">${l.img?`<figure class="ph"><img loading="lazy" src="${esc(l.img)}" alt="">${credit(l)}</figure>`:''}<div><h3>${ic(ok,'Éxito','Fallo')} ${mname(l)}</h3>
     <div class="mut">${fmt(l.net)} · ${l.rocket} · ${l.loc||''}</div>
     <div>${l.orbit?`<span class="tag">${orb(l.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">${b.serial} · vuelo ${b.flight}</span>`:''}
     ${b.land_attempt?`<span class="tag ${b.land_success?'ok':'ko'}">${b.land_success?'Aterrizó':'No aterrizó'} ${b.land_loc?'en '+b.land_loc:''}</span>`:''}</div>
-    ${l.fail?`<div class="ko">${l.fail}</div>`:''}${learnHTML(l)}${misBtn(l,'p')}</div></div>`}).join('');
-}
+    ${l.fail?`<div class="ko">${l.fail}</div>`:''}${learnHTML(l)}${misBtn(l,'p')}</div></div>`}
+function logSugs(){const P=D.previous||[],c={};const add=k=>{if(k&&!/Unknown/.test(k))c[k]=(c[k]||0)+1};
+  P.forEach(l=>{(l.stages||[]).forEach(b=>{add(b.serial);add(b.land_loc)});add(l.pad)});
+  return Object.entries(c).filter(([,n])=>n>1).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k)}
+function logFilter(q){const P=D.previous||[],w=nrm(q).split(/\s+/).filter(Boolean);
+  const R=w.length?P.filter(l=>{const h=logHay(l);return w.every(x=>h.includes(x))}):P;
+  const out=$('#log-out'),cnt=$('#log-cnt');if(!out)return;
+  cnt.textContent=w.length?(R.length?`${R.length} de ${P.length} lanzamientos coinciden con «${q.trim()}».`:`Ningún lanzamiento de los últimos ${P.length} coincide con «${q.trim()}».`):`Mostrando los últimos ${P.length} lanzamientos de SpaceX.`;
+  out.innerHTML=R.length?R.map(logCard).join(''):`<div class="card"><p class="mut">Prueba con otro nombre de misión, un cliente (por ejemplo NASA o Space Force), un propulsor (B10…), un cohete o una plataforma.</p></div>`}
+function renderLog(){const P=D.previous||[],sg=logSugs();
+  $('#log').innerHTML=fallosHTML()+`<div class="card" id="log-buscar"><h3><label for="log-q">Buscar en el historial</label></h3>
+  <p class="mut">Busca entre los últimos ${P.length} lanzamientos reales por misión, cliente, propulsor, cohete, plataforma, zona de aterrizaje u órbita.</p>
+  <div class="log-row"><input type="search" id="log-q" autocomplete="off" placeholder="Ej.: Starlink, NASA, Starship, OCISLY, Florida" aria-describedby="log-cnt">
+  <div class="opts"><button type="button" id="log-clr">Borrar</button></div></div>
+  ${sg.length?`<p class="mut" style="margin:8px 0 4px">Lo que más se repite:</p><div class="opts">${sg.map(k=>`<button type="button" data-logq="${esc(k)}">${esc(k)}</button>`).join('')}</div>`:''}
+  <p class="mut" id="log-cnt" role="status" aria-live="polite"></p></div><div id="log-out"></div>`;
+  const q=$('#log-q');q.addEventListener('input',()=>logFilter(q.value));
+  $('#log-clr').addEventListener('click',()=>{q.value='';logFilter('');q.focus()});
+  $('#log').querySelectorAll('[data-logq]').forEach(b=>b.addEventListener('click',()=>{q.value=b.dataset.logq;logFilter(q.value)}));
+  logFilter('')}
 // ---------- Aprende en 1 minuto (qué lleva, a qué órbita va y para qué sirve) ----------
 const ORB_LEARN={LEO:'Entre unos 160 y 2.000 km de altura. Una vuelta a la Tierra dura unos 90 minutos. Es la órbita más barata de alcanzar: allí están Starlink y la Estación Espacial Internacional.',
  SSO:'Órbita baja casi polar (normalmente entre 500 y 800 km) inclinada para pasar sobre cada lugar a la misma hora solar todos los días. Es ideal para fotografiar la Tierra siempre con la misma luz.',

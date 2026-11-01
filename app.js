@@ -1734,7 +1734,7 @@ function cmpHTML(rows){
   const nextT=x=>x.next?`${esc(mname(x.next))}<div class="mut">${fmtD(x.next.net)}</div>`:'<span class="mut">Sin misión anunciada</span>';
   const zT=x=>x.zones.length?x.zones.map(esc).join(', '):'<span class="mut">—</span>';
   return `<div class="card" id="cmp"><b>Comparar dos propulsores</b><div class="mut">Elige dos primeras etapas y míralas lado a lado. La estrella marca cuál va por delante en cada dato.</div>
-  <div class="opts" style="align-items:center">${opt(0)} <span aria-hidden="true">frente a</span> ${opt(1)}</div>
+  <div class="opts" style="align-items:center">${opt(0)} <span aria-hidden="true">frente a</span> ${opt(1)} <button type="button" class="cmp-sw" aria-label="Intercambiar los dos propulsores">⇄ Intercambiar</button></div>
   <div class="tscroll"><table><caption class="sr">Comparación entre ${esc(A.serial)} y ${esc(B.serial)}</caption><tr><th scope="col">Dato</th><th scope="col">${esc(A.serial)}</th><th scope="col">${esc(B.serial)}</th></tr>
   ${row('Vuelos totales',A.flights,B.flights,cmpN(A.flights,B.flights,true))}
   ${row('Aterrizajes con éxito',A.landings??'—',B.landings??'—',cmpN(A.landings,B.landings,true))}
@@ -1744,7 +1744,23 @@ function cmpHTML(rows){
   ${row('Último vuelo',lastT(A),lastT(B),cmpN(+new Date(A.last.l.net),+new Date(B.last.l.net),true))}
   ${row('Próxima misión',nextT(A),nextT(B),0)}
   </table></div>
-  <p class="mut">Totales de vuelos y aterrizajes según Launch Library 2; días en tierra y zonas, de sus vuelos entre los últimos ${D.previous.length} lanzamientos (${esc(A.serial)}: ${A.inData}, ${esc(B.serial)}: ${B.inData}).</p></div>`;
+  ${cmpMisHTML(A,B)}
+  <p class="mut">Totales de vuelos y aterrizajes según Launch Library 2; días en tierra, zonas y misiones, de sus vuelos entre los últimos ${D.previous.length} lanzamientos (${esc(A.serial)}: ${A.inData}, ${esc(B.serial)}: ${B.inData}).</p></div>`;
+}
+// Misiones de cada propulsor lado a lado (vuelos en los datos de Launch Library 2)
+function cmpMisHTML(A,B){
+  const hA=boosterHist(A.serial),hB=boosterHist(B.serial);
+  const res=s=>s.land_attempt===false?'sin intento de aterrizaje':s.land_success===true?'aterrizó'+(s.land_loc_name&&!/Unknown/.test(s.land_loc_name)?' en '+s.land_loc_name:''):s.land_success===false?'aterrizaje fallido':'aterrizaje sin confirmar';
+  const li=x=>{const td=tdays(x.s.turnaround);return `<li><b>${esc(mname(x.l))}</b><div class="mut">${fmtD(x.l.net)}${x.s.flight?` · vuelo ${x.s.flight}`:''} · ${esc(res(x.s))}${td!=null&&td>0?` · ${td} d en tierra`:''}</div>${misBtn(x.l,'p')}</li>`};
+  const col=(X,h)=>`<div class="cmpcol"><b>${esc(X.serial)}</b><ol class="cmpl" reversed>${h.slice().reverse().map(li).join('')}</ol></div>`;
+  const zA=new Set(A.zones),common=B.zones.filter(z=>zA.has(z));
+  const dA=hA.map(x=>x.l.net.slice(0,10)),dB=new Set(hB.map(x=>x.l.net.slice(0,10)));
+  const gap=hA.length&&hB.length?Math.round(Math.abs(new Date(hA[0].l.net)-new Date(hB[0].l.net))/DAY):null;
+  const sameDay=dA.filter(d=>dB.has(d)).length;
+  const notes=[common.length?`Los dos han aterrizado en ${common.map(esc).join(' y ')}.`:A.zones.length&&B.zones.length?'No comparten ninguna zona de aterrizaje en estos datos.':'',
+    sameDay?`Volaron el mismo día ${sameDay} ${sameDay===1?'vez':'veces'}.`:'',
+    gap!=null?`Su primer vuelo en estos datos está separado por ${gap} días.`:''].filter(Boolean).join(' ');
+  return `<details class="cmpmis"><summary>Sus misiones lado a lado (${hA.length} y ${hB.length} en los datos)</summary>${notes?`<p class="mut">${notes}</p>`:''}<div class="cmpgrid">${col(A,hA)}${col(B,hB)}</div></details>`;
 }
 // ---------- Carrera por el récord de la flota ----------
 function raceData(){
@@ -1788,6 +1804,7 @@ function renderFleet(){
   ${rows.map(r=>`<tr class="clic" data-serial="${r.serial}"><td><button type="button" class="lnk" data-open="${r.serial}" aria-label="Abrir la ficha del propulsor ${r.serial}"><b>${r.serial}</b> <span class="mut" aria-hidden="true">ficha ›</span></button></td><td>${r.flights}<div class="bar"><i style="width:${100*r.flights/max}%"></i></div></td><td>${fmtD(r.last)}<div class="mut">${r.missions.at(-1)}</div></td><td>${r.next?`${mname(r.next)}<div class="mut">${fmtD(r.next.net)}</div>`:'—'}</td></tr>`).join('')}</table></div>`;
   $('#fleet').querySelectorAll('button[data-s]').forEach(t=>t.onclick=()=>{fleetSort=t.dataset.s;renderFleet();const f=$('#fleet').querySelector(`button[data-s="${t.dataset.s}"]`);f&&f.focus()});
   $('#fleet').querySelectorAll('button[data-vr]').forEach(t=>t.onclick=()=>{vrSort=t.dataset.vr;renderFleet();const f=$('#fleet').querySelector(`button[data-vr="${t.dataset.vr}"]`);f&&f.focus()});
+  {const sw=$('#fleet').querySelector('.cmp-sw');if(sw)sw.onclick=()=>{CMP=[CMP[1],CMP[0]];const o=$('#fleet').querySelector('details.cmpmis')?.open;renderFleet();const d=$('#fleet').querySelector('details.cmpmis');if(d&&o)d.open=true;const b=$('#fleet').querySelector('.cmp-sw');b&&b.focus()}}
   $('#fleet').querySelectorAll('select[data-cmp]').forEach(sel=>sel.onchange=()=>{CMP[+sel.dataset.cmp]=sel.value;renderFleet();const f=$('#fleet').querySelector(`select[data-cmp="${sel.dataset.cmp}"]`);f&&f.focus()});
   $('#fleet').querySelectorAll('tr[data-serial]').forEach(t=>t.onclick=e=>{if(e.target.closest('button[data-s]'))return;openBooster(t.dataset.serial)});
 }

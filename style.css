@@ -232,3 +232,8 @@ details.rtg>summary .rtt{font:600 14px Orbitron,sans-serif;letter-spacing:1px;co
 details.rtg>summary .rtd{flex-basis:100%;font-weight:400;font-size:13px}
 details.rtg[open]>summary{border-bottom:1px solid var(--line)}
 details.rtg>summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:12px}
+
+.rc-vs{margin:10px 0;padding:8px 10px;border-radius:10px;background:rgba(127,127,127,.08)}
+.rc-bar{height:8px;border-radius:4px;background:rgba(127,127,127,.25);overflow:hidden;margin:4px 0}
+.rc-bar i{display:block;height:100%;background:#2e9bff}
+.rc-ms{white-space:nowrap;opacity:.6}.rc-ms.on{opacity:1;font-weight:600}

@@ -2449,7 +2449,10 @@ const ACH=[
  {id:'hilo5',i:'🔧',t:'Ojo de mecánico',d:'Encadena 5 aciertos seguidos en el juego «¿Más o menos?».',p:10,pr:()=>[(LS.get('hilo',{}).best)||0,5]},
  {id:'st3',i:'📅',t:'Tres días seguidos',d:'Entra 3 días seguidos.',p:10,pr:()=>[(LS.get('streak',{}).best)||0,3]},
  {id:'st7',i:'🌕',t:'Una semana sin fallar',d:'Entra 7 días seguidos.',p:25,pr:()=>[(LS.get('streak',{}).best)||0,7]},
- {id:'dd5',i:'⭐',t:'Cinco desafíos',d:'Completa 5 desafíos del día.',p:15,pr:()=>[(LS.get('streak',{}).retos)||0,5]}
+ {id:'dd5',i:'⭐',t:'Cinco desafíos',d:'Completa 5 desafíos del día.',p:15,pr:()=>[(LS.get('streak',{}).retos)||0,5]},
+ {id:'rc10',i:'🔗',t:'Racha de 10',d:'Encadena 10 aciertos seguidos en el modo Racha.',p:15,pr:()=>[(LS.get('racha',{}).best)||0,10]},
+ {id:'rc25',i:'⛓️',t:'Racha de 25',d:'Encadena 25 aciertos seguidos en el modo Racha.',p:30,pr:()=>[(LS.get('racha',{}).best)||0,25]},
+ {id:'rc50',i:'🚀',t:'Racha de 50',d:'Encadena 50 aciertos seguidos en el modo Racha.',p:50,pr:()=>[(LS.get('racha',{}).best)||0,50]}
 ];
 let ACH_BUSY=false;
 function checkAch(){if(!D||ACH_BUSY)return;ACH_BUSY=true;
@@ -3870,10 +3873,18 @@ function rcNext(){const keys=Object.keys(RC_FAM),used=RC?RC.used:new Set(),prev=
     if(id&&used.has(id)&&t<25)continue;if(q.ids&&q.ids.some(x=>used.has(x))&&t<25)continue;
     q.fam=k;return q}return null}
 function rcOk(){try{return !!rcNext()}catch(e){return false}}
+// Tu mejor racha frente a los aterrizajes seguidos reales de SpaceX (Launch Library 2) y logros a 10, 25 y 50
+function rcVsSpaceX(best){const st=D&&D.stats,sx=st&&st.consecutive_successful_landings;const got=LS.get('ach',{});
+  const ms=[10,25,50].map(n=>`<span class="rc-ms${best>=n?' on':''}" title="${best>=n?'Logro conseguido':'Te faltan '+(n-best)}">${best>=n?'✅':'🔒'} ${n} seguidas</span>`).join(' ');
+  let cmp='';if(sx!=null){const pct=Math.min(100,Math.round(sx?best/sx*100:100)),d=sx-best;
+    cmp=`<p>${d>0?`SpaceX lleva <b>${sx}</b> aterrizajes de propulsores seguidos sin fallar; a ti te faltan <b>${d}</b> ${d===1?'acierto':'aciertos'} para igualarla.`:d===0?`Tu mejor racha iguala los <b>${sx}</b> aterrizajes seguidos de SpaceX. ¡Uno más y la superas!`:`Tu mejor racha (<b>${best}</b>) supera los <b>${sx}</b> aterrizajes seguidos sin fallar de SpaceX.`}</p>
+    <div class="rc-bar" role="img" aria-label="Tu racha es el ${pct} % de la de SpaceX"><i style="width:${pct}%"></i></div>`}
+  return `<div class="rc-vs"><div class="kick">Tu racha frente a la de SpaceX</div>${cmp}<p class="mut">Logros: ${ms}${sx!=null?` · Dato de Launch Library 2, actualizado ${fmt(D.generated)}.`:''}</p></div>`}
 function renderRachaJ(){const el=$('#racha');if(!el||!D)return;const s=rcState(),ok=rcOk();
   let h=`<div class="card rapid racha"><div class="kick">Modo Racha</div>
   <p class="mut">Preguntas seguidas de todos los juegos de Retos, cada una de un juego distinto al de la anterior y con lanzamientos reales de Launch Library 2: dónde aterrizó, desde qué plataforma, qué vuelo era, la meteo, la cronología… Sigues mientras aciertes y la partida acaba en el primer fallo. 1 punto por acierto; cada día cuenta tu mejor racha (hasta ${RC_MAX} puntos).</p>
   <div class="stats"><div><b>${s.best||0}</b>mejor racha en este dispositivo</div><div><b>${s.today||0}</b>tu mejor hoy</div><div><b>${s.plays||0}</b>partidas jugadas</div></div>`;
+  h+=rcVsSpaceX(s.best||0);
   if(RC&&RC.done)h+=rcSummary();
   h+=ok?`<div class="opts"><button type="button" class="rc-go">${RC&&RC.done?'Jugar otra vez':'Empezar racha'}</button></div>`:'<p class="mut">Ahora no hay datos suficientes para el modo Racha.</p>';
   el.innerHTML=h+'</div>';const b=el.querySelector('.rc-go');if(b)b.onclick=rcStart}
@@ -3897,4 +3908,4 @@ function rcAnswer(btn){if(!RC||!RC.run||RC.lock)return;RC.lock=true;const q=RC.q
   const nx=$('#racha').querySelector('.rc-nx');if(nx){nx.onclick=()=>{RC.lock=false;if(!ok||!nq)return rcEnd();RC.q=nq;rcShow()};if(nx.focus)nx.focus({preventScroll:true})}}
 function rcEnd(){if(!RC||!RC.run)return;RC.run=false;RC.done=true;const s=rcState(),pts=Math.min(RC_MAX,RC.n),gain=Math.max(0,pts-Math.min(RC_MAX,s.today||0));
   RC.newBest=RC.n>(s.best||0)&&RC.n>0;s.today=Math.max(s.today||0,RC.n);s.best=Math.max(s.best||0,RC.n);s.plays=(s.plays||0)+1;if(RC.newBest)s.bestAt=Date.now();LS.set('racha',s);
-  RC.gain=gain;if(gain)addPts('encadena',gain);renderRachaJ();const b=$('#racha').querySelector('.rc-go');if(b&&b.focus)b.focus({preventScroll:true})}
+  RC.gain=gain;if(gain)addPts('encadena',gain);try{checkAch()}catch(e){}renderRachaJ();const b=$('#racha').querySelector('.rc-go');if(b&&b.focus)b.focus({preventScroll:true})}

@@ -2087,8 +2087,8 @@ function openBooster(serial){
    <div class="scroll"><table><tr><th scope="col">Fecha</th><th scope="col">Misión</th><th scope="col">Vuelo nº</th><th scope="col">Días en tierra</th><th scope="col">Aterrizó</th></tr>${rows}</table></div>
    <p class="mut">Datos de Launch Library 2. Los totales de vuelos y aterrizajes son los que da la fuente en la última actualización.</p></div>`;
   const prevFocus=document.activeElement;
-  document.body.appendChild(m);document.body.classList.add('noscroll');
-  const close=(keep)=>{m.remove();document.body.classList.remove('noscroll');document.removeEventListener('keydown',onKey);
+  document.body.appendChild(m);document.body.classList.add('noscroll');const tmap=drawTraj(m,l);
+  const close=(keep)=>{try{tmap&&tmap.remove()}catch(e){}m.remove();document.body.classList.remove('noscroll');document.removeEventListener('keydown',onKey);
     if(keep!==true){const t=document.querySelector(`#fleet button[data-open="${serial}"]`)||prevFocus;try{t&&t.focus&&t.focus()}catch(e){}}},
    onKey=e=>{if(e.key==='Escape')close();else if(e.key==='Tab'){const f=[...m.querySelectorAll('button,a[href],[tabindex]:not([tabindex="-1"])')];if(!f.length)return;
      const a=f[0],z=f.at(-1);if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}}};
@@ -2102,6 +2102,27 @@ function openBooster(serial){
 const ST_ES={Success:'Éxito',Failure:'Fallo','Partial Failure':'Fallo parcial',Go:'Confirmado (Go)',TBD:'Fecha por confirmar',TBC:'Pendiente de confirmar','In Flight':'En vuelo',Hold:'En espera'};
 const stES=l=>ST_ES[l.status]||l.status_name||l.status||'';
 function landKind(s){const n=s.land_loc_name||'';if(DRONE.test(n))return 'barco dron en el mar';if(LZ.test(n)||/^LZ/.test(s.land_loc||''))return 'zona de aterrizaje en tierra';if(/Ocean|Gulf|Sea/i.test(n))return 'amerizaje en el mar';return ''}
+// ---------- Trayectoria en la ficha de misión (plataforma y zona de aterrizaje con coordenadas de Launch Library 2) ----------
+function kmBetween(a,b,c,d){const r=Math.PI/180,R=6371.0088,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2;return 2*R*Math.asin(Math.min(1,Math.sqrt(x)))}
+function fmtKm(k){return k<10?k.toLocaleString('es-ES',{maximumFractionDigits:1})+' km':Math.round(k).toLocaleString('es-ES')+' km'}
+function trajInfo(l){if(l.lat==null||l.lon==null)return null;const LZD=D.lzones||{},seen=new Set(),zs=[],sea=[];
+  (l.stages||[]).forEach(s=>{const k=s.land_loc;if(!k||seen.has(k)||s.land_attempt===false)return;seen.add(k);const z=LZD[k];
+    if(z&&z.lat!=null&&z.lon!=null)zs.push({k,name:z.name||k,lat:+z.lat,lon:+z.lon,km:kmBetween(+l.lat,+l.lon,+z.lat,+z.lon),ok:s.land_success});
+    else if(s.land_loc_name&&s.land_loc_name!=='Unknown')sea.push({k,name:s.land_loc_name,type:s.land_type||(z&&z.type)})});
+  return {zs,sea}}
+function trajHTML(l){const t=trajInfo(l);if(!t)return '';const fut=new Date(l.net)>Date.now();
+  const txt=t.zs.map(z=>`<p>Distancia en línea recta de la plataforma a <b>${esc(z.name)}</b>${z.k!==z.name?` (${esc(z.k)})`:''}: <b>${fmtKm(z.km)}</b>. ${z.ok===false?'El propulsor intentó volver allí, pero no aterrizó.':fut||z.ok==null?'El propulsor intentará volver aquí tras separarse.':'El propulsor volvió aquí tras separarse.'}</p>`).join('')+
+   t.sea.map(z=>`<p class="mut">${z.type==='ASDS'?`La barcaza ${esc(z.name)} se coloca en el mar según la trayectoria de cada misión`:`El destino de la etapa (${esc(z.name)}) está en el mar`}, y Launch Library 2 no da su posición, así que no sale en el mapa.</p>`).join('')+
+   (!t.zs.length&&!t.sea.length?'<p class="mut">Launch Library 2 todavía no da dónde aterrizará el propulsor.</p>':'');
+  return `<h3>Despegue y aterrizaje en el mapa</h3>${typeof L!=='undefined'?`<div class="trajmap" role="img" aria-label="Mapa con la plataforma de lanzamiento${t.zs.length?' y la zona de aterrizaje':''}"></div>`:''}${txt}<p class="mut">Coordenadas de Launch Library 2.</p>`}
+function drawTraj(m,l){const el=m.querySelector('.trajmap'),t=trajInfo(l);if(!el||!t||typeof L==='undefined')return null;
+  try{const map=L.map(el,{scrollWheelZoom:false,attributionControl:true});
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap, © CARTO'}).addTo(map);
+    const P=[+l.lat,+l.lon];L.circleMarker(P,{radius:8,color:'#4fb3ff',fillColor:'#8a7dff',fillOpacity:.7,weight:2}).addTo(map).bindTooltip('Despegue: '+(l.pad||''),{permanent:t.zs.length>0,direction:'top'});
+    t.zs.forEach(z=>{L.circleMarker([z.lat,z.lon],{radius:7,color:'#4fe3a1',fillColor:'#4fe3a1',fillOpacity:.5,weight:2,dashArray:'3 3'}).addTo(map).bindTooltip('Aterrizaje: '+z.k,{permanent:true,direction:'bottom'});
+      L.polyline([P,[z.lat,z.lon]],{color:'#4fe3a1',weight:2,dashArray:'6 6'}).addTo(map)});
+    if(t.zs.length)map.fitBounds(L.latLngBounds([P,...t.zs.map(z=>[z.lat,z.lon])]).pad(.6),{maxZoom:13});else map.setView(P,9);
+    setTimeout(()=>{try{map.invalidateSize()}catch(e){}},60);return map}catch(e){return null}}
 function misBtn(l,src){return `<button type="button" class="lnk misb" data-mis="${esc(l.id)}" data-src="${src}" aria-label="Abrir la ficha de la misión ${esc(mname(l))}">Ficha de la misión <span aria-hidden="true">›</span></button>`}
 function findMis(id,src){const a=src==='p'?D.previous:D.upcoming,b=src==='p'?D.upcoming:D.previous;return a.find(x=>x.id===id)||b.find(x=>x.id===id)}
 function openMission(id,src,from){const l=findMis(id,src);if(!l)return;
@@ -2124,6 +2145,7 @@ function openMission(id,src,from){const l=findMis(id,src);if(!l)return;
    ${cu.length?`<p class="mut">Cliente: ${cu.map(esc).join(', ')}</p>`:''}
    ${win!=null&&fut?`<p class="mut">Ventana de lanzamiento: ${win?`${win} minutos, de ${new Date(l.ws).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})} a ${new Date(l.we).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}`:'instantánea (hay que despegar a la hora exacta)'}.</p>`:''}
    <h3>Propulsor y aterrizaje</h3>${stH}
+   ${trajHTML(l)}
    <h3>Cronología del vuelo</h3>${tlHTML(l)}
    <h3>Directo</h3>${live}
    ${canPred||canFd?`<div class="opts">${canPred?'<button type="button" data-go="predict">Predecir este lanzamiento</button>':''}${canFd?'<button type="button" data-go="flight">Jugar su cuenta atrás</button>':''}</div>`:''}

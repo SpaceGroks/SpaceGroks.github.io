@@ -179,7 +179,7 @@ function quizQs(pool,all,r){
   return Q;
 }
 const RT_GR=[
-  {id:'dest',t:'Destacados',e:'⭐',d:'Modo Racha, reto rápido, simulador de aterrizaje, ¿Más o menos? y el reto semanal',ids:['racha','rapid','aterr','hilo','qwk']},
+  {id:'dest',t:'Destacados',e:'⭐',d:'Modo Racha, reto rápido, simuladores de ascenso y de aterrizaje, ¿Más o menos? y el reto semanal',ids:['racha','rapid','ascen','aterr','hilo','qwk']},
   {id:'mis',t:'Misiones y clientes',e:'🛰️',d:'Órbitas, clientes, satélites, tipos de misión y orden de los lanzamientos',ids:['adonde','quien','sats','mtip','nyear','antes']},
   {id:'prop',t:'Propulsores y aterrizajes',e:'♻️',d:'Dónde aterrizó, qué vuelo era, plataformas y días en tierra',ids:['donde','vuelo','desde','dtierra','padn']},
   {id:'met',t:'Hora y meteo',e:'⛅',d:'Hora del despegue, previsión del tiempo y ventanas de lanzamiento',ids:['wxj','hdesp','wxpre','vabre','vdur']},
@@ -195,7 +195,7 @@ function quizBoxes(){const s=$('#quiz');if(s&&!s.querySelector('#qwk')){const o=
   s.querySelectorAll('.rt-all').forEach(b=>b.onclick=()=>{s.querySelectorAll('details.rtg').forEach(d=>d.open=b.dataset.v==='1');rtSave()});}
   return $('#qwk')}
 function renderQuiz(){
-  const QW=quizBoxes();if(!RC||!RC.run)renderRachaJ();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();if(!AD||!AD.run)renderAdonde();if(!ATS||!ATS.run)renderAterr();if(!QN||!QN.run)renderQuien();if(!ST||!ST.run)renderSats();if(!OR||!OR.run)renderOrden();if(!DN||!DN.run)renderDonde();if(!VU||!VU.run)renderVuelo();if(!DE||!DE.run)renderDesde();if(!TG||!TG.run)renderDTierra();if(!AN||!AN.run)renderAntes();if(!MT||!MT.run)renderMeteoJ();if(!HD||!HD.run)renderHoraD();if(!PQ||!PQ.run)renderPreocupa();if(!VA||!VA.run)renderVentanaJ();if(!VD||!VD.run)renderDuracionJ();if(!MQ||!MQ.run)renderTipoJ();if(!NY||!NY.run)renderAnoJ();if(!PN||!PN.run)renderPadJ();if(!TP||!TP.run)renderPasosJ();if(!LD||!LD.run)renderAterrJ();if(!EB||!EB.run)renderReentJ();if(!MX||!MX.run)renderMaxQ();if(!CF||!CF.run)renderCofiaJ();if(!SC||!SC.run)renderSecoJ();if(!ER||!ER.run)renderEntradaJ();if(!SG||!SG.run)renderSesJ();if(!PV||!PV.run)renderVueltaJ();if(!LB||!LB.run)renderAterrBurnJ();if(!PL||!PL.run)renderPlaneoJ();if(!MS||!MS.run)renderSeparaJ();if(!SB||!SB.run)renderSegBurnJ();if(!MM||!MM.run)renderMaxMecoJ();if(!FS||!FS.run)renderSesCofiaJ();if(!MR||!MR.run)renderMecoReentJ();if(!SF||!SF.run)renderCofiaSecoJ();
+  const QW=quizBoxes();if(!RC||!RC.run)renderRachaJ();if(!RP||!RP.run)renderRapid();if(!HL||!HL.run)renderHilo();if(!AD||!AD.run)renderAdonde();if(!ATS||!ATS.run)renderAterr();if(!ASC||!ASC.run)renderAscen();if(!QN||!QN.run)renderQuien();if(!ST||!ST.run)renderSats();if(!OR||!OR.run)renderOrden();if(!DN||!DN.run)renderDonde();if(!VU||!VU.run)renderVuelo();if(!DE||!DE.run)renderDesde();if(!TG||!TG.run)renderDTierra();if(!AN||!AN.run)renderAntes();if(!MT||!MT.run)renderMeteoJ();if(!HD||!HD.run)renderHoraD();if(!PQ||!PQ.run)renderPreocupa();if(!VA||!VA.run)renderVentanaJ();if(!VD||!VD.run)renderDuracionJ();if(!MQ||!MQ.run)renderTipoJ();if(!NY||!NY.run)renderAnoJ();if(!PN||!PN.run)renderPadJ();if(!TP||!TP.run)renderPasosJ();if(!LD||!LD.run)renderAterrJ();if(!EB||!EB.run)renderReentJ();if(!MX||!MX.run)renderMaxQ();if(!CF||!CF.run)renderCofiaJ();if(!SC||!SC.run)renderSecoJ();if(!ER||!ER.run)renderEntradaJ();if(!SG||!SG.run)renderSesJ();if(!PV||!PV.run)renderVueltaJ();if(!LB||!LB.run)renderAterrBurnJ();if(!PL||!PL.run)renderPlaneoJ();if(!MS||!MS.run)renderSeparaJ();if(!SB||!SB.run)renderSegBurnJ();if(!MM||!MM.run)renderMaxMecoJ();if(!FS||!FS.run)renderSesCofiaJ();if(!MR||!MR.run)renderMecoReentJ();if(!SF||!SF.run)renderCofiaSecoJ();
   const Z=buildQuiz(),st=LS.get('quiz_'+Z.key,{ans:{}}),answered=Object.keys(st.ans).length;
   const correct=Z.qs.filter((q,i)=>st.ans[i]===q.right).length;
   let h=`<div class="card"><b>Reto semanal</b><div class="mut">${Z.title}. Cada lunes sale un reto nuevo. 10 puntos por acierto.</div>
@@ -286,6 +286,100 @@ function atDraw(){const S=ATS,c=$('#at-cv');if(!c)return;const x=c.getContext('2
    else{const a=AT.thr*(S.th||1)/m-AT.g+dr;[t,col]=need>a*1.05?['Guiado: más potencia','#ffb347']:need<a*.95?['Guiado: menos potencia','#4fb3ff']:['Guiado: en la trayectoria','#7bd88f']}
    x.fillStyle=col;x.font='bold 14px sans-serif';x.fillText(t,12,22+5*18+6)}
   x.fillStyle='#4fb3ff';x.fillRect(W-24,20,10,(Hh-80)*S.prop/AT.prop)}
+// ---------- Simulador de ascenso: pasar por Max-Q con un Falcon 9 ----------
+// Física 2D con cifras reales aproximadas de un Falcon 9 Block 5 con Starlink: unas 568 t al despegar, 411 t de propelente en la
+// 1.ª etapa (se guardan unas 40 t para volver a la barcaza), 9 Merlin 1D (7.607 kN a nivel del mar y 8.227 kN en el vacío,
+// impulso específico de 311 s en el vacío) que en el juego regulan del 60 % al 100 %, atmósfera exponencial (escala de 8,5 km)
+// y un arrastre que sube al cruzar la barrera del sonido. El guiado sigue un programa de cabeceo fijo, como el ordenador de vuelo:
+// el jugador solo decide la potencia. Si la presión dinámica pasa de 35 kPa la estructura no aguanta; si se baja potencia de más,
+// el cohete pierde velocidad y altura (más pérdidas por gravedad y una trayectoria más baja y densa).
+const AS={m0:568000,prop:411000,res:40000,tsl:7607e3,tvac:8227e3,isp:311,g:9.81,area:10.5,min:.6,ramp:.3,qlim:35000,tf:35,ex:.7,x:4,dt:.02,R:6371e3};
+let ASC=null;
+const asPitch=t=>t<8?90:90-(90-AS.tf)*Math.min(1,(t-8)/140)**AS.ex;
+const asNew=()=>({t:0,h:0,x:0,vx:0,vy:0,m:AS.m0,p:AS.prop,th:1,low:false,q:0,dq:0,qmax:0,tq:0,hq:0,xq:0,vq:0,M:0,path:[[0,0]],minTh:1,lowT:0,said:{}});
+function asStep(S,dt){const e=Math.exp(-S.h/8500),rho=1.225*e,v=Math.hypot(S.vx,S.vy),q=.5*rho*v*v;
+  S.dq=(q-S.q)/dt;S.q=q;if(q>S.qmax){S.qmax=q;S.tq=S.t;S.hq=S.h;S.xq=S.x;S.vq=v}
+  const tgt=S.low?AS.min:1;S.th+=Math.max(-AS.ramp*dt,Math.min(AS.ramp*dt,tgt-S.th));S.minTh=Math.min(S.minTh,S.th);if(S.th<.995)S.lowT+=dt;
+  const T=S.th*(AS.tvac-(AS.tvac-AS.tsl)*e),mdot=S.th*AS.tvac/(AS.isp*AS.g);
+  const a=Math.max(295,340-.004*Math.min(S.h,11000)),M=v/a,cd=M<.8?.3:M<1.1?.3+(M-.8)/.3*.25:M<2?.55-(M-1.1)/.9*.2:Math.max(.25,.35-(M-2)*.03);S.M=M;
+  const Dr=q*cd*AS.area,g=AS.g*(AS.R/(AS.R+S.h))**2,pr=asPitch(S.t)*Math.PI/180;
+  const ax=T/S.m*Math.cos(pr)-(v?Dr/S.m*S.vx/v:0),ay=T/S.m*Math.sin(pr)-(v?Dr/S.m*S.vy/v:0)-g+S.vx*S.vx/(AS.R+S.h);
+  S.vx+=ax*dt;S.vy+=ay*dt;S.h=Math.max(0,S.h+S.vy*dt);S.x+=S.vx*dt;S.m-=mdot*dt;S.p-=mdot*dt;S.t+=dt}
+const asE=S=>(S.vx*S.vx+S.vy*S.vy)/2+AS.g*S.h;
+let AS_REF=null;// el mismo vuelo con un piloto automático que baja potencia al acercarse a 35 kPa: la referencia de los puntos
+function asRef(){if(AS_REF)return AS_REF;const S=asNew();while(S.p>AS.res&&S.t<400){S.low=S.q>AS.qlim-1500;asStep(S,AS.dt)}return AS_REF={E:asE(S),S}}
+const asPts=r=>r>=.99?30:r>=.97?15:r>=.94?5:0;
+function asState(){const s=LS.get('ascen',{best:0,plays:0,bestR:null});if(s.d!==dayKey()){s.d=dayKey();s.today=0}return s}
+function asReal(){// cronología real de Launch Library 2: el último Falcon 9 con Max-Q y MECO publicados, y la mediana de todos
+  const F=(D.previous||[]).filter(l=>/^Falcon 9/.test(l.rocket||'')&&mxT(l)!=null&&mxMeco(l)>0);if(!F.length)return null;
+  const med=a=>{a=a.slice().sort((x,y)=>x-y);return a[Math.floor((a.length-1)/2)]};
+  return{l:F[0],q:mxT(F[0]),m:mxMeco(F[0]),n:F.length,qm:med(F.map(mxT)),mm:med(F.map(mxMeco))}}
+const asKm=m=>(m/1e3).toFixed(1).replace('.',','),asKpa=q=>(q/1e3).toFixed(1).replace('.',','),asN=n=>Math.round(n).toLocaleString('es-ES');
+function renderAscen(){const el=$('#ascen');if(!el||!D)return;const s=asState(),R=asReal();
+  let h=`<div class="card"><div class="kick">Simulador de ascenso · Max-Q</div>
+  <p class="mut">Pilota tú la potencia de un Falcon 9 desde el despegue hasta el MECO (cuando se apaga la primera etapa). El guiado ya inclina el cohete solo; tú decides cuánto empujan los 9 motores Merlin. Al subir, la velocidad crece y el aire se va haciendo menos denso: entre los dos, la presión del aire sobre el cohete (presión dinámica) llega a un máximo, el <b>Max-Q</b>. Si pasa de ${AS.qlim/1e3} kPa, la estructura no aguanta. Si bajas potencia demasiado pronto o demasiado rato, llegas al MECO más bajo y más lento.</p>
+  ${R?`<p class="mut">En el vuelo real más reciente con cronología, ${esc(mname(R.l))} (${fmtD(R.l.net)}), Launch Library 2 publica el Max-Q en ${tFmt(R.q)} y el MECO en ${tFmt(R.m)}; la mediana de los últimos ${R.n} Falcon 9 es ${tFmt(R.qm)} y ${tFmt(R.mm)}.</p>`:''}
+  <p class="mut">Mantén pulsado <b>Bajar potencia</b> (o la barra espaciadora) para regular hasta el ${Math.round(AS.min*100)} %; al soltar vuelve al 100 %. El vuelo va a ${AS.x}× la velocidad real. Puntos según la energía con la que llegas al MECO frente al mejor piloto automático: 30 si llegas al 99 % o más, 15 desde el 97 %, 5 desde el 94 %. Cada día cuenta tu mejor ascenso.</p>
+  <div class="stats"><div><b>${s.today||0}</b>tu mejor hoy (de 30)</div><div><b>${s.bestR!=null?(Math.floor(1000*s.bestR)/10).toFixed(1).replace('.',',')+' %':'—'}</b>tu mejor ascenso</div><div><b>${s.plays||0}</b>intentos</div></div>`;
+  if(ASC&&ASC.done)h+=`<div class="rp-res" role="status"><h3>${esc(ASC.msg)}</h3><p class="mut">${esc(ASC.tip||'')}</p></div>`;
+  h+=`<div class="opts"><button type="button" class="as-go">${ASC&&ASC.done?'Intentarlo otra vez':'Despegar'}</button></div></div>`;
+  el.innerHTML=h;el.querySelector('.as-go').onclick=asStart}
+function asStart(){if(ASC&&ASC.raf)cancelAnimationFrame(ASC.raf);ASC={S:asNew(),run:true,done:false,last:null,R:asReal()};
+  $('#ascen').innerHTML=`<div class="card"><div class="kick">Simulador de ascenso · Falcon 9</div>
+  <canvas id="as-cv" width="600" height="380" style="width:100%;height:auto;display:block;background:#05070b;border:1px solid var(--line)" aria-label="Ascenso del Falcon 9: altura, distancia y presión dinámica"></canvas>
+  <div class="sr" id="as-live" role="status" aria-live="polite"></div>
+  <div class="opts"><button type="button" id="as-thr" style="flex:2 1 200px">Bajar potencia</button></div></div>`;
+  const b=$('#as-thr'),dn=e=>{e.preventDefault();asLow(true)},up=e=>{e.preventDefault();asLow(false)};
+  b.addEventListener('pointerdown',dn);b.addEventListener('pointerup',up);b.addEventListener('pointerleave',up);b.addEventListener('pointercancel',up);
+  b.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();if(!e.repeat)asLow(true)}});b.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter')asLow(false)});
+  b.focus({preventScroll:true});
+  ASC.key=e=>{if(!ASC||!ASC.run)return;if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;
+    if(e.key===' '&&e.target!==b){e.preventDefault();if(e.type==='keydown'&&!e.repeat)asLow(true);if(e.type==='keyup')asLow(false)}};
+  document.addEventListener('keydown',ASC.key);document.addEventListener('keyup',ASC.key);
+  $('#as-live').textContent='Despegue. Motores al 100 %.';ASC.raf=requestAnimationFrame(asLoop)}
+function asLow(d){if(ASC&&ASC.run)ASC.S.low=d}
+function asSay(k,t){const S=ASC.S;if(S.said[k])return;S.said[k]=1;const l=$('#as-live');if(l)l.textContent=t}
+function asLoop(ts){const A=ASC;if(!A||!A.run)return;const S=A.S,dt=A.last==null?0:Math.min(.05,(ts-A.last)/1e3)*AS.x;A.last=ts;
+  for(let k=0,n=Math.ceil(dt/AS.dt);k<n&&A.run;k++){asStep(S,dt/n);
+    if(S.q>AS.qlim){asEnd('q');break}
+    if(S.p<=AS.res){asEnd('meco');break}}
+  if(A.run){const L=S.path[S.path.length-1];if(S.x-L[0]>300||S.h-L[1]>300)S.path.push([S.x,S.h]);
+    if(S.q>.8*AS.qlim&&S.dq>0)asSay('hi',`Presión dinámica alta: ${asKpa(S.q)} kPa.`);
+    if(S.t>S.tq+3&&S.qmax>15000)asSay('mq',`Max-Q superado en ${tFmt(Math.round(S.tq))} con ${asKpa(S.qmax)} kPa.`);
+    asDraw();A.raf=requestAnimationFrame(asLoop)}}
+function asEnd(why){const A=ASC,S=A.S;A.run=false;A.done=true;cancelAnimationFrame(A.raf);document.removeEventListener('keydown',A.key);document.removeEventListener('keyup',A.key);
+  const ref=asRef(),r=asE(S)/ref.E,v=Math.hypot(S.vx,S.vy),R=A.R;let pts=0;
+  if(why==='q')A.msg=`La presión dinámica llegó a ${asKpa(S.q)} kPa en ${tFmt(Math.round(S.t))}, a ${asKm(S.h)} km y ${asN(v)} m/s: la estructura no aguanta y el vuelo se pierde.`;
+  else{pts=asPts(r);A.msg=`MECO en ${tFmt(Math.round(S.t))} a ${asKm(S.h)} km y ${asN(v)} m/s, con un Max-Q de ${asKpa(S.qmax)} kPa en ${tFmt(Math.round(S.tq))}. Energía: ${(Math.floor(1000*r)/10).toFixed(1).replace('.',',')} % del piloto automático. ${pts?`+${pts} puntos.`:'Demasiado bajo y lento para sumar puntos.'}`}
+  const P=ref.S;A.tip=(why==='q'?`Hay que bajar potencia antes de llegar al pico, mientras la presión aún sube (con el 100 % todo el rato el pico llegaría a unos 40 kPa hacia T+1:11). `:S.lowT>45?`Bajaste potencia ${Math.round(S.lowT)} s: cada segundo de menos empuje es velocidad que se come la gravedad. `:'')+
+    `El piloto automático pasa Max-Q con ${asKpa(P.qmax)} kPa en ${tFmt(Math.round(P.tq))} y llega al MECO en ${tFmt(Math.round(P.t))} a ${asKm(P.h)} km y ${asN(Math.hypot(P.vx,P.vy))} m/s.`+
+    (R?` En el vuelo real de ${mname(R.l)}, según Launch Library 2, el Max-Q fue en ${tFmt(R.q)} y el MECO en ${tFmt(R.m)}.`:'')+' Simulación aproximada: masas y empujes reales redondeados, guiado fijo y sin viento.';
+  const s=asState();s.plays=(s.plays||0)+1;const gain=Math.max(0,pts-(s.today||0));s.today=Math.max(s.today||0,pts);s.best=Math.max(s.best||0,pts);
+  if(why==='meco'&&(s.bestR==null||r>s.bestR))s.bestR=r;LS.set('ascen',s);if(gain)addPts('ascen',gain);
+  if(pts&&!gain)A.msg+=' (No mejora tu mejor ascenso de hoy, así que no suma.)';else if(gain&&gain<pts)A.msg+=` (Suma ${gain}: mejoras tu mejor ascenso de hoy.)`;
+  renderAscen();const b=$('#ascen .as-go');if(b)b.focus({preventScroll:true})}
+function asDraw(){const S=ASC.S,c=$('#as-cv');if(!c)return;const x=c.getContext('2d'),W=c.width,Hh=c.height,G=Hh-30,PW=W-70,HM=80e3,XM=100e3;
+  const px=d=>20+(PW-20)*Math.min(1,d/XM),py=hh=>G-(G-20)*Math.min(1,hh/HM);
+  x.clearRect(0,0,W,Hh);x.fillStyle='#0b1a2a';x.fillRect(0,G,W,Hh-G);
+  x.strokeStyle='#1d2633';x.lineWidth=1;x.fillStyle='#667';x.font='10px sans-serif';x.textAlign='left';
+  for(let k=20e3;k<=HM;k+=20e3){x.beginPath();x.moveTo(20,py(k));x.lineTo(PW,py(k));x.stroke();x.fillText(k/1e3+' km',PW-34,py(k)-3)}
+  x.strokeStyle='#4fb3ff';x.lineWidth=2;x.beginPath();S.path.forEach(([a,b],i)=>i?x.lineTo(px(a),py(b)):x.moveTo(px(a),py(b)));x.lineTo(px(S.x),py(S.h));x.stroke();
+  if(S.qmax>15000&&S.t>S.tq+1){x.fillStyle='#ffb347';x.beginPath();x.arc(px(S.xq),py(S.hq),4,0,7);x.fill();x.font='11px sans-serif';x.fillText('Max-Q',px(S.xq)+6,py(S.hq)+4)}
+  {const rx=px(S.x),ry=py(S.h),a=asPitch(S.t)*Math.PI/180,L=16;x.save();x.translate(rx,ry);x.rotate(-a);
+   x.fillStyle='#f2f2f2';x.fillRect(-L,-2.5,L+4,5);const fl=(8+10*S.th)*(0.85+Math.random()*.3);x.fillStyle='#ffb347';x.beginPath();x.moveTo(-L,-2);x.lineTo(-L,2);x.lineTo(-L-fl,0);x.fill();x.restore()}
+  // indicador de presión dinámica a la derecha (hasta 45 kPa) con la línea roja del límite
+  const gx=W-40,gt=20,gh=G-40,qf=q=>gt+gh*(1-Math.min(1,q/45000));
+  x.fillStyle='#151b24';x.fillRect(gx,gt,16,gh);const q=S.q,col=q>.9*AS.qlim?'#ff6b6b':q>.75*AS.qlim?'#ffb347':'#7bd88f';
+  x.fillStyle=col;x.fillRect(gx,qf(q),16,gt+gh-qf(q));x.strokeStyle='#ff6b6b';x.lineWidth=2;x.beginPath();x.moveTo(gx-4,qf(AS.qlim));x.lineTo(gx+20,qf(AS.qlim));x.stroke();
+  x.strokeStyle='#fff';x.lineWidth=1;x.beginPath();x.moveTo(gx-3,qf(S.qmax));x.lineTo(gx+19,qf(S.qmax));x.stroke();
+  x.fillStyle='#aab';x.font='10px sans-serif';x.textAlign='center';x.fillText('q',gx+8,gt+gh+12);x.fillText(AS.qlim/1e3+' kPa',gx+8,qf(AS.qlim)-5);
+  const v=Math.hypot(S.vx,S.vy);x.fillStyle='rgba(5,7,11,.82)';x.fillRect(4,4,372,7*19+12);x.textAlign='left';x.font='15px sans-serif';x.fillStyle='#fff';
+  [`${tFmt(Math.floor(S.t))}`,`Altura ${asKm(S.h)} km`,`Velocidad ${asN(v)} m/s (Mach ${S.M.toFixed(1).replace('.',',')})`,`Presión dinámica ${asKpa(S.q)} kPa (máx. ${asKpa(S.qmax)})`,`Potencia ${Math.round(100*S.th)} %`,`Propelente para el MECO ${Math.max(0,Math.round(100*(S.p-AS.res)/(AS.prop-AS.res)))} %`].forEach((t,i)=>x.fillText(t,12,22+i*19));
+  let t,c2;if(S.q>.86*AS.qlim&&S.dq>0){t=S.th>.7?'¡Baja potencia ya!':'Aguanta: la presión aún sube';c2='#ff6b6b'}
+  else if(S.qmax>15000&&S.t>S.tq+2&&S.th<.99){t='Max-Q superado: vuelve al 100 %';c2='#7bd88f'}
+  else if(S.q>.6*AS.qlim&&S.dq>0){t='La presión sube: prepárate';c2='#ffb347'}
+  else{t=S.t<5?'Despegue':'Potencia máxima: gana velocidad';c2='#9aa'}
+  x.fillStyle=c2;x.font='bold 16px sans-serif';x.fillText(t,12,22+6*19+4)}
 // ---------- Reto rápido: 3 preguntas en 30 segundos ----------
 const RAPID_S=30;
 let RP=null;
@@ -2490,6 +2584,7 @@ const ACH=[
  {id:'st3',i:'📅',t:'Tres días seguidos',d:'Entra 3 días seguidos.',p:10,pr:()=>[(LS.get('streak',{}).best)||0,3]},
  {id:'st7',i:'🌕',t:'Una semana sin fallar',d:'Entra 7 días seguidos.',p:25,pr:()=>[(LS.get('streak',{}).best)||0,7]},
  {id:'dd5',i:'⭐',t:'Cinco desafíos',d:'Completa 5 desafíos del día.',p:15,pr:()=>[(LS.get('streak',{}).retos)||0,5]},
+ {id:'asc30',i:'🌬️',t:'Max-Q de manual',d:'Consigue 30 puntos en el simulador de ascenso: pasa Max-Q sin romper el cohete y llega al MECO con el 99 % de la energía del piloto automático.',p:15,pr:()=>[(LS.get('ascen',{}).best)||0,30]},
  {id:'rc10',i:'🔗',t:'Racha de 10',d:'Encadena 10 aciertos seguidos en el modo Racha.',p:15,pr:()=>[(LS.get('racha',{}).best)||0,10]},
  {id:'rc25',i:'⛓️',t:'Racha de 25',d:'Encadena 25 aciertos seguidos en el modo Racha.',p:30,pr:()=>[(LS.get('racha',{}).best)||0,25]},
  {id:'rc50',i:'🚀',t:'Racha de 50',d:'Encadena 50 aciertos seguidos en el modo Racha.',p:50,pr:()=>[(LS.get('racha',{}).best)||0,50]}
@@ -2544,7 +2639,7 @@ function betHistHTML(){const H=betHist();if(!H.length)return '<h4>Tu historial d
   <p class="mut">${best?`Tu apuesta más fiable: ${esc(BH_N[best.k]||best.k)} (${best.ok} de ${best.n}).`:'Necesitas dos apuestas resueltas de un mismo tipo para saber cuál es la más fiable.'} ${worst?`Tu peor racha: ${worst.n} ${worst.n===1?'fallo':'fallos seguidos'}${worst.from?`, ${worst.n===1?'el':'del'} ${fmtD(worst.from)}${worst.n>1&&fmtD(worst.to)!==fmtD(worst.from)?` al ${fmtD(worst.to)}`:''}`:''}.`:'Todavía no has fallado ninguna.'}</p>`}
 function statsHTML(){if(!D)return '';const S=statsData(),tot=S.rows.reduce((s,r)=>s+r.n,0),okT=S.rows.reduce((s,r)=>s+r.ok,0);
   const row=r=>{const re=S.real[r.k];return `<tr><th scope="row">${esc(r.t)}</th><td>${r.n?`<b>${pct(r.ok,r.n)}</b> <span class="mut">(${r.ok} de ${r.n})</span>`:'<span class="mut">sin datos</span>'}</td><td>${r.n?`${pct(r.si,r.n)} Sí`:'—'}</td><td>${r.n?`${pct(r.realSi,r.n)} Sí`:'—'}</td><td>${re?`${pct(re[0],re[1])} Sí <span class="mut">(${re[0]} de ${re[1]})</span>`:'<span class="mut">la fuente no guarda la hora prevista original</span>'}</td></tr>`};
-  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['quien','¿De quién es?'],['sats','¿Cuántos satélites?'],['orden','Ordena la cuenta atrás'],['donde','¿Dónde aterrizó?'],['vuelo','¿Qué vuelo era?'],['desde','¿Desde dónde despegó?'],['dtierra','¿Cuántos días en tierra?'],['antes','¿Cuál despegó antes?'],['wxj','¿Qué meteo tenía?'],['hdesp','¿A qué hora despegó?'],['wxpre','¿Qué preocupaba a los meteorólogos?'],['vabre','¿Salió al abrir la ventana?'],['vdur','¿Cuánto duraba la ventana?'],['mtip','¿Qué tipo de misión?'],['nyear','¿Qué lanzamiento del año era?'],['padn','¿Cuántas veces había despegado la plataforma?'],['tlpas','¿Cuántos pasos tenía la cuenta atrás?'],['tland','¿Cuándo aterrizó el propulsor?'],['teb','¿Cuánto duró el encendido de reentrada?'],['mxq','¿Cuándo llegó a Max-Q?'],['cofia','¿Cuánto tardó la cofia?'],['seco','¿Cuándo apagó la segunda etapa?'],['erb','¿Cuándo empezó el encendido de reentrada?'],['sesg','¿Cuánto tardó en encenderse la segunda etapa?'],['pvol','¿Cuánto tardó el propulsor en volver?'],['lbur','¿Cuánto duró el encendido de aterrizaje?'],['plan','¿Cuánto planeó el propulsor?'],['msep','¿Cuánto tardó en separarse?'],['sbur','¿Cuánto duró el encendido de la segunda etapa?'],['mxme','¿Cuánto pasó de Max-Q al MECO?'],['cofs','¿Cuándo soltó la cofia tras SES-1?'],['mrei','¿Cuánto pasó del MECO a la reentrada?'],['fseco','¿Cuánto tardó en apagar la segunda etapa tras la cofia?'],['encadena','Modo Racha'],['flight','Director de vuelo'],['aterr','Simulador de aterrizaje'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['dia','Apuesta del día de la semana'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
+  const P=S.pts,cats=[['pred','Predicciones'],['expert','Análisis de experto'],['quiz','Reto semanal'],['rapid','Reto rápido'],['hilo','¿Más o menos?'],['adonde','¿Adónde va?'],['quien','¿De quién es?'],['sats','¿Cuántos satélites?'],['orden','Ordena la cuenta atrás'],['donde','¿Dónde aterrizó?'],['vuelo','¿Qué vuelo era?'],['desde','¿Desde dónde despegó?'],['dtierra','¿Cuántos días en tierra?'],['antes','¿Cuál despegó antes?'],['wxj','¿Qué meteo tenía?'],['hdesp','¿A qué hora despegó?'],['wxpre','¿Qué preocupaba a los meteorólogos?'],['vabre','¿Salió al abrir la ventana?'],['vdur','¿Cuánto duraba la ventana?'],['mtip','¿Qué tipo de misión?'],['nyear','¿Qué lanzamiento del año era?'],['padn','¿Cuántas veces había despegado la plataforma?'],['tlpas','¿Cuántos pasos tenía la cuenta atrás?'],['tland','¿Cuándo aterrizó el propulsor?'],['teb','¿Cuánto duró el encendido de reentrada?'],['mxq','¿Cuándo llegó a Max-Q?'],['cofia','¿Cuánto tardó la cofia?'],['seco','¿Cuándo apagó la segunda etapa?'],['erb','¿Cuándo empezó el encendido de reentrada?'],['sesg','¿Cuánto tardó en encenderse la segunda etapa?'],['pvol','¿Cuánto tardó el propulsor en volver?'],['lbur','¿Cuánto duró el encendido de aterrizaje?'],['plan','¿Cuánto planeó el propulsor?'],['msep','¿Cuánto tardó en separarse?'],['sbur','¿Cuánto duró el encendido de la segunda etapa?'],['mxme','¿Cuánto pasó de Max-Q al MECO?'],['cofs','¿Cuándo soltó la cofia tras SES-1?'],['mrei','¿Cuánto pasó del MECO a la reentrada?'],['fseco','¿Cuánto tardó en apagar la segunda etapa tras la cofia?'],['encadena','Modo Racha'],['flight','Director de vuelo'],['ascen','Simulador de ascenso'],['aterr','Simulador de aterrizaje'],['bet','Apuestas de propulsores'],['racha','Apuesta de la racha'],['ritmo','Ritmo de lanzamientos'],['cli','Apuesta de clientes'],['ven','Ventanas de lanzamiento'],['zon','Apuesta de aterrizaje'],['mes','Apuesta del mes'],['hora','Apuesta de la hora'],['dia','Apuesta del día de la semana'],['tipo','Apuesta de Starlink'],['vet','Apuesta de veteranía'],['orb','Apuesta de órbita'],['vida','Vida de los propulsores'],['tur','Apuesta del tiempo en tierra'],['hito','Apuesta de hitos'],['anu','Ritmo del año'],['prec','Apuesta de precisión'],['dir','Apuesta de retransmisión'],['streak','Racha y desafíos'],['ach','Logros']],ptot=cats.reduce((s,[k])=>s+(P[k]||0),0);
   const best=S.rows.filter(r=>r.n>=2).sort((a,b)=>b.ok/b.n-a.ok/a.n)[0];
   return `<details class="card achc stats"${LS.get('stats_open',false)?' open':''}><summary><b>Mis estadísticas</b> · ${tot?`${pct(okT,tot)} de aciertos en ${tot} ${tot===1?'pregunta':'preguntas'}`:'aún sin predicciones resueltas'}</summary>
   <p class="mut">Se calculan con lo que guardas en este navegador y los datos reales de Launch Library 2.</p>

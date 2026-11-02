@@ -116,3 +116,8 @@
 - La portada es ahora un recorrido de scroll: misterio → 3 pistas a pantalla completa (Historial, Propulsores, Mapa) que se recogen solas al bajar, con cifras reales animadas → hipótesis con un toque → próximos lanzamientos → retos y racha.
 - IntersectionObserver + animaciones suaves; respeta prefers-reduced-motion.
 - Pestañas y herramientas siguen accesibles en «Más herramientas» y con el botón ☰ fijo.
+
+## 2026-11-02 09:10 · Hipótesis de órbitas (sxp-v67)
+- Nueva sección en el recorrido de la portada, tras el misterio: «¿Adónde irán sobre todo los próximos 20 lanzamientos?». Un toque entre 4 órbitas reales (hoy Baja, Geoestacionaria, Heliosíncrona y Polar) y se revelan con barras animadas los repartos reales de Launch Library 2: próximos 20 (hoy 10 polar, 9 baja, 1 geoestacionaria) frente a los últimos 60 (48 baja). El giro lo descubre el jugador, con un enlace para investigarlo en Próximo.
+- Una respuesta por día en la clave nueva sxp_orbita; las claves sxp_* existentes no cambian.
+- ROADMAP: «Órbitas de un vistazo», «Ficha de la plataforma» y «Glosario de vuelo» se replantean como descubrimientos con un toque y menos texto.

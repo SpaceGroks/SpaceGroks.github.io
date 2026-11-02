@@ -4046,10 +4046,36 @@ function renderFeed(){const F=$('#feed'),M=misData();if(!F||!D)return;const S=D.
     h+=`<section class="fd fd-clue" data-clue="fleet"><p class="fd-k">Pista 2 · Propulsores</p><p class="fd-big">${n(M.slSea)}<span>de ${M.slN} Starlink acabaron en el mar</span></p><p>${misClue('fleet')}</p></section>`;
     h+=`<section class="fd fd-clue" data-clue="map"><p class="fd-k">Pista 3 · Mapa</p><p class="fd-big">${n(M.gN)}<span>Falcon 9 volvieron a tierra</span></p><p>${misClue('map')}</p></section>`;
     h+=`<section class="fd" id="fd-hyp"><p class="fd-k">Tu hipótesis</p></section>`}
+  h+=orbSec();
   if(up.length)h+=`<section class="fd fd-list"><p class="fd-k">Próximos lanzamientos</p>${up.map(l=>`<div class="fd-row"><b>${esc(mname(l))}</b><span class="mut">${fmt(l.net)} · ${esc(l.rocket||'')} · ${esc(l.loc||'')}</span></div>`).join('')}<a class="btn" href="#next" data-go="next">Ver todos</a></section>`;
   h+=`<section class="fd fd-list"><p class="fd-k">Retos y racha</p><p class="fd-big">${n(streakNow())}<span>días de racha · récord ${esc(st.best||0)}</span></p><p class="fd-big">${n(S.consecutive_successful_landings??0)}<span>aterrizajes seguidos de SpaceX</span></p><a class="btn" href="#quiz" data-go="quiz">Jugar retos</a></section>`;
   F.innerHTML=h;
+  orbWire(F);
   F.querySelectorAll('[data-go]').forEach(a=>a.onclick=e=>{e.preventDefault();showTab(a.dataset.go);$('#herramientas').scrollIntoView({behavior:RM()?'auto':'smooth'})});
   const seen=el=>{if(el.classList.contains('in'))return;el.classList.add('in');el.querySelectorAll('.fd-n').forEach(fdCount);if(el.dataset.clue)misGet(el.dataset.clue)};
   const secs=[...F.querySelectorAll('.fd')];
   if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){seen(e.target);io.unobserve(e.target)}}),{threshold:.45});secs.forEach(x=>io.observe(x))}else secs.forEach(seen)}
+
+// ---------- ¿Adónde van? Hipótesis de órbitas con un toque y revelado al bajar ----------
+const FD_ORB={LEO:'Baja',PO:'Polar',GTO:'Geoestacionaria (transferencia)',MEO:'Media',L2:'Punto L2','N/A':'Sin dato'};
+const orbN=o=>FD_ORB[o]||ORB_ES[o]||o||'Sin dato';
+function orbCount(a){const c={};(a||[]).forEach(l=>{const o=l.orbit||'N/A';c[o]=(c[o]||0)+1});return Object.entries(c).sort((x,y)=>y[1]-x[1])}
+function orbData(){const up=orbCount(D&&D.upcoming),pr=orbCount(D&&D.previous);if(!up.length||!pr.length)return null;
+  const opts=[];[...up,...pr].forEach(([o])=>{if(o!=='N/A'&&!opts.includes(o)&&opts.length<4)opts.push(o)});opts.sort((a,b)=>orbN(a).localeCompare(orbN(b),'es'));
+  const top=up[0][1],win=up.filter(x=>x[1]===top).map(x=>x[0]);
+  return{up,pr,opts,win,nu:(D.upcoming||[]).length,np:(D.previous||[]).length}}
+function orbBars(c,tot){return c.map(([o,k])=>`<div class="ob"><span>${esc(orbN(o))}</span><i style="--w:${Math.round(k/tot*100)}%"></i><b>${k}</b></div>`).join('')}
+function orbSec(){const O=orbData();if(!O)return'';const g=LS.get('orbita',null),key=new Date().toISOString().slice(0,10);
+  const done=g&&g.k===key;
+  return `<section class="fd" id="fd-orb"><p class="fd-k">Hipótesis</p><h2>¿Adónde irán sobre todo los próximos ${O.nu} lanzamientos?</h2>
+  <div class="ob-opts">${O.opts.map(o=>`<button type="button" class="btn" data-orb="${esc(o)}">${esc(orbN(o))}</button>`).join('')}</div>
+  <div class="ob-res" ${done?'':'hidden'}></div></section>`}
+function orbReveal(sec,pick){const O=orbData();if(!O)return;const r=sec.querySelector('.ob-res');const ok=O.win.includes(pick);
+  sec.querySelectorAll('[data-orb]').forEach(b=>{b.disabled=true;b.classList.toggle('ob-ok',O.win.includes(b.dataset.orb));b.classList.toggle('ob-no',b.dataset.orb===pick&&!ok)});
+  r.innerHTML=`<p class="ob-v">${ok?'✓ Bien visto':'✗ No'}</p><p class="fd-k">Próximos ${O.nu}</p>${orbBars(O.up,O.nu)}<p class="fd-k">Últimos ${O.np}</p>${orbBars(O.pr,O.np)}<p class="mut">¿Qué ha cambiado? Búscalo tú.</p><a class="btn" href="#next" data-go="next">Investigar en Próximo</a>`;
+  r.hidden=false;requestAnimationFrame(()=>r.classList.add('on'));
+  const a=r.querySelector('[data-go]');if(a)a.onclick=e=>{e.preventDefault();showTab('next');$('#herramientas').scrollIntoView({behavior:RM()?'auto':'smooth'})}}
+function orbWire(F){const sec=F.querySelector('#fd-orb');if(!sec)return;const g=LS.get('orbita',null);
+  if(g&&g.k===(new Date().toISOString().slice(0,10)))orbReveal(sec,g.p);
+  sec.querySelectorAll('[data-orb]').forEach(b=>b.onclick=()=>{const O=orbData();const p=b.dataset.orb,ok=!!O&&O.win.includes(p);
+    const prev=LS.get('orbita',null)||{};LS.set('orbita',{k:new Date().toISOString().slice(0,10),p,ok,n:(prev.n||0)+1,a:(prev.a||0)+(ok?1:0)});orbReveal(sec,p)})}

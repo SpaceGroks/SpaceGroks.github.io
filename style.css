@@ -289,3 +289,11 @@ details.hyp>summary{cursor:pointer;color:#c4a1ff;min-height:44px;display:flex;al
 .fd-h{text-align:center;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);margin:40px 0 0;scroll-margin-top:0}
 .fd-menu{position:fixed;right:14px;bottom:14px;z-index:1000;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#000;border:1px solid rgba(168,85,247,.7);color:#e9d5ff;text-decoration:none;font-size:20px}
 @media (prefers-reduced-motion: reduce){.fd{opacity:1;transform:none;transition:none}.fd-down{animation:none}}
+
+.ob-opts{display:flex;flex-wrap:wrap;gap:10px}.ob-opts .btn{cursor:pointer;font:inherit}
+.ob-opts .btn:disabled{opacity:.45;cursor:default}.ob-opts .btn.ob-ok{opacity:1;border-color:#22c55e;color:#bbf7d0}.ob-opts .btn.ob-no{opacity:1;border-color:#ef4444;color:#fecaca}
+.ob-res{display:flex;flex-direction:column;gap:6px}.ob-v{font-size:22px;margin:0}
+.ob{display:grid;grid-template-columns:minmax(90px,38%) 1fr 32px;align-items:center;gap:8px;font-size:15px}
+.ob i{display:block;height:12px;border-radius:6px;background:linear-gradient(90deg,#a855f7,#fff);width:0;transition:width 1s ease}
+.ob-res.on .ob i{width:var(--w)}.ob b{text-align:right}
+@media (prefers-reduced-motion: reduce){.ob i{transition:none}}

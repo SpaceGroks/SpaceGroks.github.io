@@ -4142,10 +4142,12 @@ function renderFeed(){const F=$('#feed'),M=misData();if(!F||!D)return;const S=D.
     h+=`<section class="fd fd-clue" data-clue="map"><p class="fd-k">Pista 3 · Mapa</p><p class="fd-big">${n(M.gN)}<span>Falcon 9 volvieron a tierra</span></p><p>${misClue('map')}</p></section>`;
     h+=`<section class="fd" id="fd-hyp"><p class="fd-k">Tu hipótesis</p></section>`}
   h+=orbSec();
+  h+=platSec();
   if(up.length)h+=`<section class="fd fd-list"><p class="fd-k">Próximos lanzamientos</p>${up.map(l=>`<div class="fd-row"><b>${esc(mname(l))}</b><span class="mut">${fmt(l.net)} · ${esc(l.rocket||'')} · ${esc(l.loc||'')}</span></div>`).join('')}<a class="btn" href="#next" data-go="next">Ver todos</a></section>`;
   h+=`<section class="fd fd-list"><p class="fd-k">Retos y racha</p><p class="fd-big">${n(streakNow())}<span>días de racha · récord ${esc(st.best||0)}</span></p><p class="fd-big">${n(S.consecutive_successful_landings??0)}<span>aterrizajes seguidos de SpaceX</span></p><a class="btn" href="#quiz" data-go="quiz">Jugar retos</a></section>`;
   F.innerHTML=h;
   orbWire(F);
+  platWire(F);
   F.querySelectorAll('[data-go]').forEach(a=>a.onclick=e=>{e.preventDefault();showTab(a.dataset.go);$('#herramientas').scrollIntoView({behavior:RM()?'auto':'smooth'})});
   const seen=el=>{if(el.classList.contains('in'))return;el.classList.add('in');el.querySelectorAll('.fd-n').forEach(fdCount);if(el.dataset.clue)misGet(el.dataset.clue)};
   const secs=[...F.querySelectorAll('.fd')];
@@ -4174,3 +4176,36 @@ function orbWire(F){const sec=F.querySelector('#fd-orb');if(!sec)return;const g=
   if(g&&g.k===(new Date().toISOString().slice(0,10)))orbReveal(sec,g.p);
   sec.querySelectorAll('[data-orb]').forEach(b=>b.onclick=()=>{const O=orbData();const p=b.dataset.orb,ok=!!O&&O.win.includes(p);
     const prev=LS.get('orbita',null)||{};LS.set('orbita',{k:new Date().toISOString().slice(0,10),p,ok,n:(prev.n||0)+1,a:(prev.a||0)+(ok?1:0)});orbReveal(sec,p)})}
+
+// ---------- Plataforma misteriosa: cifras reales de un lugar de despegue, el jugador adivina cuál es ----------
+const platN=loc=>{const t=String(loc||'').split(',')[0].trim();return t.replace(/^SpaceX\s+/,'')||'Sin dato'};
+function platAll(){const P=(D&&D.previous)||[],U=(D&&D.upcoming)||[],m={};
+  P.forEach(l=>{if(!l.loc||!l.net)return;(m[l.loc]=m[l.loc]||{loc:l.loc,p:[],u:0}).p.push(l)});
+  U.forEach(l=>{if(l.loc&&m[l.loc])m[l.loc].u++});
+  return Object.values(m).filter(x=>x.p.length>=2).sort((a,b)=>platN(a.loc).localeCompare(platN(b.loc),'es'))}
+function platStats(x){const t=x.p.map(l=>+new Date(l.net)).filter(isFinite).sort((a,b)=>a-b),g=[];for(let i=1;i<t.length;i++)g.push((t[i]-t[i-1])/864e5);
+  g.sort((a,b)=>a-b);const med=g.length?(g.length%2?g[(g.length-1)/2]:(g[g.length/2-1]+g[g.length/2])/2):null;
+  const oc={};x.p.forEach(l=>{const o=l.orbit||'N/A';oc[o]=(oc[o]||0)+1});const top=Object.entries(oc).sort((a,b)=>b[1]-a[1])[0];
+  return{n:x.p.length,med:med==null?null:Math.round(med*10)/10,orb:top&&top[0]!=='N/A'?orbN(top[0]):null,orbP:top?Math.round(top[1]/x.p.length*100):0,u:x.u}}
+const platKey=()=>new Date().toISOString().slice(0,10);
+function platPick(A){if(A.length<2)return null;const d=Math.floor(Date.now()/864e5);return A[d%A.length]}
+function platSec(){const A=platAll(),X=platPick(A);if(!X)return'';const S=platStats(X),np=((D&&D.previous)||[]).length;
+  const f=(LS.get('plat',{}).f)||[];
+  return `<section class="fd" id="fd-plat"><p class="fd-k">Plataforma misteriosa · ${f.filter(l=>A.some(a=>a.loc===l)).length}/${A.length} descubiertas</p><h2>¿Desde dónde despega?</h2>
+  <p class="fd-big"><b class="fd-n" data-n="${S.n}">${S.n}</b><span>de los últimos ${np} lanzamientos</span></p>
+  ${S.med!=null?`<p class="fd-big"><b>${String(S.med).replace('.',',')}</b><span>días de mediana entre despegues</span></p>`:''}
+  ${S.orb?`<p class="fd-big"><b>${S.orbP}%</b><span>con órbita ${esc(S.orb.toLowerCase())}</span></p>`:''}
+  <p class="fd-big"><b class="fd-n" data-n="${S.u}">${S.u}</b><span>próximos ya programados</span></p>
+  <div class="ob-opts">${A.map(a=>`<button type="button" class="btn" data-plat="${esc(a.loc)}">${esc(platN(a.loc))}</button>`).join('')}</div>
+  <div class="ob-res" hidden></div></section>`}
+function platReveal(sec,pick){const A=platAll(),X=platPick(A);if(!X)return;const ok=pick===X.loc,r=sec.querySelector('.ob-res');
+  sec.querySelectorAll('[data-plat]').forEach(b=>{b.disabled=true;b.classList.toggle('ob-ok',b.dataset.plat===X.loc);b.classList.toggle('ob-no',b.dataset.plat===pick&&!ok)});
+  r.innerHTML=`<p class="ob-v">${ok?'✓ Descubierta':'✗ Era otra'}</p><p><b>${esc(X.loc)}</b></p><p class="mut">${ok?'¿Por qué despega tanto desde aquí? Búscala en el mapa.':'Mañana, otra plataforma.'}</p><a class="btn" href="#map" data-go="map">Ver en el mapa</a>`;
+  r.hidden=false;requestAnimationFrame(()=>r.classList.add('on'));
+  const a=r.querySelector('[data-go]');if(a)a.onclick=e=>{e.preventDefault();showTab('map');$('#herramientas').scrollIntoView({behavior:RM()?'auto':'smooth'})}}
+function platWire(F){const sec=F.querySelector('#fd-plat');if(!sec)return;const g=LS.get('plat',{});
+  if(g.k===platKey()&&g.p)platReveal(sec,g.p);
+  sec.querySelectorAll('[data-plat]').forEach(b=>b.onclick=()=>{const X=platPick(platAll());if(!X)return;const p=b.dataset.plat,ok=p===X.loc,G=LS.get('plat',{});
+    const f=Array.isArray(G.f)?G.f.slice():[];if(ok&&!f.includes(X.loc))f.push(X.loc);
+    LS.set('plat',{k:platKey(),p,ok,f,n:(G.n||0)+1,a:(G.a||0)+(ok?1:0)});platReveal(sec,p);
+    const k=sec.querySelector('.fd-k');if(k)k.textContent=`Plataforma misteriosa · ${f.filter(l=>platAll().some(a=>a.loc===l)).length}/${platAll().length} descubiertas`})}

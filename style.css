@@ -340,3 +340,16 @@ a.btn::after{content:"→";opacity:.7}
 .acts+.opts.al button:hover:not(:disabled){border-color:#a855f7;color:#fff}
 .acts+.opts.al button.sel{background:rgba(168,85,247,.2);color:#f3e8ff;border-color:#a855f7}
 @media(max-width:520px){.score{font-size:12px;padding:6px 12px;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}.sub{font-size:11px}}
+
+/* Encabezado de pestaña (sxp-v75) */
+.thd{display:none;margin:18px 0 4px}.thd.on{display:block;animation:in .35s ease}
+.tht{margin:0 0 10px;font:700 20px Inter,sans-serif;letter-spacing:-.01em;color:var(--txt)}
+.tha{display:flex;flex-wrap:wrap;gap:8px}
+.thb{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid rgba(168,85,247,.55);background:rgba(168,85,247,.1);color:#f3e8ff;font:600 14px Inter,sans-serif;cursor:pointer;transition:background .15s,border-color .15s}
+.thb:hover{background:rgba(168,85,247,.26);border-color:#a855f7;color:#fff}
+.thb.pri{background:#fff;color:#000;border-color:#fff}.thb.pri:hover{background:#e9d5ff;border-color:#e9d5ff}
+.thb:focus-visible{outline:2px solid #d8b4fe;outline-offset:2px}
+.thb.nada{opacity:.5}
+.prhow summary{cursor:pointer;list-style:none;min-height:28px}.prhow summary::-webkit-details-marker{display:none}
+.prhow summary::after{content:' ▾';color:var(--mut)}.prhow[open] summary::after{content:' ▴'}
+@media(max-width:520px){.tht{font-size:18px}.thb{flex:1 1 auto;padding:0 12px}}

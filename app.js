@@ -44,7 +44,7 @@ function init(){
 const TABS=()=>[...document.querySelectorAll('nav [role=tab]')];
 function showTab(id,focus){const b=TABS().find(x=>x.dataset.tab===id);if(!b)return;
   TABS().forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-selected',on);x.tabIndex=on?0:-1});
-  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id===id));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id===id));document.querySelectorAll('.thd').forEach(x=>x.classList.toggle('on',x.dataset.for===id));
   if(focus)b.focus({preventScroll:true});tabIntoView(b);
   if(id==='map'){drawMap();setTimeout(()=>{try{mapObj&&mapObj.invalidateSize()}catch(e){}},50)}}
 function initTabs(){
@@ -127,7 +127,7 @@ function wxHTML(l){const ws=wxStats(),wx=wxList(l);
    '<div class="mut"><b>Meteo:</b> la fuente aún no da previsión para este lanzamiento; saldrá aquí en cuanto la publique.</div>'}${ref}</div>`}
 function renderPredict(){
   const preds=LS.get('preds',{});
-  let h=`<div class="card"><b>Cómo se juega:</b> antes de cada despegue responde a tres preguntas. Cuando el lanzamiento ocurra, comparamos con lo que pasó de verdad. Cada acierto da 10 puntos, acertar las tres da 5 de bonus, y si apuestas por un fallo y aciertas te llevas 50. Abre «Análisis de experto» en cada lanzamiento para razonar y predecir los minutos de retraso (hasta 40 puntos más).</div>`;
+  let h=`<details class="card prhow" id="pr-how"><summary><b>Cómo se juega</b></summary> Antes de cada despegue responde a tres preguntas. Cuando el lanzamiento ocurra, comparamos con lo que pasó de verdad. Cada acierto da 10 puntos, acertar las tres da 5 de bonus, y si apuestas por un fallo y aciertas te llevas 50. Abre «Análisis de experto» en cada lanzamiento para razonar y predecir los minutos de retraso (hasta 40 puntos más).</details>`;
   h+='<div id="mystats">'+statsHTML()+'</div>';
   const list=D.upcoming.filter(predictable);
   if(!list.length)h+='<p class="mut">Ahora mismo no hay lanzamientos confirmados en las próximas tres semanas. Vuelve mañana.</p>';
@@ -1908,7 +1908,7 @@ function renderFleet(){
   D.upcoming.forEach(l=>(l.stages||[]).forEach(s=>{const b=m[s.serial];if(b&&!b.next)b.next=l}));
   const rows=Object.values(m).sort((a,b)=>fleetSort==='flights'?b.flights-a.flights:new Date(b.last)-new Date(a.last));
   const max=Math.max(...rows.map(r=>r.flights),1);
-  $('#fleet').innerHTML=`<div class="card"><b>Flota de propulsores</b><div class="mut">Las primeras etapas que han volado en los últimos ${D.previous.length} lanzamientos. Pulsa una columna para ordenar y un propulsor para ver su ficha y apostar si volverá a volar.</div></div>${betsHTML()}${cmpHTML(rows)}${raceHTML()}${vrHTML()}${vidaHTML()}
+  $('#fleet').innerHTML=`<p class="mut">Los propulsores de los últimos ${D.previous.length} lanzamientos. Toca uno para ver su ficha.</p>${betsHTML()}${cmpHTML(rows)}${raceHTML()}${vrHTML()}${vidaHTML()}
   <div class="tscroll"><table><caption class="sr">Flota de propulsores, ordenada por ${fleetSort==='flights'?'número de vuelos':'último vuelo'}</caption><tr><th scope="col">Propulsor</th><th scope="col" aria-sort="${fleetSort==='flights'?'descending':'none'}"><button type="button" class="lnk" data-s="flights">Vuelos</button></th><th scope="col" aria-sort="${fleetSort==='last'?'descending':'none'}"><button type="button" class="lnk" data-s="last">Último vuelo</button></th><th scope="col">Próximo</th></tr>
   ${rows.map(r=>`<tr class="clic" data-serial="${r.serial}"><td><button type="button" class="lnk" data-open="${r.serial}" aria-label="Abrir la ficha del propulsor ${r.serial}"><b>${r.serial}</b> <span class="mut" aria-hidden="true">ficha ›</span></button></td><td>${r.flights}<div class="bar"><i style="width:${100*r.flights/max}%"></i></div></td><td>${fmtD(r.last)}<div class="mut">${r.missions.at(-1)}</div></td><td>${r.next?`${mname(r.next)}<div class="mut">${fmtD(r.next.net)}</div>`:'—'}</td></tr>`).join('')}</table></div>`;
   $('#fleet').querySelectorAll('button[data-s]').forEach(t=>t.onclick=()=>{fleetSort=t.dataset.s;renderFleet();const f=$('#fleet').querySelector(`button[data-s="${t.dataset.s}"]`);f&&f.focus()});
@@ -4217,3 +4217,17 @@ function platWire(F){const sec=F.querySelector('#fd-plat');if(!sec)return;const 
     const f=Array.isArray(G.f)?G.f.slice():[];if(ok&&!f.includes(X.loc))f.push(X.loc);
     LS.set('plat',{k:platKey(),p,ok,f,n:(G.n||0)+1,a:(G.a||0)+(ok?1:0)});platReveal(sec,p);
     const k=sec.querySelector('.fd-k');if(k)k.textContent=`Plataforma misteriosa · ${f.filter(l=>platAll().some(a=>a.loc===l)).length}/${platAll().length} descubiertas`})}
+
+// ---------- Encabezado de cada pestaña: título corto y 2-3 acciones como botones ----------
+function thGo(g){let t=null;
+  if(g==='pr-go'){t=document.querySelector('#predict .card[data-id] .opts button')||document.querySelector('#predict .card[data-id]')||$('#mystats')}
+  else if(g==='pr-how'){const d=$('#pr-how');if(d){d.open=true;t=d.querySelector('summary')||d}}
+  else if(g.startsWith('rt:')){t=rtShow(g.slice(3))}
+  else t=document.querySelector(g);
+  if(!t)return false;const d=t.closest&&t.closest('details');if(d&&!d.open)d.open=true;
+  try{t.scrollIntoView({behavior:'smooth',block:/^(INPUT|SELECT|BUTTON)$/.test(t.tagName)?'center':'start'})}catch(e){t.scrollIntoView()}
+  try{if(!t.matches('input,select,button,summary,a,[tabindex]'))t.setAttribute('tabindex','-1');t.focus({preventScroll:true})}catch(e){}
+  return true}
+function thInit(){document.querySelectorAll('.thd').forEach(h=>h.classList.toggle('on',!!document.querySelector(`#${h.dataset.for}.tab.on`)));
+  document.addEventListener('click',e=>{const b=e.target.closest('.thd [data-th]');if(!b)return;if(!thGo(b.dataset.th))b.classList.add('nada'),setTimeout(()=>b.classList.remove('nada'),600)})}
+try{thInit()}catch(e){console.error(e)}

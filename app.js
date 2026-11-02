@@ -45,7 +45,7 @@ const TABS=()=>[...document.querySelectorAll('nav [role=tab]')];
 function showTab(id,focus){const b=TABS().find(x=>x.dataset.tab===id);if(!b)return;
   TABS().forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-selected',on);x.tabIndex=on?0:-1});
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id===id));
-  if(focus)b.focus({preventScroll:true});const bar=b.parentNode;if(bar&&bar.scrollWidth>bar.clientWidth){const l=b.offsetLeft-bar.offsetLeft,r=l+b.offsetWidth;if(l<bar.scrollLeft||r>bar.scrollLeft+bar.clientWidth)bar.scrollLeft=Math.max(0,l-(bar.clientWidth-b.offsetWidth)/2)}
+  if(focus)b.focus({preventScroll:true});tabIntoView(b);
   if(id==='map'){drawMap();setTimeout(()=>{try{mapObj&&mapObj.invalidateSize()}catch(e){}},50)}}
 function initTabs(){
   const bar=$('nav .tabs'),tb=TABS();
@@ -53,10 +53,25 @@ function initTabs(){
   if(bar){bar.onkeydown=e=>{const i=tb.indexOf(document.activeElement);if(i<0)return;let j=null;
       if(e.key==='ArrowRight')j=(i+1)%tb.length;else if(e.key==='ArrowLeft')j=(i-1+tb.length)%tb.length;else if(e.key==='Home')j=0;else if(e.key==='End')j=tb.length-1;
       if(j!=null){e.preventDefault();tb[j].click();tb[j].focus({preventScroll:true})}};
-    const fade=()=>bar.classList.toggle('end',bar.scrollLeft+bar.clientWidth>=bar.scrollWidth-4);bar.onscroll=fade;fade();addEventListener('resize',fade)}
+    tabArrows(bar)}
   const fromHash=()=>{const h=(location.hash||'').slice(1);if(tb.some(b=>b.dataset.tab===h))showTab(h)};
   addEventListener('hashchange',fromHash);if(location.hash.length>1){fromHash();setTimeout(()=>{try{scrollTo(0,0)}catch(e){}},0)}
 }
+// Indicadores de desplazamiento de las pestañas (móvil): flechas y degradado a cada lado; la activa siempre visible
+function tabIntoView(b,inst){const bar=b&&b.parentNode;if(!bar||bar.scrollWidth<=bar.clientWidth+2)return;
+  const pad=44,l=b.offsetLeft-bar.offsetLeft,r=l+b.offsetWidth;if(l-pad<bar.scrollLeft||r+pad>bar.scrollLeft+bar.clientWidth){
+  const x=Math.max(0,Math.min(bar.scrollWidth-bar.clientWidth,l-(bar.clientWidth-b.offsetWidth)/2));
+  const smooth=!inst&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+  try{bar.scrollTo({left:x,behavior:smooth?'smooth':'auto'})}catch(e){bar.scrollLeft=x}}}
+function tabArrows(bar){const nav=bar.parentNode;if(!nav||nav.querySelector('.tabarr'))return;
+  const mk=(dir,lab,txt)=>{const a=document.createElement('button');a.type='button';a.className='tabarr '+dir;a.tabIndex=-1;a.setAttribute('aria-label',lab);a.innerHTML=`<span aria-hidden="true">${txt}</span>`;
+    a.onclick=()=>{const d=Math.max(120,bar.clientWidth*.7)*(dir==='l'?-1:1);try{bar.scrollBy({left:d,behavior:'smooth'})}catch(e){bar.scrollLeft+=d}};nav.appendChild(a);return a};
+  mk('l','Ver secciones anteriores','‹');mk('r','Ver más secciones','›');
+  const upd=()=>{const over=bar.scrollWidth>bar.clientWidth+2,st=bar.scrollLeft<=4,en=bar.scrollLeft+bar.clientWidth>=bar.scrollWidth-4;
+    nav.classList.toggle('scrollable',over);bar.classList.toggle('start',!over||st);bar.classList.toggle('end',!over||en);
+    nav.classList.toggle('more-l',over&&!st);nav.classList.toggle('more-r',over&&!en)};
+  bar.addEventListener('scroll',upd,{passive:true});addEventListener('resize',()=>{upd();tabIntoView(bar.querySelector('[role=tab].on'),1)});upd();
+  setTimeout(()=>{tabIntoView(bar.querySelector('[role=tab].on'),1);upd()},60)}
 // ---------- Puntuación ----------
 function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}

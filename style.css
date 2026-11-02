@@ -320,3 +320,16 @@ a.btn::after{content:"→";opacity:.7}
 .disc-opt[open] summary::before{transform:rotate(90deg)}
 .disc-opt summary:hover{color:#fff;background:rgba(168,85,247,.08)}
 .disc-opt[open] summary{border-bottom:1px solid rgba(168,85,247,.2)}
+
+/* v73 · Entrada tranquila y acciones del lanzamiento en una fila */
+.acts{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}
+.acts .live{margin:0;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 20px;border-radius:10px;background:#fff;color:#000;font-weight:700}
+.acts .live:hover{background:#e9d5ff}
+.acts button.misb{margin:0;min-height:44px;padding:0 18px;border:1px solid #a855f7;border-radius:10px;background:rgba(168,85,247,.12);color:#f3e8ff;font-weight:600}
+.acts button.misb:hover{background:rgba(168,85,247,.28);color:#fff}
+.acts .live:focus-visible,.acts button.misb:focus-visible{outline:2px solid #d8b4fe;outline-offset:2px}
+.acts+.opts.al{margin-top:10px}
+.acts+.opts.al button{background:transparent;border-color:rgba(255,255,255,.18);color:#c4b5d9;font-weight:500}
+.acts+.opts.al button:hover:not(:disabled){border-color:#a855f7;color:#fff}
+.acts+.opts.al button.sel{background:rgba(168,85,247,.2);color:#f3e8ff;border-color:#a855f7}
+@media(max-width:520px){.score{font-size:12px;padding:6px 12px;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}.sub{font-size:11px}}

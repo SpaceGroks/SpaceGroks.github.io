@@ -77,7 +77,7 @@ function renderNext(){
     <div style="margin-top:8px">${n.status==='Go'?'<span class="tag ok">Confirmado (Go)</span>':`<span class="tag warn">${n.status_name}</span>`}
     ${n.orbit?`<span class="tag">${orb(n.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">Propulsor ${b.serial} · vuelo ${b.flight}</span>`:''}
     ${b.land_loc?`<span class="tag">Aterriza en ${b.land_loc_name}</span>`:''}${n.prob?`<span class="tag">Meteo favorable ${n.prob}%</span>`:''}</div>
-    <p class="mut">${tdesc(n)}</p>${learnHTML(n,true)}${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}${misBtn(n,'u')}${alertBtns(n)}${ph?credit(ph).replace('Foto:',ph===n?'Foto:':`Foto de ${esc(mname(ph))}:`):''}</div></div>`;
+    <p class="mut">${tdesc(n)}</p>${learnHTML(n,true)}<div class="acts">${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}${misBtn(n,'u')}</div>${alertBtns(n)}${ph?credit(ph).replace('Foto:',ph===n?'Foto:':`Foto de ${esc(mname(ph))}:`):''}</div></div>`;
     const tick=()=>{const ms=new Date(n.net)-Date.now();const el=$('#cd');if(!el)return;
       if(ms<0){el.textContent='¡Despegando o ya en vuelo!';return}
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
@@ -2170,8 +2170,7 @@ function mostrarGlobo(forzar){
   g.querySelector('.x').onclick=close;g.querySelector('.later').onclick=close;
   g.querySelector('.go').onclick=()=>{close();goReto(r)};
 }
-setTimeout(()=>mostrarGlobo(false),4000);
-setInterval(()=>mostrarGlobo(false),10*60*1000);
+// v73: sin globos automáticos al entrar ni cada 10 min; los retos se abren solo desde Retos o «Descubrir».
 
 // ---------- Ficha de propulsor y apuestas "¿volverá a volar?" ----------
 const BET_DIAS=30;

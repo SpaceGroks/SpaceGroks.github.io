@@ -353,3 +353,15 @@ a.btn::after{content:"→";opacity:.7}
 .prhow summary{cursor:pointer;list-style:none;min-height:28px}.prhow summary::-webkit-details-marker{display:none}
 .prhow summary::after{content:' ▾';color:var(--mut)}.prhow[open] summary::after{content:' ▴'}
 @media(max-width:520px){.tht{font-size:18px}.thb{flex:1 1 auto;padding:0 12px}}
+
+/* chips compactos del próximo lanzamiento */
+.nchips{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 10px;padding:0}
+.nchip{display:inline-flex;align-items:baseline;gap:6px;padding:5px 10px;border-radius:8px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.16);font-size:13px;line-height:1.2;backdrop-filter:blur(4px)}
+.nchip .nk{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#b9b9c4}
+.nchip .nv{color:#fff;font-weight:600}
+.nchip.ok{border-color:rgba(61,220,132,.5)}.nchip.ok .nv{color:var(--ok)}
+.nchip.warn{border-color:rgba(255,181,71,.5)}.nchip.warn .nv{color:var(--warn)}
+.hero .xp.learn{margin-top:12px}
+@media(max-width:480px){.nchip{font-size:12px;padding:4px 8px}}
+.nchip.ko{border-color:rgba(255,92,108,.5)}.nchip.ko .nv{color:var(--ko)}
+.nchips .nchip{margin:0}

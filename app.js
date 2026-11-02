@@ -80,19 +80,25 @@ function renderScore(){const p=points(),t=Object.values(p).reduce((a,v)=>a+(type
   $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
 // ---------- Próximo ----------
 function upcomingFuture(){const now=Date.now();return D.upcoming.filter(l=>new Date(l.net)>now-3*H)}
+// chips compactos del próximo lanzamiento: estado, órbita, propulsor, aterrizaje, plataforma y meteo (datos reales de Launch Library 2)
+function nextChips(n,b){const c=(k,v,cls)=>`<li class="nchip${cls?' '+cls:''}"><span class="nk">${k}</span><span class="nv">${esc(String(v))}</span></li>`;
+  const r=[c('Estado',n.status==='Go'?'Go':(n.status_name||n.status||'—'),n.status==='Go'?'ok':'warn')];
+  if(n.orbit&&n.orbit!=='N/A')r.push(c('Órbita',orb(n.orbit)));
+  if(b.serial&&!/Unknown/.test(b.serial))r.push(c('Propulsor',b.serial+(b.flight?' · vuelo '+b.flight:'')));
+  if(b.land_loc)r.push(c('Aterriza',b.land_loc_name||b.land_loc));
+  if(n.pad)r.push(c('Plataforma',n.pad.replace(/^Space Launch Complex /,'SLC-').replace(/^Launch Complex /,'LC-')));
+  if(n.prob!=null)r.push(c('Meteo',n.prob+'% favorable',wxCls(n.prob)));
+  return `<ul class="nchips" aria-label="Datos del lanzamiento">${r.join('')}</ul>`}
 function renderNext(){
   const s=D.stats,ups=upcomingFuture(),n=ups[0];
   let h='';
   if(n){const b=(n.stages||[])[0]||{};
     const ph=n.img?n:D.previous.find(x=>x.img&&x.img_lic_url);
     h+=`<div class="card hero"><div class="bg" style="background-image:url('${ph?esc(ph.img):''}')"></div><div class="in">
-    <div class="kick">Próximo lanzamiento</div><h2>${mname(n)}</h2>
+    <div class="kick">Próximo lanzamiento</div><h2>${mname(n)}</h2>${nextChips(n,b)}
     <div class="big" id="cd" role="timer" aria-live="off" aria-label="Cuenta atrás hasta el despegue"></div>
     <div class="mut">${fmt(n.net)} · ${n.rocket} · ${n.loc||''}</div>
-    <div style="margin-top:8px">${n.status==='Go'?'<span class="tag ok">Confirmado (Go)</span>':`<span class="tag warn">${n.status_name}</span>`}
-    ${n.orbit?`<span class="tag">${orb(n.orbit)}</span>`:''}${b.serial&&!/Unknown/.test(b.serial)?`<span class="tag">Propulsor ${b.serial} · vuelo ${b.flight}</span>`:''}
-    ${b.land_loc?`<span class="tag">Aterriza en ${b.land_loc_name}</span>`:''}${n.prob?`<span class="tag">Meteo favorable ${n.prob}%</span>`:''}</div>
-    <p class="mut">${tdesc(n)}</p>${learnHTML(n,true)}<div class="acts">${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}${misBtn(n,'u')}</div>${alertBtns(n)}${ph?credit(ph).replace('Foto:',ph===n?'Foto:':`Foto de ${esc(mname(ph))}:`):''}</div></div>`;
+    <div class="acts">${n.video?`<a class="live" href="${n.video}" target="_blank" rel="noopener"><span aria-hidden="true">▶</span> Ver directo<span class="sr"> (se abre en otra pestaña)</span></a>`:''}${misBtn(n,'u')}</div>${alertBtns(n)}${learnHTML(n,false)}${ph?credit(ph).replace('Foto:',ph===n?'Foto:':`Foto de ${esc(mname(ph))}:`):''}</div></div>`;
     const tick=()=>{const ms=new Date(n.net)-Date.now();const el=$('#cd');if(!el)return;
       if(ms<0){el.textContent='¡Despegando o ya en vuelo!';return}
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);

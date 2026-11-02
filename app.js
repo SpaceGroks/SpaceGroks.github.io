@@ -4136,15 +4136,14 @@ function fdCount(el){const to=+el.dataset.n;if(!isFinite(to))return;if(RM()){el.
 function renderFeed(){const F=$('#feed'),M=misData();if(!F||!D)return;const S=D.stats||{},n=v=>`<b class="fd-n" data-n="${v}">${v}</b>`;
   const up=(D.upcoming||[]).slice(0,3),st=LS.get('streak',{n:0,best:0});let h='';
   if(M){const L=M.L;
-    h+=`<section class="fd fd-hero"><p class="fd-k">Misterio</p><h2>¿Por qué el ${esc(M.st.serial)} aterrizó en el mar y no en tierra?</h2><p class="mut">${esc(mname(L))} · ${fmtD(L.net)}</p><p class="fd-down" aria-hidden="true">↓ Baja para investigar</p></section>`;
-    h+=`<section class="fd fd-clue" data-clue="log"><p class="fd-k">Pista 1 · Historial</p><p class="fd-big">${n(stCount(L))}<span>satélites a bordo</span></p><p>${misClue('log')}</p></section>`;
-    h+=`<section class="fd fd-clue" data-clue="fleet"><p class="fd-k">Pista 2 · Propulsores</p><p class="fd-big">${n(M.slSea)}<span>de ${M.slN} Starlink acabaron en el mar</span></p><p>${misClue('fleet')}</p></section>`;
-    h+=`<section class="fd fd-clue" data-clue="map"><p class="fd-k">Pista 3 · Mapa</p><p class="fd-big">${n(M.gN)}<span>Falcon 9 volvieron a tierra</span></p><p>${misClue('map')}</p></section>`;
+    h+=`<section class="fd fd-hero"><p class="fd-k">Misterio</p><h2>¿Por qué el ${esc(M.st.serial)} aterrizó en el mar y no en tierra?</h2><p class="fd-down" aria-hidden="true">↓ Baja</p></section>`;
+    h+=`<section class="fd fd-clue" data-clue="log"><p class="fd-k">Pista 1 · Historial</p><p class="fd-big">${n(stCount(L))}<span>satélites a bordo</span></p></section>`;
+    h+=`<section class="fd fd-clue" data-clue="fleet"><p class="fd-k">Pista 2 · Propulsores</p><p class="fd-big">${n(M.slSea)}<span>de ${M.slN} acabaron en el mar</span></p></section>`;
+    h+=`<section class="fd fd-clue" data-clue="map"><p class="fd-k">Pista 3 · Mapa</p><p class="fd-big">${n(M.gN)}<span>Falcon 9 volvieron a tierra</span></p></section>`;
     h+=`<section class="fd" id="fd-hyp"><p class="fd-k">Tu hipótesis</p></section>`}
   h+=orbSec();
   h+=platSec();
-  if(up.length)h+=`<section class="fd fd-list"><p class="fd-k">Próximos lanzamientos</p>${up.map(l=>`<div class="fd-row"><b>${esc(mname(l))}</b><span class="mut">${fmt(l.net)} · ${esc(l.rocket||'')} · ${esc(l.loc||'')}</span></div>`).join('')}<a class="btn" href="#next" data-go="next">Ver todos</a></section>`;
-  h+=`<section class="fd fd-list"><p class="fd-k">Retos y racha</p><p class="fd-big">${n(streakNow())}<span>días de racha · récord ${esc(st.best||0)}</span></p><p class="fd-big">${n(S.consecutive_successful_landings??0)}<span>aterrizajes seguidos de SpaceX</span></p><a class="btn" href="#quiz" data-go="quiz">Jugar retos</a></section>`;
+  h+=`<section class="fd fd-list fd-end"><p class="fd-k">¿Más?</p><a class="btn" href="#next" data-go="next">Próximos lanzamientos</a><a class="btn" href="#quiz" data-go="quiz">Retos · racha ${n(streakNow())}</a></section>`;
   F.innerHTML=h;
   orbWire(F);
   platWire(F);
@@ -4193,14 +4192,11 @@ function platSec(){const A=platAll(),X=platPick(A);if(!X)return'';const S=platSt
   const f=(LS.get('plat',{}).f)||[];
   return `<section class="fd" id="fd-plat"><p class="fd-k">Plataforma misteriosa · ${f.filter(l=>A.some(a=>a.loc===l)).length}/${A.length} descubiertas</p><h2>¿Desde dónde despega?</h2>
   <p class="fd-big"><b class="fd-n" data-n="${S.n}">${S.n}</b><span>de los últimos ${np} lanzamientos</span></p>
-  ${S.med!=null?`<p class="fd-big"><b>${String(S.med).replace('.',',')}</b><span>días de mediana entre despegues</span></p>`:''}
-  ${S.orb?`<p class="fd-big"><b>${S.orbP}%</b><span>con órbita ${esc(S.orb.toLowerCase())}</span></p>`:''}
-  <p class="fd-big"><b class="fd-n" data-n="${S.u}">${S.u}</b><span>próximos ya programados</span></p>
   <div class="ob-opts">${A.map(a=>`<button type="button" class="btn" data-plat="${esc(a.loc)}">${esc(platN(a.loc))}</button>`).join('')}</div>
   <div class="ob-res" hidden></div></section>`}
 function platReveal(sec,pick){const A=platAll(),X=platPick(A);if(!X)return;const ok=pick===X.loc,r=sec.querySelector('.ob-res');
   sec.querySelectorAll('[data-plat]').forEach(b=>{b.disabled=true;b.classList.toggle('ob-ok',b.dataset.plat===X.loc);b.classList.toggle('ob-no',b.dataset.plat===pick&&!ok)});
-  r.innerHTML=`<p class="ob-v">${ok?'✓ Descubierta':'✗ Era otra'}</p><p><b>${esc(X.loc)}</b></p><p class="mut">${ok?'¿Por qué despega tanto desde aquí? Búscala en el mapa.':'Mañana, otra plataforma.'}</p><a class="btn" href="#map" data-go="map">Ver en el mapa</a>`;
+  r.innerHTML=`<p class="ob-v">${ok?'✓ Descubierta':'✗ Era otra'}</p><p><b>${esc(X.loc)}</b></p><p class="mut">${ok?'¿Por qué desde aquí? Búscala en el mapa.':'Mañana, otra.'}</p><a class="btn" href="#map" data-go="map">Ver en el mapa</a>`;
   r.hidden=false;requestAnimationFrame(()=>r.classList.add('on'));
   const a=r.querySelector('[data-go]');if(a)a.onclick=e=>{e.preventDefault();showTab('map');$('#herramientas').scrollIntoView({behavior:RM()?'auto':'smooth'})}}
 function platWire(F){const sec=F.querySelector('#fd-plat');if(!sec)return;const g=LS.get('plat',{});

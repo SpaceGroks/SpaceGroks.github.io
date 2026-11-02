@@ -4,8 +4,9 @@ Cada 2 horas, de 9:00 a 21:00, se hace la primera sin marcar, se prueba y se mar
 
 En cada ejecución, además: traducir al español (castellano, nombres propios intactos) las descripciones de los ids listados en `missing_es` de data.json y añadirlas a `i18n/desc_es.json` (texto completo de up.json/prev.json, cortado a 400 caracteres en límite de palabra con «…», como `cut()` de build_data.py).
 
-> **Regla: poca info al inicio, revelado progresivo.** Una idea por pantalla; cada paso se gana al bajar o al resolver. Orden: misterio → pista → pista → pista → hipótesis → juegos → enlaces.
+> **Dirección (Rodrigo, 2 nov 2026): web navegable, sin forzar la participación al entrar.** Al entrar: cabecera breve + pestañas de secciones + Próximo. Misterio, pistas, hipótesis, órbitas y plataforma solo en «Descubrir (opcional)», cerrado, al final. Nada de «adivina/investiga» en la primera vista.
 
+- [x] Inicio navegable: pestañas arriba, Próximo como primera vista y el recorrido de misterio/juegos movido a «Descubrir (opcional)» plegado al final (hecho el 2026-11-02 11:35)
 - [x] Inicio progresivo: hero solo con la pregunta, pistas con una cifra, plataforma con una cifra, próximos y retos como enlaces al final (hecho el 2026-11-02 11:24)
 - [x] Vista previa al compartir el enlace (imagen y texto Open Graph para X, WhatsApp y Reddit)
 - [x] Mejoras de uso en móvil y accesibilidad (probar en pantalla de 390 px) (hecho el 19 oct, 11:05)

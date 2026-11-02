@@ -4108,10 +4108,10 @@ function misClue(tab){const M=misData();if(!M)return'';const L=M.L,st=M.st;
 function misGet(tab){const s=misState();if(!s.clues[tab]){s.clues[tab]=Date.now();LS.set('misterio',s);renderMis()}}
 function misBanner(tab){const sec=document.getElementById(tab);if(!sec||!MIS_TABS[tab]||!misData())return;let b=sec.querySelector('.mis-pista');
   if(!b){b=document.createElement('div');b.className='card mis-pista';sec.prepend(b)}
-  b.innerHTML=`<h3>🔎 Pista</h3><p>${misClue(tab)}</p><a href="#next" class="btn">Volver al misterio</a>`;misGet(tab)}
+  b.innerHTML=`<h3>🔎 Pista</h3><p>${misClue(tab)}</p><a href="#descubrir" class="btn">Volver al misterio</a>`;misGet(tab)}
 const MIS_OPTS=[['peso','Llevaba tanta carga que no le quedaba combustible para volver'],['meteo','Hacía mal tiempo en tierra'],['viejo','El propulsor era demasiado viejo'],['prisa','Así se lanza antes']];
 function renderMis(){const sec=$('#next');const M=misData();if(!sec||!M)return;let c=sec.querySelector('#misterio');
-  if(!c){c=document.createElement('div');c.id='misterio';c.className='card mis';const fh=document.getElementById('fd-hyp');if(fh)fh.appendChild(c);else sec.prepend(c)}
+  if(!c){c=document.createElement('div');c.id='misterio';c.className='card mis';const fh=document.getElementById('fd-hyp');if(!fh)return;fh.appendChild(c)}
   const s=misState(),n=Object.keys(MIS_TABS).filter(t=>s.clues[t]).length,L=M.L;
   c.innerHTML=`<h2 class="mis-q">¿Por qué el ${esc(M.st.serial)} aterrizó en el mar y no en tierra?</h2>
 <p class="mut">${esc(mname(L))} · ${fmtD(L.net)}</p>
@@ -4125,9 +4125,7 @@ function discoverify(root){(root||document).querySelectorAll('main .tab p, main 
   if(p.closest('.mis,.mis-pista,details.hyp,button,label,.rp-res,[role=status]')||p.querySelector('button,input,select,textarea,a.btn'))return;
   const t=p.textContent.trim();if(t.length<140)return;
   const d=document.createElement('details');d.className='hyp';d.innerHTML='<summary>¿Tu hipótesis? Revela la pista</summary>';p.replaceWith(d);d.appendChild(p)})}
-function misInit(){renderMis();const o=showTab;showTab=function(id,f){o(id,f);if(MIS_TABS[id])misBanner(id);discoverify(document.getElementById(id))};
-  const h=(location.hash||'').slice(1);if(MIS_TABS[h])misBanner(h);discoverify();
-  let tm;new MutationObserver(()=>{clearTimeout(tm);tm=setTimeout(()=>discoverify(),300)}).observe($('#main'),{childList:true,subtree:true})}
+function misInit(){renderMis()} // navegable: sin pistas ni «¿Tu hipótesis?» inyectadas en las pestañas
 
 // ---------- Recorrido vertical (scrollytelling): misterio → pistas → hipótesis → próximos → retos ----------
 const RM=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -4147,7 +4145,7 @@ function renderFeed(){const F=$('#feed'),M=misData();if(!F||!D)return;const S=D.
   F.innerHTML=h;
   orbWire(F);
   platWire(F);
-  F.querySelectorAll('[data-go]').forEach(a=>a.onclick=e=>{e.preventDefault();showTab(a.dataset.go);$('#herramientas').scrollIntoView({behavior:RM()?'auto':'smooth'})});
+  F.querySelectorAll('[data-go]').forEach(a=>a.onclick=e=>{e.preventDefault();showTab(a.dataset.go);$('#main').scrollIntoView({behavior:RM()?'auto':'smooth'})});
   const seen=el=>{if(el.classList.contains('in'))return;el.classList.add('in');el.querySelectorAll('.fd-n').forEach(fdCount);if(el.dataset.clue)misGet(el.dataset.clue)};
   const secs=[...F.querySelectorAll('.fd')];
   if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){seen(e.target);io.unobserve(e.target)}}),{threshold:.45});secs.forEach(x=>io.observe(x))}else secs.forEach(seen)}
@@ -4170,7 +4168,7 @@ function orbReveal(sec,pick){const O=orbData();if(!O)return;const r=sec.querySel
   sec.querySelectorAll('[data-orb]').forEach(b=>{b.disabled=true;b.classList.toggle('ob-ok',O.win.includes(b.dataset.orb));b.classList.toggle('ob-no',b.dataset.orb===pick&&!ok)});
   r.innerHTML=`<p class="ob-v">${ok?'✓ Bien visto':'✗ No'}</p><p class="fd-k">Próximos ${O.nu}</p>${orbBars(O.up,O.nu)}<p class="fd-k">Últimos ${O.np}</p>${orbBars(O.pr,O.np)}<p class="mut">¿Qué ha cambiado? Búscalo tú.</p><a class="btn" href="#next" data-go="next">Investigar en Próximo</a>`;
   r.hidden=false;requestAnimationFrame(()=>r.classList.add('on'));
-  const a=r.querySelector('[data-go]');if(a)a.onclick=e=>{e.preventDefault();showTab('next');$('#herramientas').scrollIntoView({behavior:RM()?'auto':'smooth'})}}
+  const a=r.querySelector('[data-go]');if(a)a.onclick=e=>{e.preventDefault();showTab('next');$('#main').scrollIntoView({behavior:RM()?'auto':'smooth'})}}
 function orbWire(F){const sec=F.querySelector('#fd-orb');if(!sec)return;const g=LS.get('orbita',null);
   if(g&&g.k===(new Date().toISOString().slice(0,10)))orbReveal(sec,g.p);
   sec.querySelectorAll('[data-orb]').forEach(b=>b.onclick=()=>{const O=orbData();const p=b.dataset.orb,ok=!!O&&O.win.includes(p);
@@ -4198,7 +4196,7 @@ function platReveal(sec,pick){const A=platAll(),X=platPick(A);if(!X)return;const
   sec.querySelectorAll('[data-plat]').forEach(b=>{b.disabled=true;b.classList.toggle('ob-ok',b.dataset.plat===X.loc);b.classList.toggle('ob-no',b.dataset.plat===pick&&!ok)});
   r.innerHTML=`<p class="ob-v">${ok?'✓ Descubierta':'✗ Era otra'}</p><p><b>${esc(X.loc)}</b></p><p class="mut">${ok?'¿Por qué desde aquí? Búscala en el mapa.':'Mañana, otra.'}</p><a class="btn" href="#map" data-go="map">Ver en el mapa</a>`;
   r.hidden=false;requestAnimationFrame(()=>r.classList.add('on'));
-  const a=r.querySelector('[data-go]');if(a)a.onclick=e=>{e.preventDefault();showTab('map');$('#herramientas').scrollIntoView({behavior:RM()?'auto':'smooth'})}}
+  const a=r.querySelector('[data-go]');if(a)a.onclick=e=>{e.preventDefault();showTab('map');$('#main').scrollIntoView({behavior:RM()?'auto':'smooth'})}}
 function platWire(F){const sec=F.querySelector('#fd-plat');if(!sec)return;const g=LS.get('plat',{});
   if(g.k===platKey()&&g.p)platReveal(sec,g.p);
   sec.querySelectorAll('[data-plat]').forEach(b=>b.onclick=()=>{const X=platPick(platAll());if(!X)return;const p=b.dataset.plat,ok=p===X.loc,G=LS.get('plat',{});

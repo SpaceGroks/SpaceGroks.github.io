@@ -21,7 +21,7 @@
 <meta name="twitter:image" content="https://spacegroks.github.io/og.png">
 <meta name="twitter:image:alt" content="SpaceX Play: juega con las misiones reales de SpaceX">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 <meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -33,12 +33,9 @@
 </head><body>
 <a class="skip" href="#main">Saltar al contenido</a>
 <div class="stars" aria-hidden="true"></div><div class="stars s2" aria-hidden="true"></div>
-<header><h1><span class="logo" aria-hidden="true">▲</span> SPACEX <b>PLAY</b></h1><p class="sub">¿Sabes por qué? Investígalo.</p>
+<header><h1><span class="logo" aria-hidden="true">▲</span> SPACEX <b>PLAY</b></h1><p class="sub">Lanzamientos reales de SpaceX, al día. Elige una sección.</p>
 <div id="score" class="score" role="status" aria-live="polite"></div></header>
-<div id="feed" aria-label="Recorrido"></div>
-<a class="fd-menu" href="#herramientas" aria-label="Más herramientas">☰</a>
-<h2 id="herramientas" class="fd-h">Más herramientas</h2>
-<nav aria-label="Secciones"><div class="tabs" role="tablist">
+<nav id="herramientas" aria-label="Secciones"><div class="tabs" role="tablist">
 <button type="button" role="tab" id="t-next" data-tab="next" aria-controls="next" aria-selected="true" tabindex="0" class="on"><span aria-hidden="true">🚀</span> Próximo</button>
 <button type="button" role="tab" id="t-predict" data-tab="predict" aria-controls="predict" aria-selected="false" tabindex="-1">Predicciones</button>
 <button type="button" role="tab" id="t-quiz" data-tab="quiz" aria-controls="quiz" aria-selected="false" tabindex="-1">Retos</button>
@@ -56,6 +53,7 @@
 <section id="map" class="tab" role="tabpanel" aria-labelledby="t-map" tabindex="0"><div id="mapdiv" role="region" aria-label="Mapa de plataformas de lanzamiento y zonas de aterrizaje"></div><div id="maplist"></div></section>
 <section id="log" class="tab" role="tabpanel" aria-labelledby="t-log" tabindex="0"></section>
 </main>
+<details id="descubrir" class="disc-opt"><summary>Descubrir (opcional): misterio y minijuegos del día</summary><div id="feed" aria-label="Descubrir"></div></details>
 <footer id="foot"></footer>
 <p class="disc">Proyecto de aficionados, no oficial ni afiliado a SpaceX.</p>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

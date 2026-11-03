@@ -406,3 +406,6 @@ select:hover{border-color:#a855f7}
  .achc summary,.prhow summary,.cmpmis summary{min-height:44px;display:list-item;padding-top:11px;padding-bottom:11px;box-sizing:border-box}
  .empleo select{min-height:44px}
 }
+
+#log-buscar .log-chips{margin:6px 0 10px}#log-buscar .log-chips .cn{display:inline-block;min-width:1.6em;margin-left:4px;padding:1px 7px;border-radius:999px;background:rgba(168,85,247,.22);color:#e9d5ff;font-size:12px;font-weight:700}#log-buscar .log-chips button.sel .cn{background:rgba(11,6,18,.25);color:#0b0612}#log-buscar .log-chips button.sel::before{content:none}#log-buscar .log-chips button:disabled{opacity:.45}#log-buscar .log-sg{margin-top:8px}#log-buscar .log-sg button{font-size:13px;opacity:.9}
+#log-buscar .log-chips,#log-buscar .log-sg{gap:8px}#log-buscar .log-chips button{flex:0 0 auto;border-radius:999px;padding:8px 14px}#log-buscar .log-sg button{flex:0 0 auto;min-height:44px;border-radius:999px;padding:6px 12px;font-weight:500;color:#d8c8f0}

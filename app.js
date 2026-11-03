@@ -2051,21 +2051,32 @@ function logCard(l){const b=(l.stages||[])[0]||{};const ok=l.status==='Success';
 function logSugs(){const P=D.previous||[],c={};const add=k=>{if(k&&!/Unknown/.test(k))c[k]=(c[k]||0)+1};
   P.forEach(l=>{(l.stages||[]).forEach(b=>{add(b.serial);add(b.land_loc)});add(l.pad)});
   return Object.entries(c).filter(([,n])=>n>1).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k)}
+// Filtro en chips (Todos, cada cohete presente, Con fallo) combinado con el buscador; el número de cada chip sale de data.previous.
+let LOGF='all';
+const logFails=l=>l.status&&l.status!=='Success';
+function logChips(){const P=D.previous||[],c={};P.forEach(l=>{if(l.rocket)c[l.rocket]=(c[l.rocket]||0)+1});
+  const ord=['Falcon 9','Falcon Heavy','Starship'],R=Object.keys(c).sort((a,b)=>((ord.indexOf(a)+1)||9)-((ord.indexOf(b)+1)||9)||c[b]-c[a]);
+  const F=[{k:'all',t:'Todos',n:P.length},...R.map(r=>({k:'r:'+r,t:r,n:c[r]}))],nf=P.filter(logFails).length;
+  F.push({k:'fail',t:'Con fallo',n:nf});return F}
+function logMatchF(l){return LOGF==='all'?true:LOGF==='fail'?logFails(l):LOGF.startsWith('r:')?l.rocket===LOGF.slice(2):true}
 function logFilter(q){const P=D.previous||[],w=nrm(q).split(/\s+/).filter(Boolean);
-  const R=w.length?P.filter(l=>{const h=logHay(l);return w.every(x=>h.includes(x))}):P;
+  const R=P.filter(l=>logMatchF(l)&&(!w.length||(h=>w.every(x=>h.includes(x)))(logHay(l))));
   const out=$('#log-out'),cnt=$('#log-cnt');if(!out)return;
-  cnt.textContent=w.length?(R.length?`${R.length} de ${P.length} lanzamientos coinciden con «${q.trim()}».`:`Ningún lanzamiento de los últimos ${P.length} coincide con «${q.trim()}».`):`Mostrando los últimos ${P.length} lanzamientos de SpaceX.`;
-  out.innerHTML=R.length?R.map(logCard).join(''):`<div class="card"><p class="mut">Prueba con otro nombre de misión, un cliente (por ejemplo NASA o Space Force), un propulsor (B10…), un cohete o una plataforma.</p></div>`}
-function renderLog(){const P=D.previous||[],sg=logSugs();
+  const fl=(logChips().find(f=>f.k===LOGF)||{}).t,fx=LOGF!=='all'?` · ${fl}`:'',qx=w.length?` · «${esc(q.trim())}»`:'';
+  cnt.innerHTML=`${R.length} de ${P.length} lanzamientos${fx}${qx}`;
+  out.innerHTML=R.length?R.map(logCard).join(''):`<div class="card"><p class="mut">${LOGF==='fail'&&!w.length?`Ningún fallo en los últimos ${P.length} lanzamientos.`:'Nada coincide. Prueba con otro filtro o búsqueda.'}</p></div>`}
+function renderLog(){const sg=logSugs(),F=logChips();if(!F.some(f=>f.k===LOGF))LOGF='all';
   $('#log').innerHTML=fallosHTML()+`<div class="card" id="log-buscar"><h3><label for="log-q">Buscar en el historial</label></h3>
-  <p class="mut">Busca entre los últimos ${P.length} lanzamientos reales por misión, cliente, propulsor, cohete, plataforma, zona de aterrizaje u órbita.</p>
-  <div class="log-row"><input type="search" id="log-q" autocomplete="off" placeholder="Ej.: Starlink, NASA, Starship, OCISLY, Florida" aria-describedby="log-cnt">
+  <div class="opts log-chips" role="group" aria-label="Filtrar por cohete o resultado">${F.map(f=>`<button type="button" data-logf="${esc(f.k)}" aria-pressed="${f.k===LOGF}" class="${f.k===LOGF?'sel':''}"${f.n||f.k===LOGF?'':' disabled'}>${esc(f.t)} <span class="cn">${f.n}</span></button>`).join('')}</div>
+  <div class="log-row"><input type="search" id="log-q" autocomplete="off" placeholder="Misión, cliente, propulsor…" aria-describedby="log-cnt">
   <div class="opts"><button type="button" id="log-clr">Borrar</button></div></div>
-  ${sg.length?`<p class="mut" style="margin:8px 0 4px">Lo que más se repite:</p><div class="opts">${sg.map(k=>`<button type="button" data-logq="${esc(k)}">${esc(k)}</button>`).join('')}</div>`:''}
+  ${sg.length?`<div class="opts log-sg" role="group" aria-label="Búsquedas frecuentes">${sg.map(k=>`<button type="button" data-logq="${esc(k)}">${esc(k)}</button>`).join('')}</div>`:''}
   <p class="mut" id="log-cnt" role="status" aria-live="polite"></p></div><div id="log-out"></div>`;
   const q=$('#log-q');q.addEventListener('input',()=>logFilter(q.value));
   $('#log-clr').addEventListener('click',()=>{q.value='';logFilter('');q.focus()});
   $('#log').querySelectorAll('[data-logq]').forEach(b=>b.addEventListener('click',()=>{q.value=b.dataset.logq;logFilter(q.value)}));
+  $('#log').querySelectorAll('[data-logf]').forEach(b=>b.addEventListener('click',()=>{LOGF=b.dataset.logf;
+    $('#log').querySelectorAll('[data-logf]').forEach(x=>{const on=x.dataset.logf===LOGF;x.classList.toggle('sel',on);x.setAttribute('aria-pressed',on)});logFilter(q.value)}));
   logFilter('')}
 // ---------- Aprende en 1 minuto (qué lleva, a qué órbita va y para qué sirve) ----------
 const ORB_LEARN={LEO:'Entre unos 160 y 2.000 km de altura. Una vuelta a la Tierra dura unos 90 minutos. Es la órbita más barata de alcanzar: allí están Starlink y la Estación Espacial Internacional.',

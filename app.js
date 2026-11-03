@@ -35,7 +35,7 @@ async function translateDescs(){try{
 Promise.all([fetch('data.json?'+Date.now()).then(r=>r.json()),fetch('i18n/desc_es.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({})),fetch('i18n/fail_es.json?'+Date.now()).then(r=>r.ok?r.json():{}).catch(()=>({}))]).then(([d,es,fes])=>{D=d;ES=es||{};FES=fes||{};init();translateDescs()}).catch(e=>{$('main').innerHTML='<p class="ko">No se han podido cargar los datos.</p>'});
 
 function init(){
-  initTabs();checkIn();
+  initTabs();initTop();checkIn();
   resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderSemana();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCalendario();bindCalendario();renderCohetes();resolveHora();renderHora();bindHora();resolveDia();renderDias();bindDias();renderDobles();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderEstados();bindDirectos();bindPrecision();renderReloj();renderCrono();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
   renderInstall();offlineNote();try{renderFeed()}catch(e){console.error(e)}try{misInit()}catch(e){console.error(e)}
@@ -49,7 +49,7 @@ function showTab(id,focus){const b=TABS().find(x=>x.dataset.tab===id);if(!b)retu
   if(id==='map'){drawMap();setTimeout(()=>{try{mapObj&&mapObj.invalidateSize()}catch(e){}},50)}}
 function initTabs(){
   const bar=$('nav .tabs'),tb=TABS();
-  tb.forEach(b=>b.onclick=()=>{showTab(b.dataset.tab);try{history.replaceState(null,'','#'+b.dataset.tab)}catch(e){}});
+  tb.forEach(b=>b.onclick=()=>{showTab(b.dataset.tab);toTabStart();try{history.replaceState(null,'','#'+b.dataset.tab)}catch(e){}});
   if(bar){bar.onkeydown=e=>{const i=tb.indexOf(document.activeElement);if(i<0)return;let j=null;
       if(e.key==='ArrowRight')j=(i+1)%tb.length;else if(e.key==='ArrowLeft')j=(i-1+tb.length)%tb.length;else if(e.key==='Home')j=0;else if(e.key==='End')j=tb.length-1;
       if(j!=null){e.preventDefault();tb[j].click();tb[j].focus({preventScroll:true})}};
@@ -57,6 +57,14 @@ function initTabs(){
   const fromHash=()=>{const h=(location.hash||'').slice(1);if(tb.some(b=>b.dataset.tab===h))showTab(h)};
   addEventListener('hashchange',fromHash);if(location.hash.length>1){fromHash();setTimeout(()=>{try{scrollTo(0,0)}catch(e){}},0)}
 }
+// Navegación: al cambiar de pestaña estando abajo, ir a su inicio; botón «Arriba» al bajar
+const RMo=()=>!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+function toTabStart(){const n=$('nav'),m=$('#main');if(!n||!m)return;const y=m.getBoundingClientRect().top+scrollY-n.offsetHeight-8;
+  if(scrollY>y+4){try{scrollTo({top:Math.max(0,y),behavior:RMo()?'auto':'smooth'})}catch(e){scrollTo(0,Math.max(0,y))}}}
+function initTop(){if($('#totop'))return;const b=document.createElement('button');b.type='button';b.id='totop';b.className='totop';b.setAttribute('aria-label','Volver arriba, a las secciones');b.innerHTML='<span aria-hidden="true">↑</span> Arriba';b.tabIndex=-1;
+  b.onclick=()=>{try{scrollTo({top:0,behavior:RMo()?'auto':'smooth'})}catch(e){scrollTo(0,0)}const t=$('nav [role=tab].on');t&&t.focus({preventScroll:true})};
+  document.body.appendChild(b);let on=false;const upd=()=>{const v=scrollY>innerHeight*1.2;if(v!==on){on=v;b.classList.toggle('on',v);b.tabIndex=v?0:-1;b.setAttribute('aria-hidden',v?'false':'true')}};
+  b.setAttribute('aria-hidden','true');addEventListener('scroll',upd,{passive:true});upd()}
 // Indicadores de desplazamiento de las pestañas (móvil): flechas y degradado a cada lado; la activa siempre visible
 function tabIntoView(b,inst){const bar=b&&b.parentNode;if(!bar||bar.scrollWidth<=bar.clientWidth+2)return;
   const pad=44,l=b.offsetLeft-bar.offsetLeft,r=l+b.offsetWidth;if(l-pad<bar.scrollLeft||r+pad>bar.scrollLeft+bar.clientWidth){

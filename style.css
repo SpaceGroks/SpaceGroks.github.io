@@ -368,3 +368,11 @@ a.btn::after{content:"→";opacity:.7}
 @media(max-width:480px){.nchip{font-size:12px;padding:4px 8px}}
 .nchip.ko{border-color:rgba(255,92,108,.5)}.nchip.ko .nv{color:var(--ko)}
 .nchips .nchip{margin:0}
+
+/* sxp-v78 · botón «Arriba» */
+.totop{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:998;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid #a855f7;background:rgba(11,6,18,.9);backdrop-filter:blur(8px);color:#f3e8ff;font:600 14px Inter,sans-serif;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.5);opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .2s,transform .2s,background .15s}
+.totop.on{opacity:1;transform:none;pointer-events:auto}
+.totop:hover{background:#a855f7;color:#0b0612}
+.totop:focus-visible{outline:2px solid #d8b4fe;outline-offset:2px}
+.totop span{font-size:16px}
+@media (prefers-reduced-motion: reduce){.totop{transition:none}}

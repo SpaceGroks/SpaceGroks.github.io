@@ -376,3 +376,33 @@ a.btn::after{content:"→";opacity:.7}
 .totop:focus-visible{outline:2px solid #d8b4fe;outline-offset:2px}
 .totop span{font-size:16px}
 @media (prefers-reduced-motion: reduce){.totop{transition:none}}
+
+/* sxp-v79 · estados uniformes de botones y enlaces de acción */
+button,select,summary,a.btn{-webkit-tap-highlight-color:transparent}
+button:not(:disabled),summary,select{cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+/* mismo foco morado en todo lo que se puede pulsar */
+button:focus-visible,a:focus-visible,select:focus-visible,summary:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #d8b4fe;outline-offset:2px;border-radius:10px}
+nav button:focus-visible{border-radius:999px}
+/* mismo hover morado */
+.opts button:hover:not(:disabled),.cal-nav button:hover:not(:disabled){background:rgba(168,85,247,.2);border-color:#a855f7;color:#fff;transform:none}
+.opts button.sel:hover:not(:disabled){background:#b77af9;color:#0b0612}
+button.lnk:hover,.linkish:hover{color:#e9d5ff}
+select{min-height:44px;padding:0 12px;border-radius:10px;background:#111015;color:#f3e8ff;border:1px solid rgba(168,85,247,.35);font:500 14px Inter,sans-serif}
+select:hover{border-color:#a855f7}
+.modal .x:hover,.globo .x:hover,.alertbar .x:hover{color:#fff;background:rgba(168,85,247,.16);border-radius:10px}
+/* mismo estado pulsado */
+.opts button:active:not(:disabled),.thb:active,.btn:active,a.btn:active,nav button:active,.acts .live:active,.acts button.misb:active,.totop:active,.fdgo:active{transform:scale(.97)}
+.opts button,.thb,.btn,a.btn,.acts .live,.acts button.misb,nav button{transition:background .15s,border-color .15s,color .15s,transform .08s}
+/* mismo activo: pestañas, filtros y enlaces seleccionados */
+.linkish[aria-current]{color:#e9d5ff;text-decoration-color:#a855f7;text-decoration-thickness:2px}
+/* 44 px en móvil para todo lo que se toca */
+@media (max-width:720px),(pointer:coarse){
+ button.lnk,.linkish{min-height:44px;display:inline-flex;align-items:center}
+ th button.lnk{width:100%}
+ .rtidx .rtall button,.alertbar .x{min-height:44px;min-width:44px}
+ .alertbar .x{width:44px;height:44px;top:2px;right:2px}
+ .globo .x{width:44px;height:44px}
+ .achc summary,.prhow summary,.cmpmis summary{min-height:44px;display:list-item;padding-top:11px;padding-bottom:11px;box-sizing:border-box}
+ .empleo select{min-height:44px}
+}

@@ -38,7 +38,7 @@ function init(){
   initTabs();initTop();checkIn();
   resolvePredictions();resolveExpert();resolveBets();resolveRbet();resolveVida();renderNext();renderPredict();renderQuiz();renderFlight();renderFleet();bindVida();renderLog();renderDaily();renderSemana();renderLogros();resolveRitmo();renderRacha();bindRacha();renderRitmo();bindRitmo();resolveCli();renderClientes();bindClientes();resolveVen();renderVentanas();bindVentanas();resolveZon();renderZonas();bindZonas();resolveMes();renderMeses();bindMeses();renderCalendario();bindCalendario();renderCohetes();resolveHora();renderHora();bindHora();resolveDia();renderDias();bindDias();renderDobles();renderBarcazas();resolveTipo();renderTipos();bindTipos();renderStarlink();renderMeteo();resolveVet();renderVeterania();bindVeterania();resolveOrb();renderOrbitas();bindOrbitas();renderRetrasos();resolvePrec();renderPrecision();resolveDir();renderDirectos();renderEstados();bindDirectos();bindPrecision();renderReloj();renderCrono();resolveTur();renderTierra();bindTierra();resolveHito();renderHitos();bindHitos();renderPlataformas();resolveAnu();renderAnual();bindAnual();renderEmpleo();bindEmpleo();setInterval(refreshRacha,20*6e4);renderScore();startAlerts();
   $('#foot').innerHTML=`Datos: <a href="https://thespacedevs.com/llapi" target="_blank">Launch Library 2 (The Space Devs)</a>. Actualizado: ${fmt(D.generated)}. Tus puntos se guardan solo en este navegador.`;
-  renderInstall();offlineNote();try{renderFeed()}catch(e){console.error(e)}try{misInit()}catch(e){console.error(e)}
+  renderInstall();offlineNote();try{nxInit()}catch(e){console.error(e)}try{renderFeed()}catch(e){console.error(e)}try{misInit()}catch(e){console.error(e)}
 }
 // ---------- Pestañas (accesibles con teclado y enlazables con #) ----------
 const TABS=()=>[...document.querySelectorAll('nav [role=tab]')];
@@ -112,13 +112,22 @@ function renderNext(){
       const d=Math.floor(ms/DAY),hh=Math.floor(ms%DAY/H),m=Math.floor(ms%H/6e4),sec=Math.floor(ms%6e4/1e3);
       el.textContent=`T- ${d}d ${String(hh).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`};
     tick();setInterval(tick,1000);}
-  h+='<div id="alerts"></div><div id="daily"></div><div id="semana"></div><div id="rlive"></div><div id="ritmo"></div><div id="calendario"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="dias"></div><div id="dobles"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="precision"></div><div id="directos"></div><div id="estados"></div><div id="reloj"></div><div id="crono"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div><div id="install"></div>';
+  h+='<div id="alerts"></div>';
+  h+=`<h3 class="nxh">Siguientes lanzamientos</h3>`+ups.slice(1,8).map(l=>`<div class="card"><h3>${mname(l)}</h3><div class="mut">${fmt(l.net)}${/TBD|MON|YEAR|QUARTER/i.test(l.net_precision||'')?' (fecha aproximada)':''} · ${l.rocket} · ${l.loc||''}</div>${alertBtns(l)}${learnHTML(l)}${misBtn(l,'u')}</div>`).join('');
+  h+='<div id="calendario"></div>';
   h+=`<div class="stats"><div><b>${s.total_launch_count}</b>lanzamientos totales</div><div><b>${s.successful_launches}</b>con éxito</div>
   <div><b>${s.consecutive_successful_launches}</b>éxitos seguidos</div><div><b>${s.successful_landings}</b>aterrizajes de propulsor</div>
   <div><b>${s.consecutive_successful_landings}</b>aterrizajes seguidos</div><div><b>${s.pending_launches}</b>lanzamientos pendientes</div></div>`;
-  h+=`<h3 style="margin-top:22px">Siguientes lanzamientos</h3>`+ups.slice(1,8).map(l=>`<div class="card"><h3>${mname(l)}</h3><div class="mut">${fmt(l.net)}${/TBD|MON|YEAR|QUARTER/i.test(l.net_precision||'')?' (fecha aproximada)':''} · ${l.rocket} · ${l.loc||''}</div>${alertBtns(l)}${learnHTML(l)}${misBtn(l,'u')}</div>`).join('');
+  h+=`<details id="nxmas" class="nxmas"${LS.get('nxmas',false)?' open':''}><summary><span class="nxt">Más datos y juegos</span><span class="nxn" aria-hidden="true"></span></summary><div class="nxb"><div id="daily"></div><div id="semana"></div><div id="rlive"></div><div id="ritmo"></div><div id="hitos"></div><div id="plataformas"></div><div id="anual"></div><div id="meses"></div><div id="cohetes"></div><div id="hora"></div><div id="dias"></div><div id="dobles"></div><div id="barcazas"></div><div id="tipos"></div><div id="starlink"></div><div id="meteo"></div><div id="veterania"></div><div id="orbitas"></div><div id="retrasos"></div><div id="precision"></div><div id="directos"></div><div id="estados"></div><div id="reloj"></div><div id="crono"></div><div id="tierra"></div><div id="clientes"></div><div id="ventanas"></div><div id="zonas"></div><div id="empleo"></div><div id="logros"></div></div></details><div id="install"></div>`;
   $('#next').innerHTML=h;
 }
+// Próximo sin ruido: datos y juegos extra plegados en «Más datos y juegos» (se recuerda abierto/cerrado)
+function nxInit(){const d=$('#nxmas');if(!d)return;const b=d.querySelector('.nxb'),n=d.querySelector('.nxn');
+  const cnt=b?[...b.children].filter(x=>x.innerHTML.trim()).length:0;if(n)n.textContent=cnt?String(cnt):'';d.hidden=!cnt;
+  const sm=d.querySelector('summary');if(sm)sm.setAttribute('aria-label',`Más datos y juegos (${cnt} secciones)`);
+  if(!d.dataset.b){d.dataset.b=1;d.addEventListener('toggle',()=>{try{LS.set('nxmas',d.open)}catch(e){}})}}
+// Abre el desplegable que contenga un destino antes de saltar a él
+function openTo(t){try{let d=t&&t.closest&&t.closest('details');while(d){if(!d.open)d.open=true;d=d.parentElement&&d.parentElement.closest('details')}}catch(e){}return t}
 // ---------- Predicciones ----------
 function predictable(l){return new Date(l.net)>Date.now()&&!/TBD/i.test(l.status)&&new Date(l.net)-Date.now()<21*DAY}
 // ---------- Meteo real en las predicciones (Launch Library 2: probability y weather_concerns) ----------
@@ -2430,7 +2439,7 @@ function completeDaily(k){try{const d=LS.get('daily',null);if(!d||d.d!==dayKey()
   d.done=true;d.pts=dailyPts();d.at=Date.now();LS.set('daily',d);addPts('streak',d.pts);
   const st=LS.get('streak',{});st.retos=(st.retos||0)+1;LS.set('streak',st);
   aviso(`Desafío del día completado: +${d.pts} puntos.`);renderDaily()}catch(e){}}
-function goReto(r){if(r.url){window.open(r.url,'_blank','noopener');completeDaily(r.k)}else{const b=document.querySelector(`nav button[data-tab="${r.tab}"]`);if(b)b.click();try{const qid=r.tab==='quiz'&&!r.sel?({quiz:'qwk',encadena:'racha'}[r.k]||r.k):null;const t=qid?rtShow(qid):r.sel&&document.querySelector(r.sel);if(t)t.scrollIntoView({block:'start'});else scrollTo({top:0})}catch(e){}}}
+function goReto(r){if(r.url){window.open(r.url,'_blank','noopener');completeDaily(r.k)}else{const b=document.querySelector(`nav button[data-tab="${r.tab}"]`);if(b)b.click();try{const qid=r.tab==='quiz'&&!r.sel?({quiz:'qwk',encadena:'racha'}[r.k]||r.k):null;const t=qid?rtShow(qid):r.sel&&openTo(document.querySelector(r.sel));if(t)t.scrollIntoView({block:'start'});else scrollTo({top:0})}catch(e){}}}
 function aviso(t){let a=$('#aviso');if(!a){a=document.createElement('div');a.id='aviso';a.className='aviso';a.setAttribute('role','status');document.body.appendChild(a)}
   a.textContent=a.classList.contains('show')&&a.textContent&&!a.textContent.includes(t)?a.textContent+' '+t:t;a.classList.add('show');clearTimeout(a._t);a._t=setTimeout(()=>a.classList.remove('show'),4500)}
 function renderDaily(){const el=$('#daily');if(!el||!D)return;const st=LS.get('streak',{n:0,best:0}),n=streakNow(),d=retoDelDia();

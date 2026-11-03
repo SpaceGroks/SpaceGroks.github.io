@@ -422,3 +422,4 @@ details.nxmas>summary:focus-visible{outline:2px solid var(--acc2);outline-offset
 details.nxmas[open]>summary{border-bottom:1px solid var(--line);border-radius:14px 14px 0 0}
 details.nxmas .nxb{padding:4px 12px 12px}
 @media (prefers-reduced-motion:reduce){details.nxmas>summary::before{transition:none}}
+#nx-sig,#calendario,#nxmas{scroll-margin-top:16px}

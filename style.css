@@ -423,3 +423,16 @@ details.nxmas[open]>summary{border-bottom:1px solid var(--line);border-radius:14
 details.nxmas .nxb{padding:4px 12px 12px}
 @media (prefers-reduced-motion:reduce){details.nxmas>summary::before{transition:none}}
 #nx-sig,#calendario,#nxmas{scroll-margin-top:16px}
+
+/* sxp-v83: marcador discreto en pastilla */
+.score{position:relative;display:inline-block;margin-top:10px;padding:0;border:0;background:none;box-shadow:none;backdrop-filter:none;font-size:13px;max-width:none;overflow:visible}
+.scb{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:4px 12px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.04);color:inherit;font:inherit;font-size:13px;letter-spacing:.04em;cursor:pointer;opacity:.8;transition:opacity .15s,border-color .15s}
+.scb:hover,.score.open .scb{opacity:1;border-color:#8b5cf6}
+.scb b{font-family:var(--sans);color:#fff}
+.scr{opacity:.75}
+.scp{position:absolute;left:50%;top:calc(100% + 6px);transform:translateX(-50%);z-index:30;min-width:210px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:#0b0b12;box-shadow:0 8px 24px rgba(0,0,0,.5);text-align:left}
+.scp[hidden]{display:none}
+.scp div{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:13px}
+.scp span{opacity:.65}
+.scp b{color:#fff;font-weight:600}
+@media(max-width:520px){.score{font-size:12px;padding:0;white-space:normal;max-width:none;overflow:visible}.scb{min-height:36px}}

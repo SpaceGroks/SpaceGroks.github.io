@@ -85,7 +85,13 @@ function points(){return LS.get('points',{pred:0,quiz:0})}
 function addPts(kind,n){const p=points();p[kind]=(p[kind]||0)+n;LS.set('points',p);renderScore()}
 function renderScore(){const p=points(),t=Object.values(p).reduce((a,v)=>a+(typeof v==='number'&&isFinite(v)?v:0),0),st=LS.get('streak',null),rn=st&&(st.last===dayKey()||st.last===dayKey(-1))?st.n:0;
   const lv=t<50?'Becario de control':t<150?'Ingeniero de lanzamiento':t<400?'Director de vuelo':'Leyenda de Starbase';
-  $('#score').innerHTML=`<b>${t}</b> puntos · ${lv}${rn?` · racha de ${rn} ${rn===1?'día':'días'}`:''}`;checkAch()}
+  const el=$('#score'),op=el.classList.contains('open');
+  el.innerHTML=`<button type="button" class="scb" aria-expanded="${op}" aria-controls="scp" aria-label="Tus puntos: ${t}${rn?`, racha de ${rn} ${rn===1?'día':'días'}`:''}. Toca para ver más"><b>${t}</b> pts${rn?`<span class="scr">· ${rn} d</span>`:''}</button><div id="scp" class="scp" ${op?'':'hidden'}><div><span>Puntos</span><b>${t}</b></div><div><span>Nivel</span><b>${lv}</b></div><div><span>Racha</span><b>${rn?`${rn} ${rn===1?'día':'días'}`:'Sin racha'}</b></div></div>`;
+  if(!el.dataset.w){el.dataset.w=1;const tg=o=>{el.classList.toggle('open',o);const b=el.querySelector('.scb'),p=el.querySelector('.scp');if(b)b.setAttribute('aria-expanded',o);if(p)p.hidden=!o};
+    el.addEventListener('click',e=>{if(e.target.closest('.scb'))tg(!el.classList.contains('open'))});
+    document.addEventListener('click',e=>{if(!el.contains(e.target)&&el.classList.contains('open'))tg(false)});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&el.classList.contains('open')){tg(false);el.querySelector('.scb')?.focus()}})}
+  checkAch()}
 // ---------- Próximo ----------
 function upcomingFuture(){const now=Date.now();return D.upcoming.filter(l=>new Date(l.net)>now-3*H)}
 // chips compactos del próximo lanzamiento: estado, órbita, propulsor, aterrizaje, plataforma y meteo (datos reales de Launch Library 2)

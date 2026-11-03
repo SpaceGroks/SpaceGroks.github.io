@@ -45,9 +45,16 @@ const TABS=()=>[...document.querySelectorAll('nav [role=tab]')];
 function showTab(id,focus){const b=TABS().find(x=>x.dataset.tab===id);if(!b)return;
   TABS().forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-selected',on);x.tabIndex=on?0:-1});
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.id===id));document.querySelectorAll('.thd').forEach(x=>x.classList.toggle('on',x.dataset.for===id));
-  if(focus)b.focus({preventScroll:true});tabIntoView(b);
+  if(focus)b.focus({preventScroll:true});tabIntoView(b);tabPager(id);
   if(id==='map'){drawMap();setTimeout(()=>{try{mapObj&&mapObj.invalidateSize()}catch(e){}},50)}}
+// Al final de cada sección: botones a la sección anterior y a la siguiente, con su nombre
+function tabPager(id){const tb=TABS(),i=tb.findIndex(x=>x.dataset.tab===id);if(i<0)return;
+  [['#tp-prev',tb[i-1]],['#tp-next',tb[i+1]]].forEach(([s,t])=>{const e=$(s);if(!e)return;e.hidden=!t;if(!t)return;
+    e.querySelector('b').textContent=t.textContent.trim();e.dataset.to=t.dataset.tab;
+    e.setAttribute('aria-label',(s==='#tp-prev'?'Sección anterior: ':'Sección siguiente: ')+t.textContent.trim())});
+  const g=$('.tpg');if(g)g.classList.toggle('solo',!tb[i-1]||!tb[i+1])}
 function initTabs(){
+  ['#tp-prev','#tp-next'].forEach(s=>{const e=$(s);if(e)e.onclick=()=>{const t=TABS().find(x=>x.dataset.tab===e.dataset.to);if(t){t.click();try{t.focus({preventScroll:true})}catch(x){}}}});
   const bar=$('nav .tabs'),tb=TABS();
   tb.forEach(b=>b.onclick=()=>{showTab(b.dataset.tab);toTabStart();try{history.replaceState(null,'','#'+b.dataset.tab)}catch(e){}});
   if(bar){bar.onkeydown=e=>{const i=tb.indexOf(document.activeElement);if(i<0)return;let j=null;
@@ -55,6 +62,7 @@ function initTabs(){
       if(j!=null){e.preventDefault();tb[j].click();tb[j].focus({preventScroll:true})}};
     tabArrows(bar)}
   const fromHash=()=>{const h=(location.hash||'').slice(1);if(tb.some(b=>b.dataset.tab===h))showTab(h)};
+  tabPager((tb.find(b=>b.classList.contains('on'))||tb[0]||{dataset:{}}).dataset.tab);
   addEventListener('hashchange',fromHash);if(location.hash.length>1){fromHash();setTimeout(()=>{try{scrollTo(0,0)}catch(e){}},0)}
 }
 // Navegación: al cambiar de pestaña estando abajo, ir a su inicio; botón «Arriba» al bajar
@@ -1995,7 +2003,7 @@ function lzInfo(z){const rec=z.type!=='EXP';
    (z.active===false?'<br>Ya no está en servicio':'')}
 function drawMap(){if(mapDone)return;mapDone=true;
   const map=mapObj=L.map('mapdiv').setView([31,-100],3);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap, © CARTO'}).addTo(map);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:16,attribution:'Mapa © Esri, HERE, Garmin, © OpenStreetMap'}).addTo(map);
   const pads={};[...D.previous.map(l=>({...l,up:0})),...D.upcoming.map(l=>({...l,up:1}))].forEach(l=>{if(l.lat==null)return;
     const k=l.pad;const p=pads[k]||(pads[k]={pad:l.pad,loc:l.loc,lat:l.lat,lon:l.lon,done:0,up:0});l.up?p.up++:p.done++});
   const gP=L.layerGroup().addTo(map),gZ=L.layerGroup().addTo(map);
@@ -2305,7 +2313,7 @@ function trajHTML(l){const t=trajInfo(l);if(!t)return '';const fut=new Date(l.ne
   return `<h3>Despegue y aterrizaje en el mapa</h3>${typeof L!=='undefined'?`<div class="trajmap" role="img" aria-label="Mapa con la plataforma de lanzamiento${t.zs.length?' y la zona de aterrizaje':''}"></div>`:''}${txt}<p class="mut">Coordenadas de Launch Library 2.</p>`}
 function drawTraj(m,l){const el=m.querySelector('.trajmap'),t=trajInfo(l);if(!el||!t||typeof L==='undefined')return null;
   try{const map=L.map(el,{scrollWheelZoom:false,attributionControl:true});
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap, © CARTO'}).addTo(map);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:16,attribution:'Mapa © Esri, HERE, Garmin, © OpenStreetMap'}).addTo(map);
     const P=[+l.lat,+l.lon];L.circleMarker(P,{radius:8,color:'#4fb3ff',fillColor:'#8a7dff',fillOpacity:.7,weight:2}).addTo(map).bindTooltip('Despegue: '+(l.pad||''),{permanent:t.zs.length>0,direction:'top'});
     t.zs.forEach(z=>{L.circleMarker([z.lat,z.lon],{radius:7,color:'#4fe3a1',fillColor:'#4fe3a1',fillOpacity:.5,weight:2,dashArray:'3 3'}).addTo(map).bindTooltip('Aterrizaje: '+z.k,{permanent:true,direction:'bottom'});
       L.polyline([P,[z.lat,z.lon]],{color:'#4fe3a1',weight:2,dashArray:'6 6'}).addTo(map)});

@@ -342,7 +342,7 @@ a.btn::after{content:"→";opacity:.7}
 .acts+.opts.al button{background:transparent;border-color:rgba(255,255,255,.18);color:#c4b5d9;font-weight:500}
 .acts+.opts.al button:hover:not(:disabled){border-color:#a855f7;color:#fff}
 .acts+.opts.al button.sel{background:rgba(168,85,247,.2);color:#f3e8ff;border-color:#a855f7}
-@media(max-width:520px){.score{font-size:12px;padding:6px 12px;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}.sub{font-size:11px}}
+@media(max-width:520px){.score{font-size:12px;padding:6px 12px;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}.sub{display:none}header{padding-top:16px;padding-bottom:8px}}
 
 /* Encabezado de pestaña (sxp-v75) */
 .thd{display:none;margin:18px 0 4px}.thd.on{display:block;animation:in .35s ease}

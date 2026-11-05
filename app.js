@@ -162,22 +162,35 @@ function wxHTML(l){const ws=wxStats(),wx=wxList(l);
   const ref=ws?`<div class="mut">Referencia real: en los últimos ${ws.n} lanzamientos de SpaceX con previsión, despegaron con una meteo favorable mediana del ${ws.med}% y la más baja fue del ${ws.lo.prob}% (${esc(mname(ws.lo))})${ws.top?`; lo que más preocupó: ${esc(ws.top.name)} (${ws.top.c} de ${ws.top.n})`:''}.</div>`:'';
   return `<div class="wxp" style="margin-top:8px">${l.prob!=null?`<div><b>Meteo:</b> <span class="tag ${wxCls(l.prob)}">${l.prob}% favorable</span>${wx.length?` Preocupa: ${esc(wx.join(', '))}.`:''}</div>`:
    '<div class="mut"><b>Meteo:</b> la fuente aún no da previsión para este lanzamiento; saldrá aquí en cuanto la publique.</div>'}${ref}</div>`}
+function predQs(l){const b=(l.stages||[])[0]||{};return[['ok','¿Llegará la carga a su órbita?'],...(b.land_attempt?[['land',`¿Aterrizará el propulsor ${b.serial||''} en ${b.land_loc_name||'su zona'}?`]]:[]),['time',`¿Despegará dentro de las 24 h de la hora prevista ahora (${fmt(l.net)})?`]]}
+function predComplete(p,qs){return !!(p&&p.saved&&qs.every(([k])=>p.a&&p.a[k]))}
 function renderPredict(){
   const preds=LS.get('preds',{});
   let h=`<details class="card prhow" id="pr-how"><summary><b>Cómo se juega</b></summary> Antes de cada despegue responde a tres preguntas. Cuando el lanzamiento ocurra, comparamos con lo que pasó de verdad. Cada acierto da 10 puntos, acertar las tres da 5 de bonus, y si apuestas por un fallo y aciertas te llevas 50. Abre «Análisis de experto» en cada lanzamiento para razonar y predecir los minutos de retraso (hasta 40 puntos más).</details>`;
   h+='<div id="mystats">'+statsHTML()+'</div>';
   const list=D.upcoming.filter(predictable);
   if(!list.length)h+='<p class="mut">Ahora mismo no hay lanzamientos confirmados en las próximas tres semanas. Vuelve mañana.</p>';
-  list.forEach(l=>{const p=preds[l.id]||{a:{}};const b=(l.stages||[])[0]||{};
-    const qs=[['ok','¿Llegará la carga a su órbita?'],...(b.land_attempt?[['land',`¿Aterrizará el propulsor ${b.serial||''} en ${b.land_loc_name||'su zona'}?`]]:[]),['time',`¿Despegará dentro de las 24 h de la hora prevista ahora (${fmt(l.net)})?`]];
-    h+=`<div class="card" data-id="${l.id}"><h3>${mname(l)}</h3><div class="mut">${l.rocket} · ${l.loc||''}${b.flight?` · vuelo nº ${b.flight} del propulsor`:''}</div>${wxHTML(l)}`+
-    qs.map(([k,q])=>`<div style="margin-top:8px"><div id="q-${l.id}-${k}">${q}</div><div class="opts" role="group" aria-labelledby="q-${l.id}-${k}">${['Sí','No'].map(v=>`<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${p.a[k]===v}" class="${p.a[k]===v?'sel':''}">${v}</button>`).join('')}</div></div>`).join('')+
-    `<div class="mut">${p.saved?'Predicción guardada ✔ (puedes cambiarla hasta el despegue)':'Sin predicción todavía'}</div>${expertHTML(l)}</div>`});
-  const done=Object.values(preds).filter(p=>p.res);
-  if(done.length)h+=`<h3>Tus resultados</h3>`+done.sort((a,b)=>b.resAt-a.resAt).map(p=>`<div class="card"><h3>${p.name}</h3>${p.wx0!=null?`<div class="mut">Meteo al predecir: ${p.wx0}% favorable</div>`:''}${p.res.map(r=>`<div>${ic(r.ok)} ${r.q}: dijiste ${r.you}, pasó ${r.real}</div>`).join('')}<b>+${p.pts} puntos</b></div>`).join('');
+  list.forEach(l=>{const p=preds[l.id]||{a:{}};const b=(l.stages||[])[0]||{};const qs=predQs(l);
+    const hecha=predComplete(p,qs),open=PRED_OPEN===l.id;
+    const tag=hecha?'<span class="tag ok">Hecha</span>':'<span class="tag warn">Pendiente</span>';
+    const btn=open?'Cerrar':(hecha?'Editar predicción':'Predecir');
+    const mut=`${l.rocket} · ${l.loc||''}${b.flight?` · vuelo nº ${b.flight} del propulsor`:''}`;
+    h+=`<div class="card prcard" data-id="${l.id}"><div class="prsum"><div class="prsum-t"><h3>${mname(l)}</h3><div class="mut">${mut}</div></div><div class="prsum-a">${tag}<button type="button" class="thb${open||!hecha?' pri':''} pr-tog">${btn}</button></div></div>`;
+    if(open)h+=`<div class="prbody">${wxHTML(l)}`+
+      qs.map(([k,q])=>`<div style="margin-top:8px"><div id="q-${l.id}-${k}">${q}</div><div class="opts" role="group" aria-labelledby="q-${l.id}-${k}">${['Sí','No'].map(v=>`<button type="button" data-k="${k}" data-v="${v}" aria-pressed="${p.a[k]===v}" class="${p.a[k]===v?'sel':''}">${v}</button>`).join('')}</div></div>`).join('')+
+      `<div class="mut">${p.saved?'Predicción guardada ✔ (puedes cambiarla hasta el despegue)':'Sin predicción todavía'}</div>${expertHTML(l)}</div>`;
+    h+=`</div>`});
+  const done=Object.entries(preds).filter(([,p])=>p.res);
+  if(done.length)h+=`<h3>Tus resultados</h3>`+done.sort((a,b)=>b[1].resAt-a[1].resAt).map(([id,p])=>{
+    const open=PRED_RES_OPEN===('p:'+id);
+    return `<div class="card prcard" data-resid="p:${esc(id)}"><div class="prsum"><div class="prsum-t"><h3>${esc(p.name)}</h3></div><div class="prsum-a"><span class="tag ok">Resuelta</span><button type="button" class="thb${open?' pri':''} pr-res-tog">${open?'Cerrar':'Ver resultado'}</button></div></div>`+
+      (open?`<div class="prbody">${p.wx0!=null?`<div class="mut">Meteo al predecir: ${p.wx0}% favorable</div>`:''}${p.res.map(r=>`<div>${ic(r.ok)} ${r.q}: dijiste ${r.you}, pasó ${r.real}</div>`).join('')}<b>+${p.pts} puntos</b></div>`:'')+`</div>`}).join('');
   h+=expertResultsHTML();
   $('#predict').innerHTML=h;
   bindExpert();bindStats();
+  $('#predict').querySelectorAll('.pr-tog').forEach(bt=>bt.onclick=()=>{const id=bt.closest('[data-id]').dataset.id;PRED_OPEN=PRED_OPEN===id?null:id;renderPredict();
+    if(PRED_OPEN){const n=document.querySelector(`#predict .card[data-id="${CSS.escape(id)}"] .opts button`);if(n)try{n.focus({preventScroll:true})}catch(e){}}});
+  $('#predict').querySelectorAll('.pr-res-tog').forEach(bt=>bt.onclick=()=>{const id=bt.closest('[data-resid]').dataset.resid;PRED_RES_OPEN=PRED_RES_OPEN===id?null:id;renderPredict()});
   $('#predict').querySelectorAll('.opts button[data-k]').forEach(bt=>bt.onclick=()=>{
     const id=bt.closest('.card').dataset.id,l=D.upcoming.find(x=>x.id===id);const ps=LS.get('preds',{});
     const p=ps[id]||{a:{},name:mname(l),land:!!((l.stages||[])[0]||{}).land_attempt};p.a[bt.dataset.k]=bt.dataset.v;p.net=l.net;if(l.prob!=null)p.wx0=l.prob;p.saved=Date.now();ps[id]=p;LS.set('preds',ps);completeDaily('pred');renderPredict()});
@@ -2377,6 +2390,7 @@ function tlHTML(l){const tl=(l.tl||[]).slice().sort((a,b)=>a[1]-b[1]);if(!tl.len
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button[data-mis]');if(b&&!b.closest('.modal'))openMission(b.dataset.mis,b.dataset.src,b)});
 // ---------- Análisis de experto (razonamiento + predicción medible que se puntúa sola) ----------
 const XDRAFT={},XOPEN=new Set();
+let PRED_OPEN=null,PRED_RES_OPEN=null;
 const precise=l=>/^(SEC|MIN)$/i.test(l.net_precision||'');
 function winStats(){// datos reales: minutos entre la apertura de la ventana y el despegue en los lanzamientos recientes
   const v=D.previous.filter(l=>l.ws&&l.net&&precise(l)).map(l=>Math.round((new Date(l.net)-new Date(l.ws))/6e4)).filter(x=>x>=0).sort((a,b)=>a-b);
@@ -2428,13 +2442,15 @@ function resolveExpert(){
   if(ch)LS.set('expert',X);
 }
 function expertResultsHTML(){
-  const done=Object.values(LS.get('expert',{})).filter(x=>x.res);if(!done.length)return '';
-  return `<h3>Tus análisis de experto</h3>`+done.sort((a,b)=>b.resAt-a.resAt).map(x=>{const r=x.res;
-    return `<div class="card"><h3>${esc(x.name)}</h3>${x.prob0!=null?`<div class="mut">Meteo al guardar: ${x.prob0}% favorable</div>`:''}${r.void?'<div class="mut">La fuente no da la hora exacta del despegue, así que el retraso no se puede medir.</div>':
+  const done=Object.entries(LS.get('expert',{})).filter(([,x])=>x.res);if(!done.length)return '';
+  return `<h3>Tus análisis de experto</h3>`+done.sort((a,b)=>b[1].resAt-a[1].resAt).map(([id,x])=>{const r=x.res,open=PRED_RES_OPEN===('x:'+id);
+    return `<div class="card prcard" data-resid="x:${esc(id)}"><div class="prsum"><div class="prsum-t"><h3>${esc(x.name)}</h3></div><div class="prsum-a"><span class="tag ok">Resuelta</span><button type="button" class="thb${open?' pri':''} pr-res-tog">${open?'Cerrar':'Ver resultado'}</button></div></div>`+
+    (open?`<div class="prbody">${x.prob0!=null?`<div class="mut">Meteo al guardar: ${x.prob0}% favorable</div>`:''}${r.void?'<div class="mut">La fuente no da la hora exacta del despegue, así que el retraso no se puede medir.</div>':
     `<div>${ic(r.err<=10,'Muy cerca','Lejos')} Retraso: dijiste ${x.delay} min, fue ${r.realDelay} min (error de ${r.err} min) · +${r.dpts}</div>`}
     ${r.cpts!=null?`<div>${ic((x.conf>=50)===r.landed,'Bien calibrado','Mal calibrado')} Confianza en el aterrizaje: ${x.conf}% · ${r.landed?'aterrizó':'no aterrizó'} · +${r.cpts}</div>`:''}
-    ${x.txt?`<blockquote class="xq">${esc(x.txt)}</blockquote>`:''}<b>+${x.pts} puntos</b></div>`}).join('');
+    ${x.txt?`<blockquote class="xq">${esc(x.txt)}</blockquote>`:''}<b>+${x.pts} puntos</b></div>`:'')+`</div>`}).join('');
 }
+
 
 // ---------- Racha de días y desafío del día ----------
 // Volver cada día suma 2 puntos por día de racha (máximo 14). Completar el desafío del día da 10, +5 con racha de 3 días y +10 con racha de 7.
@@ -4268,7 +4284,10 @@ function platWire(F){const sec=F.querySelector('#fd-plat');if(!sec)return;const 
 
 // ---------- Encabezado de cada pestaña: título corto y 2-3 acciones como botones ----------
 function thGo(g){let t=null;
-  if(g==='pr-go'){t=document.querySelector('#predict .card[data-id] .opts button')||document.querySelector('#predict .card[data-id]')||$('#mystats')}
+  if(g==='pr-go'){const list=(D&&D.upcoming||[]).filter(predictable),preds=LS.get('preds',{});
+    const first=list.find(l=>!predComplete(preds[l.id]||{a:{}},predQs(l)))||list[0];
+    if(first){PRED_OPEN=first.id;renderPredict();t=document.querySelector(`#predict .card[data-id="${CSS.escape(first.id)}"] .opts button`)||document.querySelector(`#predict .card[data-id="${CSS.escape(first.id)}"] .pr-tog`)||document.querySelector(`#predict .card[data-id="${CSS.escape(first.id)}"]`)}
+    else t=$('#mystats')}
   else if(g==='pr-how'){const d=$('#pr-how');if(d){d.open=true;t=d.querySelector('summary')||d}}
   else if(g.startsWith('rt:')){t=rtShow(g.slice(3))}
   else t=document.querySelector(g);

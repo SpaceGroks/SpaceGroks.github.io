@@ -355,6 +355,16 @@ a.btn::after{content:"→";opacity:.7}
 .thb.nada{opacity:.5}
 .prhow summary{cursor:pointer;list-style:none;min-height:28px}.prhow summary::-webkit-details-marker{display:none}
 .prhow summary::after{content:' ▾';color:var(--mut)}.prhow[open] summary::after{content:' ▴'}
+/* sxp-v86 · predicciones en tarjetas cerradas */
+.prsum{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.prsum h3{margin:0}
+.prsum-t{flex:1 1 160px;min-width:0}
+.prsum-a{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.prsum-a .tag{margin:0}
+.prbody{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.prcard .prsum .thb{flex:0 0 auto}
+@media(max-width:520px){.prsum-a{width:100%;justify-content:space-between}.prsum-a .thb{flex:1 1 auto}}
+
 @media(max-width:520px){.tht{font-size:18px}.thb{flex:1 1 auto;padding:0 12px}}
 
 /* chips compactos del próximo lanzamiento */
